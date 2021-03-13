@@ -1,0 +1,63 @@
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:18:49 $
+.TH DIST 3 "$Date: 1997/04/12 04:18:49 $"
+.SH NAME
+dist, latlon \- distance, azimuth and location calculations on a sphere
+.SH SYNOPSIS
+.nf
+void dist ( double lat1,
+	 double long1,
+	 double lat2,
+	 double long2,
+	 double *delta,
+	 double *azimuth );
+
+void latlon ( double lat1,
+	 double long1,
+	 double del,
+	 double azimuth,
+	 double *lat2,
+	 double *long2 );
+.fi
+.SH DESCRIPTION
+Subroutine \fBdist\fR computes the angular distance 
+between two points,
+and the relative azimuth from point 1 to point2. 
+The two input points are specified as latitude and longitude in radians:
+.IP "\fIlat1, long1\fR"
+.IP "\fIlat2, long2\fR"
+Latitude is positive north
+from the equator and longitude is positive
+east from Greenwich, England.
+.br
+The results are:
+.IP del             
+The angular distance (in radians) between the two points.
+.IP azimuth              
+The azimuth (in radians) from point 1 to point 2.
+Azimuth is positive clockwise and measured from north.
+.LP
+Subroutine \fBlatlon\fR takes 
+as input a starting point and an azimuth and angular distance, 
+and computes the latitude and longitude of the resultant position on the
+sphere.
+.IP "lat1, long1"   
+The latitude-longitude in radians of the starting point. 
+.IP del             
+The angular distance to the second point (in radians).
+.IP azimuth              
+The relative azimuth from the starting point to the second point.
+The results are:
+.IP "lat2, long2"   
+The latitude and longitude (in radians) of the second point.
+.SH EXAMPLE
+.SH RETURN VALUES
+.SH LIBRARY
+.SH DIAGNOSTICS
+.SH "SEE ALSO"
+.nf
+.fi
+.SH "BUGS AND CAVEATS"
+.SH AUTHOR
+Danny Harvey
+
+.\" $Id: dist.3,v 1.1.1.1 1997/04/12 04:18:49 danq Exp $ 
