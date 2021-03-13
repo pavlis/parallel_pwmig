@@ -1,0 +1,133 @@
+.TH DATAFILE 3 "$Date: 2014/09/01 21:26:12 $"
+.SH NAME
+datafile, datapath, newdata \- find program data file 
+.SH SYNOPSIS
+.nf
+
+char *datafile ( char *envname, char *filename ) 
+
+char *datapath ( char *envname, char *dirname, char *filename, char *suffix ) ;
+
+int newdata ( char *returnpath, 
+		char *envname, char *dirname, char *filename, char *suffix );
+
+.fi
+.SH DESCRIPTION
+Many programs need to open a private data file -- for
+instance a font file, or a list of geographic
+regions, or a travel-time table.  Since the program needs to 
+always be able to find the file, the tendency is to 
+compile an absolute path name into the program.
+This is,  of course, very non-portable.
+.LP
+Datafile and datapath attempt to provide a standard 
+way of treating this problem.
+Both attempt to find a datafile somewhere in the
+standard location $PWMIG/data.  \fBDatafile\fR looks
+for the \fIfilename\fR, while \fBdatapath\fR concatenates
+the \fIdirname\fR, \fIfilename\fR, and \fIsuffix\fR:
+.nf
+
+    \fIdirname\fR/\fIfilename\fR.\fIsuffix\fR
+	
+.fi
+and looks for that file. 
+\fIdirname\fR or \fIsuffix\fR may be null or null strings, in
+which case they are ignored (along with the corresponding 
+slash or dot separator). 
+.LP
+PWMIG programs typically place their private
+datafiles somewhere under $PWMIG/data.
+The caller of datafile provides two names to find
+a datafile: 
+.IP 1)
+an environment variable name.
+.IP 2)
+a pathname relative to $PWMIG/data
+.LP
+The routine first checks for the existence of the 
+environment variable.
+If it exists it is used to form the top of the 
+directory chain.  If it is not defined, a frozen
+default of "~/pwmig" is used, which is not advised.  
+.LP
+If an element does not point to a directory, 
+it may point to a file, and this is tested.
+.LP
+If all these tests fail, the environment variable 
+"PWMIG" is checked.  If no "PWMIG" environment variable exists, 
+"~/pwmig" is used.
+Then, "/data/" and the passed \fIfilename\fR
+are appended, and resulting path is checked for
+a readable file.
+.LP
+If any step above finds a readable file, that
+pathname is returned in freshly allocated memory.  
+Otherwise the routine
+returns 0.
+.LP
+Newpath returns a filename constructed according to the
+rules above, but expects that the named file will not exist.
+It attempts to create any non-existent intermediate directories
+on the returned path, and returns
+.IP -1 
+Either the directory path can't be constructed, or the complete
+path is not writeable.
+.IP 0
+if the directory exists and is writeable, and no file of that
+name exists.
+.IP 1
+The returned path already exists, but is writeable.
+.SH ENVIRONMENT
+The routine datafile will check for an environment variable
+"PWMIG", which is used to locate the "data" directory 
+in which private data files are expected to be found.
+.SH EXAMPLE
+.nf
+#include "stock.h"
+
+char *datafile (); 
+
+main (argc, argv ) 
+int argc ;
+char *argv ; 
+{
+    char aline[STRSZ] ; 
+    char *result ; 
+    char envname[STRSZ], filename[STRSZ] ; 
+
+    printf ( "Enter environment name, file name: " ) ; 
+    while ( gets ( aline ) ) 
+	{
+	sscanf ( aline, "%s %s", envname, filename ) ; 
+	result = datafile ( envname, filename ) ; 
+	if ( result != 0 ) 
+	    {
+	    printf ( "%s\en", result ) ; 
+	    free ( result ) ; 
+	    }
+	else
+	    printf ( "Not found.\en" ) ; 
+	}
+}
+.fi
+.SH RETURN VALUES
+Returns the filename on success, 
+0 on failure.  In the case of success, the filename is
+in freshly allocated memory, which should be freed by the 
+caller.
+.SH LIBRARY
+-lstock
+.SH DIAGNOSTICS
+none
+.SH "SEE ALSO"
+.nf
+.fi
+.SH "BUGS AND CAVEATS"
+.LP
+This adaptation of Dan Quinlan's code removes the : separated list 
+of directories available in a procedure by the same name in antelope.
+.SH AUTHOR
+Original code was written by Daniel Quinlan and obtained from the 
+open source datascope library.   Altered and dumbed down by Gary Pavlis
+for use in the PWMIG package.

@@ -1,0 +1,31 @@
+.\" $Name $Revision: 1.1.1.1 $ $Date: 1997/04/12 04:19:01 $
+
+
+.TH MAKEDIR 3 "$Date: 1997/04/12 04:19:01 $"
+.SH NAME
+makedir \- ensure that a directory exists
+.SH SYNOPSIS
+.nf
+int makedir ( char *dir );
+.fi
+.SH DESCRIPTION
+\fBMakedir\fR ensures the existence of the named directory, 
+creating it (and all intermediate directories) if necessary.
+.SH RETURN VALUES
+Returns zero on success, -1 otherwise.
+.SH LIBRARY
+-lstock
+.SH DIAGNOSTICS
+.IP "Can't create writable directory \fIfilename\fR"
+.br
+failure typically means that an intermediate 
+directory has the wrong permissions -- eg, does not allow writing.
+.SH "SEE ALSO"
+.nf
+abspath(3), wd(3), dirbase(3)
+.fi
+.SH "BUGS AND CAVEATS"
+.SH AUTHOR
+Daniel Quinlan
+
+.\" $Id: makedir.3,v 1.1.1.1 1997/04/12 04:19:01 danq Exp $ 

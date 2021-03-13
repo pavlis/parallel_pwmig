@@ -1,0 +1,667 @@
+'\" t
+.\" $Name $Revision: 1.9 $ $Date: 1998/05/04 22:28:27 $
+.TH ELOG 3 "$Date: 1998/05/04 22:28:27 $"
+.SH NAME
+register_error, notify, complain, die, fault, elog_init, elog_log, elog_notify, elog_complain, elog_die, elog_fault, elog_msg_print, elog_print, elog_clear, elog_set, elog_query, elog_mark, elog_flush \- error handling routines
+.SH SYNOPSIS
+.nf
+
+#include "elog.h"
+int elog_init ( int argc, char **argv );
+
+void elog_log ( int flag, char *format, ... );
+void elog_notify ( int flag, char *format, ... );
+void elog_complain ( int flag, char *format, ... );
+void elog_die ( int flag, char *format, ... );
+void elog_fault ( int flag, char *format, ... );
+
+void elog_msg_print ( FILE *file, Elog_msg *elog_msg );
+void elog_print ( FILE *file, int first );
+
+void elog_free_msg ( void *vmsg );
+void elog_clear ( void );
+int elog_mark () ;
+void elog_flush ( int deliver, int first ) ;
+
+int elog_query ( enum Elog_code code, int severity, void **value );
+int elog_set ( enum Elog_code code, int severity, void *value );
+
+void register_error ( int flag, char *format, ... );
+void complain ( int flag, char *format, ... );
+void die ( int flag, char *format, ... );
+void clear_register ( int deliver );
+
+.fi
+.SH DESCRIPTION
+The elog functions provide a central error reporting and
+handling facility.  
+They provide
+convenient and concise facilities for announcing problems for both library
+routines and programs.
+This is useful for standardization, for debugging, 
+and for building programs which work together.  
+.LP
+Library routines should almost never exit, but should instead return an
+error code.  However, an error code alone is quite limiting, and requires
+a lot of coordination with other routines if it is to be unique.
+\fBelog_log()\fR allows a library routine to post an error message,
+which the calling program can choose (or choose not) to print out.  
+.LP
+Programs, on the other hand, often need to announce problems in a standard
+way, and oftentimes then exit with an error code.  The routines complain
+and die are useful for this purpose.
+.LP
+The elog routines are a new implementation
+of the previous suite of complain, die, and register_error; 
+they are intended
+to deal with some of the shortcomings of the previous version, and
+extend the capabilities significantly, particularly for dealing with
+multiple interacting programs.
+.SS "New Features"
+.IP \(bu
+The elog routines are generally, suitable for use in threaded programs
+as the error log is protected with a mutex; however, the facility
+using elog_query to get the actual error log, and the facility using
+elog_set to set the actual error log are not thread-safe, and 
+should not be used in a multithreaded program.
+.IP \(bu
+routines are compiled
+with __REENTRANT so that errno and printf are all serial.
+.IP \(bu
+Error messages may be appended to (multiple) files.
+.IP \(bu
+Certain signals are intercepted, which can then cause a meaningful 
+error message to be printed; otherwise you must depend on the program
+which executed the fault-generating process.
+.IP \(bu
+It's possible to cause a debugger to run automatically when a
+problem is detected.
+.IP \(bu
+It's possible to force error messages to be printed immediately as they're
+detected, rather than simply saved to the log.
+.IP \(bu
+The routines look at a number of environment variables, so that
+it's possible to affect the behavior fairly radically by setting 
+environment variables.  These environment variables can affect the 
+delivery and content of error messages and 
+the interception of faults.
+.SS "Severity levels"
+.LP
+The elog facility defines a new term: the \fIseverity\fR level.
+Internally, there is only one error reporting routine, 
+with multiple entry points distinguished by
+\fIseverity\fR levels.   
+There are also a number of settable parameters which are
+indexed by \fIseverity\fR.  
+.LP
+These severity levels are:
+.IP ELOG_LOG
+log a message, but don't cause any immediate output
+.IP ELOG_NOTIFY
+just a message, not an error.  
+.IP ELOG_COMPLAIN
+A non-fatal error message 
+.IP ELOG_DIE
+A fatal error message
+.IP ELOG_FAULT
+interception of a signal like bus error or segmentation fault.
+.LP
+The following table shows the different
+levels, the ascii character code used to specify a particular level in 
+environment variables, and the new and old routine names corresponding
+to a particular severity.
+.TS
+l l l l l.
+Level	Symbolic Name	Char Code	New Routine	Old Routine
+log	ELOG_LOG	l	elog_log	register_error	
+notify	ELOG_NOTIFY	n	elog_notify
+complain	ELOG_COMPLAIN	c	elog_complain	complain	
+die	ELOG_DIE	d	elog_die	die	
+fault	ELOG_FAULT	f	elog_fault
+.TE
+.LP
+The old interfaces still work, and existing programs compiled with the new
+libraries should show essentially unchanged behavior.  However, the old routines
+register_error, complain, die, and clear_register have been replaced with 
+macros which call the new interface.
+.SS "Reporting and printing errors"
+.LP
+The elog routines should always be initialized from the main program
+by calling \fBelog_init\fR, passing argc and argv.  This information 
+may be used later in error messages, or to launch a debugger.
+For compatibility with the previous version,
+the global variable \fIProgram_Name\fR is still available, and may
+be initialized to contain the (null-terminated) name of the program.
+Wherever possible, \fBelog_init\fR should be used instead.  
+.LP
+If \fBelog_init\fR is
+not called explicitly from the program, it will be called implicitly the
+first time any other elog function is called.  In this event, however, the argc
+and argv values will not be available, and consequently, it may not be 
+possible to run the debugger if a problem occurs.
+.LP
+The error reporting routines are \fBelog_log\fR, \fBelog_notify\fR, \fBelog_complain\fR,   
+\fBelog_die\fR and \fBelog_fault\fR.
+.LP 
+\fBelog_log\fR adds a message to the internally accumulating error log.
+.LP
+\fBelog_notify\fR delivers a message, and always returns.
+.LP
+\fBelog_complain\fR (formerly \fBcomplain()\fR) delivers a message, 
+and always returns.  
+.LP 
+\fBelog_die\fR (formerly \fBdie()\fR) delivers a message, 
+and exits with error code 1; it never returns.  
+.LP
+\fBelog_fault\fR delivers a message, 
+and exits with error code 1; it never returns.  
+.LP
+\fBelog_notify\fR, \fBelog_complain\fR, \fBelog_die\fR, and 
+\fBelog_fault\fR always print the entire pending error log, not just the
+current message.  
+.LP
+The error log may also be printed with the 
+\fBelog_print\fR routine.   In addition, it may be cleared 
+entirely with \fBelog_clear\fR, or adjusted using either \fBelog_flush\fR, or \fBelog_query\fR and 
+\fBelog_set\fR to delete some of the messages.  This can prove useful
+when an library routine error is expected, but should be handled silently.
+\fBelog_mark\fR is a shorthand method of getting the current number of 
+messages in the register.
+.LP
+The old routine \fBclear_register()\fR still exists also; it
+both prints the error log
+if deliver is nonzero, and clears the existing register of error messages.
+.LP
+The old routine \fBget_register()\fR has been retired altogether; 
+it's now possible to 
+use \fBelog_query\fR to get the Tbl list of messages.
+.LP
+All the reporting routines take a flag argument, 
+followed by a standard printf
+format and arguments.   This makes it fairly easy to provide detailed error
+messages which are helpful in diagnosing the cause of problems (though
+it's still often difficult to provide sufficient context to the user).
+When the bit corresponding to 1 is set in flag,
+the system error message becomes part of a message.
+.SH "PARAMETERS AND ENVIRONMENT"
+The elog facility has a number of settable parameters as well as a fair
+amount of state information.  These may be queried and set
+via \fBelog_query\fR and \fBelog_set\fR; some may also be affected (at initialization
+only) by environment variables.
+.LP
+The following table shows the various \fBelog_query\fR codes, 
+whether a corresponding environment variable is checked, 
+if the value is indexed by severity, if \fBelog_set\fR can be used
+to set the parameter, and a short description.
+.TS
+l s s s s
+l l l l l.
+Parameters and State Variables
+=
+Name	Env?	levels?	elog_set?	description
+ELOG_TBL	n	n	y	log (Tbl list) of Elog_msg *messages
+ELOG_COUNT	n	n	y	number of messages in log
+ELOG_VERSION	n	n	n	elog version code
+ELOG_ARGV	n	n	y	pointer to command line arguments
+ELOG_ARGC	n	n	y	number of arguments on command line
+
+ELOG_MAXMSG	y	n	y	max # of messages allowed in log
+ELOG_SIGNALS	y	n	y	colon separated list of intercepted signals
+ELOG_TAG	y	y	y	tag value for each message
+ELOG_DELIVER	y	y	y	delivery method
+ELOG_DEBUG	y	y	y	run debugger when called.
+ELOG_RTMSEND	y	y	y	message to deliver using rtmsend
+.TE
+
+.LP
+Here's a bit more detail about each parameter.
+.IP ELOG_TBL
+This is the Tbl list used to keep track of pending elog messages.
+.IP ELOG_COUNT
+The count of messages on the log; \fBelog_set\fR may only set this 
+number lower, that is, it may only delete messages.
+.IP ELOG_VERSION
+This is just a version code.
+.IP ELOG_ARGV
+.IP ELOG_ARGC
+A pointer to the command line arguments, and their count, 
+is kept, provide \fBelog_init\fR
+is called by the main program to initialize this.  Of course, the 
+program may choose to modify argv, and then this will no longer
+represent the original command line.
+.IP ELOG_MAXMSG
+If this is non-zero, and the number of messages 
+in the error log reaches this
+number, the program will exit with an error.
+.IP ELOG_TAG
+A tag is attached to each message, and this tag is typically 
+prepended to the error message in the output.
+By default, the tag is the program name '%P' for severity levels
+ELOG_LOG, ELOG_NOTIFY and ELOG_COMPLAIN.
+If the severity level is
+die or fault, the tag also includes the string *fatal* or *fault*.
+The program name is argv[0].  
+.IP ELOG_DELIVER
+This is a blank separated list of delivery destinations, which 
+can be filenames starting with either "/" or "./", or "stderr" or 
+"stdout".
+.IP ELOG_DEBUG
+If the environment variable ELOG_DEBUG is set, then the program will
+pause and run the debugger when certain error routines are called.  This
+can be convenient for debugging.
+The default value for die or fault is "ups %r %p"; otherwise the 
+default is not to call the debugger.
+.IP ELOG_SIGNALS
+If this environment variable is set, \fBelog_init\fR will setup signal
+handlers for selected signals.  You may specify the signals
+explicitly by using the following names from signal.h:
+.TS
+l l.
+SIGHUP	hangup
+SIGINT	interrupt (rubout)
+SIGQUIT	quit (ASCII FS)
+SIGILL	illegal instruction (not reset when caught)
+SIGTRAP	trace trap (not reset when caught)
+SIGIOT	IOT instruction
+SIGABRT	used by abort, replace SIGIOT in the future
+SIGEMT	EMT instruction
+SIGFPE	floating point exception
+SIGBUS	bus error
+SIGSEGV	segmentation violation
+SIGSYS	bad argument to system call
+SIGPIPE	write on a pipe with no one to read it
+SIGALRM	alarm clock
+SIGTERM	software termination signal from kill
+SIGUSR1	user defined signal 1
+SIGUSR2	user defined signal 2
+SIGCLD	child status change
+SIGCHLD	child status change alias (POSIX)
+SIGPWR	power-fail restart
+SIGWINCH	window size change
+SIGURG	urgent socket condition
+SIGPOLL	pollable event occured
+SIGTSTP	user stop requested from tty
+SIGCONT	stopped process has been continued
+SIGTTIN	background tty read attempted
+SIGTTOU	background tty write attempted
+SIGVTALRM	virtual timer expired
+SIGPROF	profiling timer expired
+SIGXCPU	exceeded cpu limit
+SIGXFSZ	exceeded file size limit
+SIGFREEZE	special signal used by CPR
+SIGTHAW	special signal used by CPR
+.TE
+.LP
+The default set of intercepted signals is
+"SIGILL:SIGTRAP:SIGIOT:SIGFPE:SIGBUS:SIGSEGV:SIGSYS". 
+
+.IP ELOG_RTMSEND
+
+.SS "Special Characters"
+The following special character sequences are recognized in 
+ELOG_TAG, ELOG_DEBUG, and ELOG_RTMSEND.
+.IP '%a'
+argument list
+.IP '%h'
+host name
+.IP '%p'
+pid
+.IP '%P'
+program name
+.IP '%r'
+complete path to program
+.IP '%t'
+local time tag, eg
+"Thu May 29 15:27:59 1997" 
+.IP '%T'
+thread id
+.IP '%u'
+UTC time code, eg
+"1997-149 21:27:59"
+.SS "Specifying Severity in environment variables"
+Obviously, it's often useful to be able to set the various parameters
+differently depending on the severity.  For instance, the usual setting is
+to run the debugger only for die and fault, and only when the environment
+variable ELOG_DEBUG is set.
+.LP
+However, you might like to also intercept a complaint, but without changing the
+program.  Rather than clutter the environment with multiple names
+like ELOG_TAG_NOTIFY, ELOG_TAG_COMPLAIN, ELOG_TAG_DIE, etcetera, there 
+is a somewhat contrived method for setting only certain severity levels for
+ELOG_TAG, ELOG_DEBUG, ELOG_DELIVER, and so on.  
+.LP
+Consider ELOG_TAG as an example.
+The value of the environment variable ELOG_TAG may include a suffix of the
+form "@xyz", where x, y, and z are one letter codes for the severity.  They
+may take the values indicated in the severity table above.  The list is
+terminated by the end of the environment string, or by another '@'.
+In this way, multiple strings may be set with a single environment variable.
+For example, the following:
+.nf
+
+    setenv ELOG_TAG "%P %p *log*@l@%P %p *notify*@n"
+
+.fi
+would set the ELOG_TAG strings for severity log, and notify to
+be the program name, its pid, and a string corresponding to the severity
+level.  The tags for the complain, 
+die and fault severities would remain the defaults.
+.SH EXAMPLE
+.SS "Print error log messages immediately"
+If return codes are not checked, it's easy for error log messages
+to disappear.  For debugging purposes, it may be useful to 
+force messages to be printed immediately.  To do this:
+.nf
+
+    setenv ELOG_DELIVER stderr@l
+
+.fi
+.SS "Run the debugger when an error occurs"
+It's often interesting to run the debugger when an error
+occurs.  You can force this to happen whenever any error routine
+is called by just setting ELOG_DEBUG:
+.nf
+
+    setenv ELOG_DEBUG 
+
+.fi
+This will cause ups to be run, using the default command:
+"ups %r %p &".
+To be more selective, and only stop at complain, die or fault,
+try "setenv ELOG_DEBUG @cdf".
+Or to use debugger instead of ups, try:
+.nf
+
+    setenv ELOG_DEBUG "debugger %r %p &@cdf"
+
+.fi
+When a fault occurs, the elog routines use system(3) to try to run the 
+debugger, and then sleep(3) ELOG_WAIT seconds to give the debugger the
+opportunity to assume control.  Some debuggers require more startup
+time than others; the default is 10 seconds, but you can set the 
+environment variable ELOG_WAIT to a longer or shorter period depending
+on your needs.
+.SS "Modify the tag"
+Perhaps it would be interesting to have more detail
+when a program dies due to a fault.  Try:
+.nf
+
+    setenv ELOG_TAG "%t %p\\@%h %r %a *fault*@f" 
+
+.fi
+.SS Usage in a program
+The following is a routine used for testing the elog routines. 
+Hopefully, it is short enough to be illustrative.
+.nf
+    % cat elogt.c
+
+    #include <stdio.h>
+
+    #include "stock.h"
+
+    extern int errno ;
+
+    static void
+    fill_log ( nlog, nsys ) 
+    int nlog ;
+    int *nsys ; 
+    {
+        int i ; 
+        static int m = 0 ;
+
+        errno = *nsys ; 
+        register_error ( 1, "log message #%d\n", m ) ; 
+        for (i=0 ; i<nlog ; i++ ) {
+            errno = *nsys ; 
+            register_error ( 1, "log message #%d\n", m++ ) ; 
+            if ( *nsys > 0 ) 
+                (*nsys)++ ;
+        }
+    }
+
+    static void
+    cause_fault ( afault ) 
+    char *afault ; 
+    {
+        if (strcmp(afault, "SIGFPE") == 0) {
+            double a=1.0, b=0.0, c ; 
+            c = a/b ; 
+        } else if ( strcmp(afault, "SIGBUS") == 0 ) {
+            char string[2], *s ; 
+            double d ; 
+            s = string+1 ;
+            d = *((double *) s) ; 
+        } else if ( strcmp(afault, "SIGSEGV") == 0 ) {
+            char *s = 0 ; 
+            *s = 1 ; 
+        } else {
+            elog_fault ( 1, "Can't generate fault '%s'\n", afault ) ; 
+        }
+    }
+
+    char *Unset = "** unset **" ;
+    char *Severity[] = { "log", "notify", "complain", "die", "fault" } ; 
+
+    static void
+    show_config ()
+    {
+        int severity, i, n, argc ; 
+        char *string ;
+        char **argv; 
+        Tbl *tbl ;
+
+        for ( severity = 0 ; severity < ELOG_NSEVERITY ; severity++ ) {
+            elog_query(ELOG_TAG, severity, (void **) &string) ; 
+            if ( string == 0 ) string = Unset ;
+            printf ( "ELOG_TAG[%s] is %s\n", Severity[severity], string) ; 
+
+            elog_query(ELOG_DELIVER, severity, (void **) &string) ; 
+            if ( string == 0 ) string = Unset ;
+            printf ( "ELOG_DELIVER[%s] is %s\n", Severity[severity], string) ; 
+
+            elog_query(ELOG_DEBUG, severity, (void **) &string) ; 
+            if ( string == 0 ) string = Unset ;
+            printf ( "ELOG_DEBUG[%s] is %s\n", Severity[severity], string) ; 
+
+            elog_query(ELOG_RTMSEND, severity, (void **) &string) ; 
+            if ( string == 0 ) string = Unset ;
+            printf ( "ELOG_RTMSEND[%s] is %s\n", Severity[severity], string) ; 
+        }
+
+        elog_query(ELOG_VERSION, -1, (void **) &string) ; 
+        if ( string == 0 ) string = Unset ;
+        printf ( "ELOG_VERSION is %s\n", string) ; 
+
+        elog_query(ELOG_SIGNALS, -1, (void **) &string) ; 
+        if ( string == 0 ) string = Unset ;
+        printf ( "ELOG_SIGNALS is %s\n", string) ; 
+
+        elog_query(ELOG_TBL, -1, (void **) &tbl) ; 
+        printf ( "ELOG_TBL is at 0x%x, and has %d entries\n", tbl, maxtbl(tbl)) ; 
+
+        elog_query(ELOG_COUNT, -1, (void **) &n) ; 
+        printf ( "ELOG_COUNT is %d\n", n) ; 
+
+        elog_set (ELOG_COUNT, -1, (void *) (n-1)) ;
+        elog_query(ELOG_COUNT, -1, (void **) &n) ; 
+        printf ( "ELOG_COUNT is now %d\n", n) ; 
+
+        elog_query(ELOG_MAXMSG, -1, (void **) &n) ; 
+        printf ( "ELOG_MAXMSG is %d\n", n) ; 
+
+        elog_query(ELOG_ARGC, -1, (void **) &argc) ; 
+        printf ( "ELOG_ARGC is %d\n", argc) ; 
+
+        elog_query(ELOG_ARGV, -1, (void **) &argv) ; 
+        for ( i=0 ; i<argc ; i++ ) {
+            printf ( "ELOG_ARGV[%d] is %s\n", i, argv[i]) ; 
+
+        }
+    }
+
+    static void
+    usage ()
+    {
+        fprintf (stderr, "Usage: %s [-m msg] [-n nlog] [-s syserr]\n", 
+            Program_Name);
+        banner (Program_Name, "Version $Revision: 1.9 $ $Date: 1998/05/04 22:28:27 $\n");
+        exit (1);
+    }
+
+    int
+    main (argc, argv)
+    int             argc;
+    char          **argv;
+    {
+
+        extern char    *optarg;
+        extern int      optind;
+        char        *msg = "elog error example", *afault = 0 ;
+        int                 nlog = 3, nsys=0; 
+        int             c, maxmsg,
+                        errflg = 0;
+
+        Program_Name = argv[0];
+        elog_init ( argc, argv ) ; 
+
+        while ((c = getopt (argc, argv, "f:m:n:s:t:V")) != -1)
+            switch (c) {
+            case 'f':
+                afault = optarg ; 
+                break ;
+
+            case 'm':
+                maxmsg = atoi(optarg) ;
+                elog_set (ELOG_MAXMSG, -1, maxmsg) ;
+                break ;
+
+            case 'n':
+                nlog = atoi(optarg) ; 
+                break ;
+
+            case 's':
+                nsys = atoi(optarg) ;
+                break ;
+
+            case 'V':
+                usage ();
+                break;
+
+            case '?':
+                errflg++;
+
+            }
+        if (errflg)
+            usage ();
+
+        fill_log ( nlog, &nsys ) ;
+
+        show_config () ; 
+        elog_notify ( 1, "notify message ='%s'\n", msg ) ; 
+
+        fill_log ( nlog, &nsys ) ;
+        complain ( 1, "complain message ='%s'\n", msg ) ; 
+
+        fill_log ( nlog, &nsys ) ;
+        if ( afault ) 
+            cause_fault(afault) ;
+        else
+            die ( 1, "die message ='%s'\n", msg ) ; 
+
+        printf ( "should never reach this point.\n" ) ; 
+        return 0;
+    }
+    % setenv ELOG_TAG   "%t %p\\@%h %r %a *fault*@f" 
+    % elogt -f SIGBUS
+    ELOG_TAG[log] is %P
+    ELOG_DELIVER[log] is 
+    ELOG_DEBUG[log] is ** unset **
+    ELOG_RTMSEND[log] is ** unset **
+    ELOG_TAG[notify] is %P
+    ELOG_DELIVER[notify] is stderr
+    ELOG_DEBUG[notify] is ** unset **
+    ELOG_RTMSEND[notify] is ** unset **
+    ELOG_TAG[complain] is %P
+    ELOG_DELIVER[complain] is stderr
+    ELOG_DEBUG[complain] is ** unset **
+    ELOG_RTMSEND[complain] is ** unset **
+    ELOG_TAG[die] is %P *fatal*
+    ELOG_DELIVER[die] is stderr
+    ELOG_DEBUG[die] is ** unset **
+    ELOG_RTMSEND[die] is ** unset **
+    ELOG_TAG[fault] is %t %p@%h %r %a *fault*
+    ELOG_DELIVER[fault] is stderr
+    ELOG_DEBUG[fault] is ** unset **
+    ELOG_RTMSEND[fault] is ** unset **
+    ELOG_VERSION is $Name $Revision: 1.9 $ $Date: 1998/05/04 22:28:27 $
+    ELOG_SIGNALS is SIGHUP:SIGILL:SIGTRAP:SIGIOT:SIGFPE:SIGBUS:SIGSEGV:SIGSYS:SIGPIPE
+    ELOG_TBL is at 0x261a8, and has 3 entries
+    ELOG_COUNT is 3
+    ELOG_COUNT is now 2
+    ELOG_MAXMSG is 50
+    ELOG_ARGC is 3
+    ELOG_ARGV[0] is elogt
+    ELOG_ARGV[1] is -f
+    ELOG_ARGV[2] is SIGBUS
+    elogt: log message #0
+            ** repeated 2 times
+    elogt: log message #1
+    elogt: notify message ='elog error example'
+    elogt: log message #3
+            ** repeated 2 times
+    elogt: log message #4
+    elogt: log message #5
+    elogt: complain message ='elog error example'
+    elogt: log message #6
+            ** repeated 2 times
+    elogt: log message #7
+    elogt: log message #8
+    Thu Sep 26 10:35:58 1996 2649@grewal ./elogt -f SIGBUS  *fault*: bus error
+    %
+
+.fi
+.SH RETURN VALUES
+elog_query and elog_set return 0 for success, 
+-1 when an error occurred.  They do not themselves add to the
+error log.
+.SH LIBRARY
+-lstock
+.SH DIAGNOSTICS
+.LP
+The error messages below usually indicate a configuration problem -- perhaps
+environment variables are set wrong, permissions are wrong on a log
+file, or elog_set has setup some invalid paths.
+Messages like these are printed directly to stderr 
+to avoid infinite loop issues; errors detected
+inside the elog routines do not themselves call 
+elog routines, nor leave messages on the error log.
+.SS "non-fatal diagnostics"
+.IP "Couldn't intercept signal \fIasignal_name\fR"
+.IP "Unrecognized signal name '\fIasignal_name\fR'"
+.IP "Unrecognized severity in '\fIvalue\fR'"
+.IP "Can't open error file '\fIadest\fR'"
+.IP "Can't close error file '\fIadest\fR'"
+.IP "unknown delivery '\fIadest\fR'"
+.SS "fatal diagnostics"
+.IP "failed to initialize elog lock mutex"
+.IP "quitting because of \fInmsg\fR messages in log"
+.SH "SEE ALSO"
+.nf
+perror(3)
+.fi
+.SH "BUGS AND CAVEATS"
+Allowing the behavior to change so radically due to environment
+variables is questionable, because environment variables are so
+easily forgotten.  However, this also makes it possible to continuously
+have a debugging mode enabled, and allows exactly the same programs
+to be run individually or as part of a larger system where it's important
+to track and handle errors.
+.LP
+Using elog_query to get the actual error log Tbl, and/or using
+elog_set to set the actual error log Tbl is not thread-safe;
+neither should be used in a multithreaded program.
+.IP \(bu
+.SH AUTHOR
+Daniel Quinlan
+
+.\" $Id: elog.3,v 1.9 1998/05/04 22:28:27 danq Exp $ 
