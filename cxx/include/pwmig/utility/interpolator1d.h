@@ -1,6 +1,6 @@
 #ifndef _INTERPOLATOR1D_H_
 #define _INTERPOLATOR1D_H_
-#include "dmatrix.h"
+#include "mspass/utility/dmatrix.h"
 /*! \brief A family of interpolators between regular and irregular 1d grids.
 *
 * Interpolation is a common theme for a variety of processing.  This family of 
@@ -13,6 +13,7 @@
 */
 namespace INTERPOLATOR1D
 {
+using mspass::utility::dmatrix;
 /*! \brief Linear interpolator for a single point for a scalar valued function.
 * This procedure is called to interpolate a single point that is 
 * assumed to be located between two bracketing endpoints.  The
