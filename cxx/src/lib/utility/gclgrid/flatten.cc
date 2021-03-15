@@ -1,31 +1,35 @@
-#include "gclgrid.h"
+#include "pwmig/utility/gclgrid.h"
+using namespace pwmig::gclgrid;
+namespace pwmig::gclgrid;
+{
 /*  forward and backward flattening transformation routines
-are in this file.  
+are in this file.
 
 It is common practice in regional scale studies to use the
 flattening transform as an approximation for converting from
 spherical to cartesian coordinates.  flatz converts from
 depth to an equivalent flattened depth.  uflatz does
-the inverse.  flatvel converts velocity and uflatvel 
+the inverse.  flatvel converts velocity and uflatvel
 does the reciprocal.
 
-This is a C translation of routines by the same name in 
-FORTRAN from Steve Roecker.  
+This is a C translation of routines by the same name in
+FORTRAN from Steve Roecker.
 */
 const double REARTH=6371.0;
-double flatz(double z)
+double flatz(const double z)
 {
 	return(REARTH*log(REARTH/(REARTH-z)));
 }
-double uflatz(double z)
+double uflatz(const double z)
 {
 	return(REARTH*(1.0-exp(-z/REARTH)));
 }
-double flatvel(double v, double z)
+double flatvel(const double v, const double z)
 {
 	return(v*exp(z/REARTH));
 }
-double uflatvel(double v, double z)
+double uflatvel(const double v, const double z)
 {
 	return(v*exp(-z/REARTH));
 }
+} //end namespace

@@ -1,8 +1,11 @@
 // Writes dx test file to output stream out
 #include <iostream>
-#include "gclgrid.h"
-
-void dx_output(GCLscalarfield3d& g, ostream& out)
+#include "pwmig/utility/gclgrid.h"
+using namespace std;
+using namespace pwmig::gclgrid;
+namespace pwmig::gclgrid;
+{
+void dx_output(const GCLscalarfield3d& g, ostream& out)
 {
 	int i,j,k;
 	int ncoords=g.n1*g.n2*g.n3;
@@ -31,3 +34,4 @@ void dx_output(GCLscalarfield3d& g, ostream& out)
 	out << "component \"data\" value 3" << endl;
 	out << "end" << endl;
 }
+} //end namespace

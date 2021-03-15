@@ -1,31 +1,37 @@
 #include <vector>
-#include "gclgrid.h"
-#include "dmatrix.h"
+#include "pwmig/utility/gclgrid.h"
+#include "mspass/utility/dmatrix.h"
+using namespace std;
+using namespace pwmig::gclgrid;
+using mspass::utility::dmatrix;
+namespace pwmig::gclgrid;
+{
+using mspass::utility::dmatrix;
 /* General purpose utility to integrate a scalar field variable
 along a path defined by the input matrix path.  The prototype
 example of this for us seismologists is integration of slowness
-along a ray path.  Only the cartesian system of the field is 
-used. The components of path are assumed stored in a 3xnc 
+along a ray path.  Only the cartesian system of the field is
+used. The components of path are assumed stored in a 3xnc
 matrix whose components use the same basis as the field object.
 The algorithm works along the path.  If the lookup function
-ever fails for any reason the path will be truncated at the 
-point where the lookup failed.  The caller should test for 
+ever fails for any reason the path will be truncated at the
+point where the lookup failed.  The caller should test for
 this condition by verifying that the length of the output
 vector of doubles is the same as the number of columns in
-the path matrix.  
+the path matrix.
 
 The function returns a vector of doubles containing integral
 along path of the field variable.
 
 The routine throws an exception when the input matrix is not
 correctly dimension.  This would normally be a programming error
-and the caller may choose to not attempt to catch the error 
-except in debugging.  
+and the caller may choose to not attempt to catch the error
+except in debugging.
 
 Author:  Gary L. Pavlis
 Written:  June 2003
 */
-vector <double> pathintegral(GCLscalarfield3d& field,dmatrix& path)
+vector <double> pathintegral(GCLscalarfield3d& field,const dmatrix& path)
 				throw(GCLgrid_error)
 {
 	int *sz;
@@ -39,14 +45,14 @@ vector <double> pathintegral(GCLscalarfield3d& field,dmatrix& path)
 
 	sz=path.size();
 	npts = sz[1];
-	if(sz[0]!=3) 
+	if(sz[0]!=3)
 	{
 	  delete [] sz;
 	  throw(GCLgrid_error("pathintegral:  input matrix of path coordinates has incorrect dimensions"));
 	}
 	delete [] sz;  // no longer needed
 	outvec.reserve(npts);
-	// push 0 to the first point 
+	// push 0 to the first point
 	outvec.push_back(0.0);
 	// This was found to alway be prudent
 	field.reset_index();
@@ -69,17 +75,17 @@ vector <double> pathintegral(GCLscalarfield3d& field,dmatrix& path)
 	return(outvec);
 }
 /* A path defined by a 3xn dmatrix is defined by the Cartesian reference frame in the
-grid from which it is derived.  If one wants to use this path inside another grid, 
+grid from which it is derived.  If one wants to use this path inside another grid,
 which does not necessarily have the same Cartesian transformation, the path has
 to be converted to the new reference frame.  This function does this.
 
 pathgrid is the grid in which the curve defined by the dmatrix path was originally
-defined.  othergrid is the new grid into which the path is to be mapped.  The 
-returned result is a new dmatrix of the same size as path, but defined in the 
+defined.  othergrid is the new grid into which the path is to be mapped.  The
+returned result is a new dmatrix of the same size as path, but defined in the
 Cartesian reference frame for othergrid instead of pathgrid.
 */
 
-dmatrix remap_path(GCLgrid3d& pathgrid, dmatrix& path, GCLgrid3d& othergrid)
+dmatrix remap_path(const GCLgrid3d& pathgrid, const dmatrix& path, const GCLgrid3d& othergrid)
 {
 	int i;
 	int m=path.columns();
@@ -98,4 +104,5 @@ dmatrix remap_path(GCLgrid3d& pathgrid, dmatrix& path, GCLgrid3d& othergrid)
 	}
 	return(newpath);
 }
-		
+
+} //end nameespace

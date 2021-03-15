@@ -2,11 +2,13 @@
 #include <typeinfo>
 #include "seispp.h"
 #include "Metadata.h"
-#include "gclgrid.h"
+#include "pwmig/utility/gclgrid.h"
 using namespace std;
-using namespace SEISPP;
+using namespace pwmig::gclgrid;
+namespace pwmig::gclgrid;
+{
 /* Common code to load attributes to Metadata object for saving */
-Metadata load_common_GCL_attributes(BasicGCLgrid *g)
+Metadata load_common_GCL_attributes(const BasicGCLgrid *g)
 {
     Metadata m;
     m.put("name",g->name);
@@ -43,8 +45,8 @@ Metadata load_common_GCL_attributes(BasicGCLgrid *g)
     m.put("object_type",obname);
     return m;
 }
-/* In this library 3D grids have some extra attributes 
-   that have to be added.  Thus each 3d save routine needs 
+/* In this library 3D grids have some extra attributes
+   that have to be added.  Thus each 3d save routine needs
    to call this routine to append these attributes to
    the Metadata object. This procedure depends upon
    the implementation here that 3d objects are all
@@ -55,10 +57,10 @@ void load_3d_attributes(GCLgrid3d& g, Metadata& m)
     m.put("n3",g.n3);
     m.put("k0",g.k0);
 }
-/* A small helper to handle directory and file names correctly. 
+/* A small helper to handle directory and file names correctly.
 This is used repeatedly here to combine a dir and fname field
 WITHOUT the "ext" fields used for the default format  */
-string makepath(string dir, string base)
+string makepath(const string dir, const string base)
 {
     /* first step is to make sure the directory exists */
     if(makedir(const_cast<char *>(dir.c_str())))
@@ -72,7 +74,7 @@ string makepath(string dir, string base)
         result=base;
     return result;
 }
-void pfsave_attributes(Metadata& attributes,string base)
+void pfsave_attributes(const Metadata& attributes,const string base)
 {
     string pffilename=base+".pf";
     try {
@@ -85,13 +87,13 @@ void pfsave_attributes(Metadata& attributes,string base)
                 + pffilename);
     }
 }
-/* This painfully parallel set of helper procedures are used to 
-   write the coordinate data in the default format of pfhdr.  
+/* This painfully parallel set of helper procedures are used to
+   write the coordinate data in the default format of pfhdr.
    There are several I could have reduced the redundant code, but
    took this path as I think it will simply be clearer.  Beware, however,
    that an error in one of these procedures nearly guarantees a parallel
    error in the other. */
-void pfhdr_save_griddata(GCLgrid& g,string base)
+void pfhdr_save_griddata(const GCLgrid& g,const string base)
 {
     try {
         const string base_error("pfhdr format GCLgrid (2d)  writing routine:  ");
@@ -106,7 +108,7 @@ void pfhdr_save_griddata(GCLgrid& g,string base)
         {
             fclose(fp);
             throw GCLgridError(base_error + "file "
-                    + fullname 
+                    + fullname
                     + " exists\nChange file name or move this file away");
         }
         size_t npoints;
@@ -115,7 +117,7 @@ void pfhdr_save_griddata(GCLgrid& g,string base)
                 != npoints)
         {
             fclose(fp);
-            throw GCLgridError(base_error 
+            throw GCLgridError(base_error
                     + "fwrite error while saving x1 coordinates to file "
                     + fullname + "\nOutput file is incomplete");
         }
@@ -123,7 +125,7 @@ void pfhdr_save_griddata(GCLgrid& g,string base)
                 != npoints)
         {
             fclose(fp);
-            throw GCLgridError(base_error 
+            throw GCLgridError(base_error
                     + "fwrite error while saving x2 coordinates to file "
                     + fullname + "\nOutput file is incomplete");
         }
@@ -131,7 +133,7 @@ void pfhdr_save_griddata(GCLgrid& g,string base)
                 != npoints)
         {
             fclose(fp);
-            throw GCLgridError(base_error 
+            throw GCLgridError(base_error
                     + "fwrite error while saving x3 coordinates to file "
                     + fullname +"\nOutput file is incomplete");
         }
@@ -139,7 +141,7 @@ void pfhdr_save_griddata(GCLgrid& g,string base)
     } catch(...){throw;};
 }
 /* 3D equivalent to above */
-void pfhdr_save_griddata(GCLgrid3d& g,string base)
+void pfhdr_save_griddata(const GCLgrid3d& g,const string base)
 {
     try {
         const string base_error("pfhdr format GCLgrid3d writing routine:  ");
@@ -154,7 +156,7 @@ void pfhdr_save_griddata(GCLgrid3d& g,string base)
         {
             fclose(fp);
             throw GCLgridError(base_error + "file "
-                    + fullname 
+                    + fullname
                     + " exists\nChange file name or move this file away");
         }
         size_t npoints;
@@ -163,7 +165,7 @@ void pfhdr_save_griddata(GCLgrid3d& g,string base)
                 != npoints)
         {
             fclose(fp);
-            throw GCLgridError(base_error 
+            throw GCLgridError(base_error
                     + "fwrite error while saving x1 coordinates to file "
                     + fullname+"\nOutput file is incomplete");
         }
@@ -171,7 +173,7 @@ void pfhdr_save_griddata(GCLgrid3d& g,string base)
                 != npoints)
         {
             fclose(fp);
-            throw GCLgridError(base_error 
+            throw GCLgridError(base_error
                     + "fwrite error while saving x2 coordinates to file "
                     + fullname+"\nOutput file is incomplete");
         }
@@ -179,7 +181,7 @@ void pfhdr_save_griddata(GCLgrid3d& g,string base)
                 != npoints)
         {
             fclose(fp);
-            throw GCLgridError(base_error 
+            throw GCLgridError(base_error
                     + "fwrite error while saving x3 coordinates to file "
                     + fullname+"\nOutput file is incomplete");
         }
@@ -188,20 +190,20 @@ void pfhdr_save_griddata(GCLgrid3d& g,string base)
 }
 /* This is a generic writer for the field data of any GCLgrid based
    field object.  This works ONLY because the grids are constructed
-   as contiguous memory blocks.  BE WARNED if that feature of this 
-   library ever changes.  
+   as contiguous memory blocks.  BE WARNED if that feature of this
+   library ever changes.
 
   This procedure tries to opens a file fbase+".dat"
-  If the file is empty it will throw an exception as it assumes the 
+  If the file is empty it will throw an exception as it assumes the
   grid data have already been stored.  Note this is NOT a bombproof
-  method to handle this, but it should be workable here since in 
-  all cases this procedure is called immediately after writing the 
-  grid data.  This will only be a problem if this procedure is 
+  method to handle this, but it should be workable here since in
+  all cases this procedure is called immediately after writing the
+  grid data.  This will only be a problem if this procedure is
   recycled in a different context.  It then writes n double vavlues
   that is presumes are in a contiguous block of memory referened by
   the pointer d.
  */
-void pfhdr_save_field_data(string fbase, double *d, size_t n)
+void pfhdr_save_field_data(const string fbase, const double *d, const size_t n)
 {
     const string base_error("pfhdr_save_field_data procedure:  ");
     string fullname=fbase+"."+dfileext;
@@ -210,7 +212,7 @@ void pfhdr_save_field_data(string fbase, double *d, size_t n)
         throw GCLgridError(base_error+"fopen failed on file="
                 + fullname);
     long current_length=ftell(fp);
-    if(current_length<=0) 
+    if(current_length<=0)
     {
         fclose(fp);
         throw GCLgridError(base_error + "file="
@@ -226,7 +228,7 @@ void pfhdr_save_field_data(string fbase, double *d, size_t n)
     fclose(fp);
 }
 
-void GCLgrid::save(string fname, string dir,string format)
+void GCLgrid::save(const string fname, string dir,const string format)
 {
     const string base_error("GCLgrid::save:  ");
     try{
@@ -244,7 +246,7 @@ void GCLgrid::save(string fname, string dir,string format)
 
     }catch(...){throw;};
 }
-void GCLgrid3d::save(string fname, string dir,string format)
+void GCLgrid3d::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLgrid3d::save:  ");
     try{
@@ -262,17 +264,17 @@ void GCLgrid3d::save(string fname, string dir,string format)
                     + format);
     }catch(...){throw;};
 }
-void GCLscalarfield::save(string fname, string dir,string format)
+void GCLscalarfield::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLscalarfield::save:  ");
     try{
         Metadata attributes=load_common_GCL_attributes(this);
         GCLgrid *g=dynamic_cast<GCLgrid*>(this);
         g->save(fname,dir,format);
-        /* To allow using common code to save the grid we have to 
+        /* To allow using common code to save the grid we have to
            segregate writing the field data.  Currently only support
            one format so this issue does not come up as a restriction.
-           Beware if this is extended as this may have to be 
+           Beware if this is extended as this may have to be
            reorganized. */
         if(format==default_output_format)
         {
@@ -286,7 +288,7 @@ void GCLscalarfield::save(string fname, string dir,string format)
                     + format);
     }catch(...){throw;};
 }
-void GCLvectorfield::save(string fname, string dir,string format)
+void GCLvectorfield::save(const string fname, string dir,const string format)
 {
     const string base_error("GCLvectorfield::save:  ");
     try{
@@ -298,10 +300,10 @@ void GCLvectorfield::save(string fname, string dir,string format)
         {
             pfsave_attributes(attributes,fbase);
             pfhdr_save_griddata(*this,fbase);
-        /* To allow using common code to save the grid we have to 
+        /* To allow using common code to save the grid we have to
            segregate writing the field data.  Currently only support
            one format so this issue does not come up as a restriction.
-           Beware if this is extended as this may have to be 
+           Beware if this is extended as this may have to be
            reorganized. */
             string fbase=makepath(dir,fname);
             size_t npts=n1*n2*nv;
@@ -313,7 +315,7 @@ void GCLvectorfield::save(string fname, string dir,string format)
                     + format);
     }catch(...){throw;};
 }
-void GCLscalarfield3d::save(string fname, string dir,string format)
+void GCLscalarfield3d::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLscalarfield3d::save:  ");
     try{
@@ -332,7 +334,7 @@ void GCLscalarfield3d::save(string fname, string dir,string format)
                     + format);
     }catch(...){throw;};
 }
-void GCLvectorfield3d::save(string fname, string dir,string format)
+void GCLvectorfield3d::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLvectorfield3d::save:  ");
     try{
@@ -353,3 +355,4 @@ void GCLvectorfield3d::save(string fname, string dir,string format)
                     + format);
     }catch(...){throw;};
 }
+} //end namespace

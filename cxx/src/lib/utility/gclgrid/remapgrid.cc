@@ -1,4 +1,7 @@
-#include "gclgrid.h"
+#include "pwmig/utility/gclgrid.h"
+using namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
+{
 /*  This set of functions take the input grid g and remap the
   internal coordinates to be consistent with the coordinate system
   in pattern.  The same function exists for both 2d and 3d grid.
@@ -8,7 +11,7 @@
 
   All return an object rather than a pointer under and assumption
   that this process will not be done a lot.  There is a large overhead
-  in returning the object instead of a pointer to the object.  
+  in returning the object instead of a pointer to the object.
   If that need arises a pointer version of these functions would be
   easy to create from these.
 
@@ -16,12 +19,12 @@
 Original functions did indeed return a new object.  I realized thought
 it worked better to modify the object in place.  The reason for this is
 that the same algorithm can be applied to field objects using a dynamic_cast
-back to the parent grid.  The reason this is possible is that remap_grid 
-does not alter the grid geometry but only the coordinate system used to 
+back to the parent grid.  The reason this is possible is that remap_grid
+does not alter the grid geometry but only the coordinate system used to
 reference each grid point.  This feature MUST be recognized by the caller,
 however, this alters the parent object.
 */
-void remap_grid(GCLgrid& g, BasicGCLgrid& pattern)
+void remap_grid(GCLgrid& g, const BasicGCLgrid& pattern)
 {
 	// return immediately if these grids are congruent
 	if(g==pattern) return;
@@ -29,7 +32,7 @@ void remap_grid(GCLgrid& g, BasicGCLgrid& pattern)
 	GCLgrid oldgrid(g);
 	// We have a copy of the original in oldgrid so now
 	// modify g in place.
-	// This requires only setting the origin and azimuth_y 
+	// This requires only setting the origin and azimuth_y
 	// followed by use of the set_transsformation_matrix function
 	g.lat0=pattern.lat0;
 	g.lon0=pattern.lon0;
@@ -56,7 +59,7 @@ void remap_grid(GCLgrid& g, BasicGCLgrid& pattern)
 	g.compute_extents();
 	return;
 }
-void remap_grid(GCLgrid3d& g, BasicGCLgrid& pattern)
+void remap_grid(GCLgrid3d& g, const BasicGCLgrid& pattern)
 {
 	// return immediately if these grids are congruent
 	if(g==pattern) return;
@@ -92,8 +95,8 @@ void remap_grid(GCLgrid3d& g, BasicGCLgrid& pattern)
    It builds a minimal sized and then will use one of the above
    procedures to do the actual work.   Inheritance sorts out the
    2d or 3d form. */
-void remap_grid(BasicGCLgrid *g, 
-        double olat, double olon, double oradius, double azn)
+void remap_grid(BasicGCLgrid *g, const double olat, const double olon,
+	const double oradius, const double azn)
 {
     GCLgrid rmg(2,2,string("dummy"),olat,olon,oradius,azn,1.0,1.0,0,0);
     GCLgrid *g2d;
@@ -107,6 +110,4 @@ void remap_grid(BasicGCLgrid *g,
         if(g3d==NULL) throw GCLgridError("remap_grid - downcast failed from BasicGCLgrid pointer");
     }
 }
-
-			
-			
+} //end namespace

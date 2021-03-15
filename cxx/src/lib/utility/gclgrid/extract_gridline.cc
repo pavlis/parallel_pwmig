@@ -1,5 +1,10 @@
-#include "gclgrid.h"
-#include "dmatrix.h"
+#include "pwmig/utility/gclgrid.h"
+#include "mspass/utility/dmatrix.h"
+using namespace std;
+using namespace pwmig::gclgrid;
+using mspass::utility::dmatrix;
+namespace pwmig::gclgrid;
+{
 /* Extracts the Cartesian components of a GCLgrid3d object along
 a desired gridline from a specified offset.  The result is returned
 as a 3xn matrix (dmatrix object) with n computed from the offsets
@@ -7,14 +12,14 @@ as a 3xn matrix (dmatrix object) with n computed from the offsets
 
 Arguments:
 	grid - GCLgrid3d object to extract from.
-	ix1,ix2, and ix3  define the offset into the grid that 
-		extraction is to proceed from.  
+	ix1,ix2, and ix3  define the offset into the grid that
+		extraction is to proceed from.
 	comp - component to extract (1, 2, or 3)  1 extracts line along
 		x1 direction, 2 for x2 direction, and 3 for x3 direction.
 	reverse - if true, matrix will in reverse order from the original
 		path.  (i.e. first will become the last on output)
 
-The offset variables (ix1,ix2,ix3) determine which part of the 
+The offset variables (ix1,ix2,ix3) determine which part of the
 parent grid is extracted.  When reverse is false the grid line will
 be extracted from ixi with the other offset variables constant where
 i is 1,2, or 3.  For example, to extract the complete path defined by the
@@ -23,7 +28,7 @@ i is 1,2, or 3.  For example, to extract the complete path defined by the
 to extract from the x3 offset of 8 use
 	path = extract_gridline(grid,3,4,8,3,1);
 
-Some testing is performed on the offset values. If the request is 
+Some testing is performed on the offset values. If the request is
 inconsistent with a dimensions of the grid the routine will throw a
 GCLgrid_error object with a diagnostic message.
 
@@ -31,8 +36,9 @@ Author:  Gary Pavlis
 Written:  June 2003
 */
 
-dmatrix *extract_gridline(GCLgrid3d& grid, int ix1, int ix2, int ix3,
-        int comp, bool reverse) throw (GCLgrid_error)
+dmatrix *extract_gridline(const GCLgrid3d& grid,
+  const int ix1, const int ix2, const int ix3,
+    const int comp, const bool reverse)
 {
 	dmatrix coords;
 	int npts, i0, di;
@@ -91,3 +97,4 @@ dmatrix *extract_gridline(GCLgrid3d& grid, int ix1, int ix2, int ix3,
 	dmatrix *dmptr=new dmatrix(coords);
 	return dmptr;
 }
+} //end nameespace

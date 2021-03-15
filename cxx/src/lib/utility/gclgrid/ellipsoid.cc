@@ -1,5 +1,9 @@
 #include <math.h>
-#include "gclgrid.h"
+#include "pwmig/utility/gclgrid.h"
+using namespace std;
+using namespace pwmig::gclgrid;
+namespace pwmig::gclgrid;
+{
 /* Standize functions to handle ellipticity corrections */
 
 /* Earth ellipticity constants from Turcotte and Schubert */
@@ -7,7 +11,7 @@
 #define FLATTENING 0.00335282
 /* r0_ellipse returns the sea level geoid radius at latitute
 lat in radians */
-double r0_ellipse(double lat)
+double r0_ellipse(const double lat)
 {
         double r, sinlat;
         sinlat = sin(lat);
@@ -15,27 +19,28 @@ double r0_ellipse(double lat)
         return(r);
 }
 /* Converts from a radius to a depth for a standard ellipse */
-double r_to_depth(double r, double lat)
+double r_to_depth(const double r, const double lat)
 {
 	double r0;
 	r0=r0_ellipse(lat);
 	return(r0-r);
 }
-double GCLgrid::depth(int i, int j)
+double GCLgrid::depth(const int i, const int j) const
 {
 	return(r0_ellipse(lat(i,j))-r(i,j));
 }
-double GCLgrid3d::depth(int i, int j, int k)
+double GCLgrid3d::depth(const int i, const int j, const int k) const
 {
 	return(r0_ellipse(lat(i,j,k))-r(i,j,k));
 }
-double BasicGCLgrid::depth(Cartesian_point p)
+double BasicGCLgrid::depth(const Cartesian_point p) const
 {
 	Geographic_point gp;
 	gp=ctog(p);
 	return(r0_ellipse(gp.lat) - gp.r);
 }
-double BasicGCLgrid::depth(Geographic_point p)
+double BasicGCLgrid::depth(const Geographic_point p) const
 {
 	return(r0_ellipse(p.lat) - p.r);
 }
+} //end namespace

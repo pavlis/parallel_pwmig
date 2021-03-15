@@ -1,5 +1,9 @@
-#include "gclgrid.h"
-/* This file contains a pair of functions that extract a single component 
+#include "pwmig/utility/gclgrid.h"
+using namespace std;
+using namespace pwmig::gclgrid;
+namespace pwmig::gclgrid;
+{
+/* This file contains a pair of functions that extract a single component
 from a vector field and return the result as a scalar field defined
 on the same base grid.  There is a 2d and 3d version.
 Both return pointers to the potentially large objects so the normal
@@ -7,10 +11,10 @@ warnings about freeing the output in the caller is in order.
 Both throw an exception if the number defining the requested component
 is outside the valid range of the input field.
 */
-GCLscalarfield *extract_component(GCLvectorfield& f,int component)
+GCLscalarfield *extract_component(const GCLvectorfield& f,const int component)
 {
 	int i,j;
-	if( (component<0) || (component>=f.nv) ) 
+	if( (component<0) || (component>=f.nv) )
 	{
 		elog_notify(0,
 		 "extract_component:  requested component %d is not consistent with field dimension %d\n",
@@ -25,10 +29,10 @@ GCLscalarfield *extract_component(GCLvectorfield& f,int component)
 		}
 	return(sf);
 }
-GCLscalarfield3d *extract_component(GCLvectorfield3d& f,int component)
+GCLscalarfield3d *extract_component(const GCLvectorfield3d& f,const int component)
 {
 	int i,j,k;
-	if( (component<0) || (component>=f.nv) ) 
+	if( (component<0) || (component>=f.nv) )
 	{
 		elog_notify(0,
 		 "extract_component:  requested component %d is not consistent with field3d dimension %d\n",
@@ -44,5 +48,4 @@ GCLscalarfield3d *extract_component(GCLvectorfield3d& f,int component)
 		}
 	return(sf);
 }
-
-	
+} //end namespace

@@ -1,19 +1,23 @@
-#include "gclgrid.h"
-#include "dmatrix.h"
+#include "pwmig/utility/gclgrid.h"
+#include "mspass/utility/dmatrix.h"
+using namespace pwmig::gclgrid;
+namespace pwmig::gclgrid;
+{
+using mspass::utility::dmatrix;
 /* Sometimes it is useful to work in unit spherical coordinates.  That is,
  * local coordinates at a given latitude and longitude with x1 local host,
  * x2 = local north, and x3 local up.  The orientation of this coordinate
  * system is different at every point on the earth.  This function computes
  * the transformation matrix from this reference frame TO that used in
  * the GCLgrid object.  Note this is ONLY the rotational component, not
- * the translation vector which is stored with the GCLgrid object.  
+ * the translation vector which is stored with the GCLgrid object.
  * Note also the returned transformation from coordinates in a local
  * frame at lat,lon to the GCLgrid coordinate frame.  The inverse transform
  * is just the transpose of this matrix because the basis vectors are
  * orthogonal.
  */
 
-dmatrix ustrans(GCLgrid& g, double lat, double lon)
+dmatrix ustrans(const GCLgrid& g, const double lat, const double lon)
 {
 	double colat=M_PI_2-lat;
 	dmatrix usph(3,3);
@@ -36,4 +40,4 @@ dmatrix ustrans(GCLgrid& g, double lat, double lon)
 	U=tr(Ut);
 	return(U);
 }
-
+} //end namespace

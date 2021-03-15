@@ -1,24 +1,27 @@
 #include <sstream>
 #include "PfStyleMetadata.h"
-#include "gclgrid.h"
-#include "seispp.h"
+#include "pwmig/utility/gclgrid.h"
+//#include "seispp.h"
 using namespace std;
-using namespace SEISPP;
-/*! \brief Object to apply tapers at the edges of GCLfield objects.  
+using namespace pwmig::gclgrid;
+//using namespace SEISPP;
+namespace pwmig::gclgrid;
+{
+/*! \brief Object to apply tapers at the edges of GCLfield objects.
 
 In wavefield imaging the edges of the the data projected into the image
 volumn need to be tapered to avoid edges. This processing objects
 implements this process through a clean interface.  The object
 is constructed from a parameter file or Metadata object which allows
-a completely general description of it's properties.  
+a completely general description of it's properties.
 
 The current implementation uses linear tapers at the edges or none
 but the interface is general. */
 class TaperGrid
 {
 public:
-	TaperGrid(Metadata& md);
-	TaperGrid(string fname);
+	TaperGrid(const Metadata& md);
+	TaperGrid(const string fname);
 	TaperGrid(const TaperGrid& parent);
 	TaperGrid& operator=(const TaperGrid& parent);
 	void apply(GCLscalarfield3d& g);
@@ -31,14 +34,14 @@ private:
 	of the taper for the x1 coordinate at 0 while xhvalues[0] is the value
 	of the taper at the opposite end of this coordinate axis x1[n3-1].*/
 	double xlvalues[3],xhvalues[3];
-	/*! Contains linear taper width parameters.  
+	/*! Contains linear taper width parameters.
 
-	This implementation uses only linear tapers.  These define the width 
+	This implementation uses only linear tapers.  These define the width
 	of the tapers on the low and high ends of grid coordinates.  */
 	double widthlow[3],widthhigh[3];
-	/*! These control if a taper is applied along a particular edge.  
+	/*! These control if a taper is applied along a particular edge.
 
-	When true a taper will be applied. 
+	When true a taper will be applied.
 	*/
 	bool applylow[3],applyhigh[3];
 };
@@ -50,7 +53,7 @@ void constructor_log_error(const string base, int comp, const string detail)
 	<< "Component number "<<comp
 	<< detail<<endl;
 }
-TaperGrid::TaperGrid(Metadata& md)
+TaperGrid::TaperGrid(const Metadata& md)
 {
 	xlvalues[0]=md.get_double("x1low_edge_value");
 	xlvalues[1]=md.get_double("x2low_edge_value");
@@ -105,7 +108,7 @@ TaperGrid::TaperGrid(Metadata& md)
 	}
 
 }
-TaperGrid::TaperGrid(string fname)
+TaperGrid::TaperGrid(const string fname)
 {
     try {
         PfStyleMetadata mdtmp=pfread(fname);
@@ -156,7 +159,7 @@ void TaperGrid::apply(GCLscalarfield3d& g)
 	double slope;
 	double multiplier;
 	int endtaper;
-	// probably should have a sanity check on the width 
+	// probably should have a sanity check on the width
 	// parameters.  We'll just throw an exception if
 	// we get a crazy request.
 	const string baseerror("TaperGrid::apply(GCLscalarfield3d):  taper width inconsistent with this grid\n");
@@ -245,5 +248,4 @@ void TaperGrid::apply(GCLscalarfield3d& g)
 		}
 	}
 }
-	
-		
+} //end namespace

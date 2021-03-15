@@ -1,17 +1,20 @@
 #include <stdio.h>
 #include <float.h>
 #include "elog.h"
-#include "gclgrid.h"
+#include "pwmig/utility/gclgrid.h"
+using namespace pwmig::gclgrid;
+namespace pwmig::gclgrid;
+{
 /* modified Nov. 2003.  Original assumed cartesian frames for g and the current object were
 identical.  We have no reason to believe this should always be so.  Now all these operators
 are paranoid and use the geographhic points and convert them to the cartesian components.
 
-Modified Nov 2004:  added == and != operators 
-Modified April 2004:  
-1.  modified += operators for 3d objects to improve efficiency by 
+Modified Nov 2004:  added == and != operators
+Modified April 2004:
+1.  modified += operators for 3d objects to improve efficiency by
 	dropping unnecessary geographic conversions.  (algorithm change)
 2.  Moved = operators from create_destroy to this file.  Found I had
-	missed the fact that operator = was not defined before for 
+	missed the fact that operator = was not defined before for
 	field objects.  These were added.
 */
 
@@ -19,7 +22,7 @@ Modified April 2004:
 // This code is very repetitious as I don't see how to avoid the
 // duplication of code necessitated by inheritance mechanism.
 // That is, I am not aware of the equivalent of what can be done
-// for a copy constructor 
+// for a copy constructor
 
 GCLgrid& GCLgrid::operator=(const GCLgrid& g)
 {
@@ -61,7 +64,7 @@ GCLgrid& GCLgrid::operator=(const GCLgrid& g)
 		x3=create_2dgrid_contiguous(n1,n2);
 		//
 		//I use separate loops for each array here as this is highly
-		//optimized on most compilers 
+		//optimized on most compilers
 		//
 		for(i=0;i<n1;++i)
 			for(j=0;j<n2;++j) x1[i][j]=g.x1[i][j];
@@ -117,13 +120,13 @@ GCLgrid3d& GCLgrid3d::operator=(const GCLgrid3d& g)
 		}
 		ix1=g.ix1; ix2=g.ix2; ix3=g.ix3;
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
+			for(j=0;j<n2;++j)
 				for(k=0;k<n3;++k) x1[i][j][k]=g.x1[i][j][k];
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
+			for(j=0;j<n2;++j)
 				for(k=0;k<n3;++k) x2[i][j][k]=g.x2[i][j][k];
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
+			for(j=0;j<n2;++j)
 				for(k=0;k<n3;++k) x3[i][j][k]=g.x3[i][j][k];
 	}
 	return *this;
@@ -173,7 +176,7 @@ GCLscalarfield& GCLscalarfield::operator=(const GCLscalarfield& g)
 		val=create_2dgrid_contiguous(n1,n2);
 		//
 		//I use separate loops for each array here as this is highly
-		//optimized on most compilers 
+		//optimized on most compilers
 		//
 		for(i=0;i<n1;++i)
 			for(j=0;j<n2;++j) x1[i][j]=g.x1[i][j];
@@ -229,7 +232,7 @@ GCLvectorfield& GCLvectorfield::operator=(const GCLvectorfield& g)
 		val=create_3dgrid_contiguous(n1,n2,nv);
 		//
 		//I use separate loops for each array here as this is highly
-		//optimized on most compilers 
+		//optimized on most compilers
 		//
 		for(i=0;i<n1;++i)
 			for(j=0;j<n2;++j) x1[i][j]=g.x1[i][j];
@@ -238,7 +241,7 @@ GCLvectorfield& GCLvectorfield::operator=(const GCLvectorfield& g)
 		for(i=0;i<n1;++i)
 			for(j=0;j<n2;++j) x3[i][j]=g.x3[i][j];
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
+			for(j=0;j<n2;++j)
 				for(k=0;k<nv;++nv) val[i][j][k]=g.val[i][j][k];
 	}
 	return *this;
@@ -286,16 +289,16 @@ GCLscalarfield3d& GCLscalarfield3d::operator=(const GCLscalarfield3d& g)
 			for(j=0;j<3;++j) gtoc_rmatrix[i][j]=g.gtoc_rmatrix[i][j];
 		}
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
+			for(j=0;j<n2;++j)
 				for(k=0;k<n3;++k) x1[i][j][k]=g.x1[i][j][k];
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
+			for(j=0;j<n2;++j)
 				for(k=0;k<n3;++k) x2[i][j][k]=g.x2[i][j][k];
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
+			for(j=0;j<n2;++j)
 				for(k=0;k<n3;++k) x3[i][j][k]=g.x3[i][j][k];
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
+			for(j=0;j<n2;++j)
 				for(k=0;k<n3;++k) val[i][j][k]=g.val[i][j][k];
 	}
 	return *this;
@@ -343,17 +346,17 @@ GCLvectorfield3d& GCLvectorfield3d::operator=(const GCLvectorfield3d& g)
 			for(j=0;j<3;++j) gtoc_rmatrix[i][j]=g.gtoc_rmatrix[i][j];
 		}
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
+			for(j=0;j<n2;++j)
 				for(k=0;k<n3;++k) x1[i][j][k]=g.x1[i][j][k];
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
+			for(j=0;j<n2;++j)
 				for(k=0;k<n3;++k) x2[i][j][k]=g.x2[i][j][k];
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
+			for(j=0;j<n2;++j)
 				for(k=0;k<n3;++k) x3[i][j][k]=g.x3[i][j][k];
 		for(i=0;i<n1;++i)
-			for(j=0;j<n2;++j) 
-				for(k=0;k<n3;++k) 
+			for(j=0;j<n2;++j)
+				for(k=0;k<n3;++k)
 					for(l=0;l<nv;++l)
 						val[i][j][k][l]=g.val[i][j][k][l];
 	}
@@ -367,7 +370,7 @@ system.  In this library this is totally defined by the origin of
 the coordinate system and the azimuth_y parameter of the grid.
 The routine then simply tests these for equality.
 
-Note a previous version tested the transformation matrix and the 
+Note a previous version tested the transformation matrix and the
 translation vector, but that required far more work and was more
 subject to roundoff error mistakes.
 
@@ -375,11 +378,11 @@ delta_cutoff defines the distance in cartesian units between
 the origin of the two grids.  Note assumption that these
 are stored in units of km.
 */
-const double delta_cutoff(0.1);  
+const double delta_cutoff(0.1);
 // A relatively safe equality test
 bool values_differ(double a, double b)
 {
-	if(fabs(a-b)==0.0) 
+	if(fabs(a-b)==0.0)
 		return false;
 	else if(fabs((a-b)/b)<(10.0*DBL_EPSILON))
 		return false;
@@ -387,7 +390,7 @@ bool values_differ(double a, double b)
 		return true;
 }
 // This is a common routine for == and != that computes distance
-double delta_origin(BasicGCLgrid& a, BasicGCLgrid& b)
+double delta_origin(const BasicGCLgrid& a, const BasicGCLgrid& b)
 {
 	Cartesian_point pa=b.gtoc(b.lat0,b.lon0,b.r0);
 	Cartesian_point pb=b.gtoc(a.lat0,a.lon0,a.r0);
@@ -401,7 +404,7 @@ bool BasicGCLgrid::operator==(const BasicGCLgrid& b)
 	double dp;
 	if(values_differ(azimuth_y,b.azimuth_y) )return(false);
 	dp=delta_origin(*this,const_cast<BasicGCLgrid&>(b));
-	if(dp<=delta_cutoff) 
+	if(dp<=delta_cutoff)
 		return(true);
 	else
 		return(false);
@@ -410,7 +413,7 @@ bool BasicGCLgrid::operator!=(const BasicGCLgrid& b)
 {
 	double dp;
 	dp=delta_origin(*this,const_cast<BasicGCLgrid&>(b));
-	if(dp>delta_cutoff) 
+	if(dp>delta_cutoff)
 		return(true);
 	else if(values_differ(azimuth_y,b.azimuth_y))
 		return(true);
@@ -431,7 +434,7 @@ void GCLscalarfield3d::operator+=(GCLscalarfield3d& g)
 	else
 		remap=true;
 
-	g.reset_index(); 
+	g.reset_index();
 
 	for(i=0;i<n1;++i)
 	{
@@ -446,14 +449,14 @@ void GCLscalarfield3d::operator+=(GCLscalarfield3d& g)
 				}
 				else
 				{
-					cx.x1=x1[i][j][k];	
-					cx.x2=x2[i][j][k];	
-					cx.x3=x3[i][j][k];	
+					cx.x1=x1[i][j][k];
+					cx.x2=x2[i][j][k];
+					cx.x3=x3[i][j][k];
 				}
 				err=g.lookup(cx.x1,cx.x2,cx.x3);
 				switch(err)
 				{
-					
+
 				case -2:
 				case 2:
 					elog_die(0,(char*)"Coding error:  return code %d from GCLgrid3d::lookup method depricated\n",err);
@@ -487,7 +490,7 @@ void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
 	Cartesian_point cx;
 	Geographic_point gp;
 
-	g.reset_index(); 
+	g.reset_index();
 
 	if(*this==g)
 		remap=false;
@@ -507,9 +510,9 @@ void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
 				}
 				else
 				{
-					cx.x1=x1[i][j][k];	
-					cx.x2=x2[i][j][k];	
-					cx.x3=x3[i][j][k];	
+					cx.x1=x1[i][j][k];
+					cx.x2=x2[i][j][k];
+					cx.x3=x3[i][j][k];
 				}
 
 				err=g.lookup(cx.x1,cx.x2,cx.x3);
@@ -540,7 +543,7 @@ void GCLscalarfield::operator += (GCLscalarfield& g)
 	double valnew;
 	int err;
 
-	g.reset_index(); 
+	g.reset_index();
 
 	for(i=0;i<n1;++i)
 	{
@@ -582,7 +585,7 @@ void GCLvectorfield::operator += (GCLvectorfield& g)
 	double *valnew;
 	int err;
 
-	g.reset_index(); 
+	g.reset_index();
 
 	for(i=0;i<n1;++i)
 	{
@@ -619,7 +622,7 @@ void GCLvectorfield::operator += (GCLvectorfield& g)
 	}
 }
 // Multiplication by scalar operators
-void GCLscalarfield3d::operator *= (double c1)
+void GCLscalarfield3d::operator *= (const double c1)
 {
 	int i,j,k;
 	for(i=0;i<n1;++i)
@@ -627,7 +630,7 @@ void GCLscalarfield3d::operator *= (double c1)
 			for(k=0;k<n3;++k)
 				val[i][j][k]*=c1;
 }
-void GCLvectorfield3d::operator *= (double c1)
+void GCLvectorfield3d::operator *= (const double c1)
 {
 	int i,j,k,l;
 	for(i=0;i<n1;++i)
@@ -636,14 +639,14 @@ void GCLvectorfield3d::operator *= (double c1)
 				for(l=0;l<nv;++l)
 					val[i][j][k][l]*=c1;
 }
-void GCLscalarfield::operator *= (double c1)
+void GCLscalarfield::operator *= (const double c1)
 {
 	int i,j,k;
 	for(i=0;i<n1;++i)
 		for(j=0;j<n2;++j)
 			val[i][j]*=c1;
 }
-void GCLvectorfield::operator *= (double c1)
+void GCLvectorfield::operator *= (const double c1)
 {
 	int i,j,k,l;
 	for(i=0;i<n1;++i)
@@ -732,9 +735,9 @@ ostream& operator << (ostream& fout, GCLvectorfield& g)
 				<< " "
 				<< deg(g.lon(i,j))
 				<< " "
-				<< g.r(i,j) 
+				<< g.r(i,j)
 				<< " "
-				<< g.depth(i,j); 
+				<< g.depth(i,j);
 			for(k=0;k<g.nv;++k)
 				fout<< " " << g.val[i][j][k];
 			fout << endl;
@@ -773,3 +776,4 @@ ostream& operator << (ostream& fout, GCLvectorfield3d& g)
 	}
 	return fout;
 }
+} //end namespace

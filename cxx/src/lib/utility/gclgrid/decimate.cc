@@ -1,22 +1,26 @@
-#include "gclgrid.h"
+#include "pwmig/utility/gclgrid.h"
+using namespace pwmig::gclgrid;
+using namespace std;
+namespace pwmig::gclgrid;
+{
 /*! \brief Decimate a GCLgrid3d.
 
 We sometimes want to decimate a grid. This procedure does this for
-a 3D grid with variable decimation for each generalized coordinate 
+a 3D grid with variable decimation for each generalized coordinate
 axis.  An added compliation is the fact that because GCLgrids hae
 the x3 direction directed upward in earth coordinates and the free
 surface is so special, we work the x3 coordinate backward compared
 to the others.  i.e. we for the n3-1 point to be the n3-1 point in
-the result, not the 0 points.  
+the result, not the 0 points.
 
 \param g parent grid that is to be decimated
 \param dec1 decimation factor for x1
 \param dec2 decimation factor for x2
 \param dec3 decimamtion factor for x3
 
-\return pointer to decimated grid object 
+\return pointer to decimated grid object
 */
-GCLgrid3d *decimate(GCLgrid3d& g,int dec1, int dec2, int dec3)
+GCLgrid3d *decimate(const GCLgrid3d& g,const int dec1, const int dec2, const int dec3)
 {
 	int n1,n2,n3;
 	n1=(g.n1)/dec1;
@@ -33,7 +37,7 @@ GCLgrid3d *decimate(GCLgrid3d& g,int dec1, int dec2, int dec3)
 	{
 		for(j=0,jj=0;j<g.n2 && jj<n2;j+=dec2,++jj)
 		{
-			// note reverse order 
+			// note reverse order
 			//for(k=0,kk=0;k<g.n3 && kk<n3; k+=dec3,++kk)
 			for(k=g.n3-1,kk=n3-1;kk>=0; k-=dec3,--kk)
 			{
@@ -65,10 +69,11 @@ GCLgrid3d *decimate(GCLgrid3d& g,int dec1, int dec2, int dec3)
 	result->j0=g.j0/dec2;
 	result->k0=g.k0/dec3;
 	for(i=0;i<3;++i)
-		for(j=0;j<3;++j) 
+		for(j=0;j<3;++j)
 		    result->gtoc_rmatrix[i][j]=g.gtoc_rmatrix[i][j];
 	for(i=0;i<3;++i)result->translation_vector[i]
 			 = g.translation_vector[i];
 
 	return(result);
 }
+} //end namespace

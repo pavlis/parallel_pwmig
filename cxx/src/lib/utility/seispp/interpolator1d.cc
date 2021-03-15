@@ -1,7 +1,7 @@
 #include <float.h>
-#include "interpolator1d.h"
-#include "perf.h"
-#include "dmatrix.h"
+#include "pwmig/utility/interpolator1d.h"
+#include "mspass/misc/blas.h"
+#include "mspass/utility/dmatrix.h"
 /* This is a collection of interpolators for 1D scalar or vector
 functions of one variable.  I have stolen portions from Igor Morozov, but
 changed the wrapper completely.  The collection is wrapped in a namespace
@@ -12,8 +12,10 @@ linear_scale() or you are likely to have a name conflict.  This
 library could have been fully objectized, but I chose to keep it 
 procedural because these operations are commonly done on primitives.*/
 #include <math.h>
+using namespace INTERPOLATOR1D;
 namespace INTERPOLATOR1D
 {
+using mspass::utility::dmatrix;
 /* primitive for 2 point linear interpolation.  Uses a weight formula
 instead of an explicit point-slope to reduce operation counts.  
 Probably a trivial detail, but it uses it anyway.  

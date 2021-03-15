@@ -1,18 +1,20 @@
 #include <typeinfo>
 #include <string.h>
 #include <math.h>
-#include "PfStyleMetadata.h"
-#include "gclgrid.h"
-#include "seispp.h"  // needed here for byte swap procedures
+#include "mspass/utility/PfStyleMetadata.h"
+#include "pwmig/utility/gclgrid.h"
+//#include "seispp.h"  // needed here for byte swap procedures
 using namespace std;
-using namespace SEISPP;
-/* This series of internal procedures contain duplicate code 
+using namespace pwmig::gclgrid;
+namespace pwmig::gclgrid;
+{
+/* This series of internal procedures contain duplicate code
    for file-based constructors.  They follow the class hierarchy.
    Very convenient to put these in one place because the namespace
    of attribute tags is hard coded into this code.
    */
 template <class T>
-    void pfload_common_GCL_attributes(T& g,Metadata& par)
+    void pfload_common_GCL_attributes(T& g,const Metadata& par)
 {
     try {
 	/* This template loads common attributes from BasicGCLgrid base class*/
@@ -31,8 +33,8 @@ template <class T>
 	g.n2=par.get_int("n2");
 	g.i0=par.get_int("i0");
 	g.j0=par.get_int("j0");
-        /* There perhaps should be a way to force these to be 
-           computed, but for now we assume they were set by 
+        /* There perhaps should be a way to force these to be
+           computed, but for now we assume they were set by
            a writer and we don't need to compute them. */
         g.x1low=par.get_double("x1low");
         g.x1high=par.get_double("x1high");
@@ -50,7 +52,7 @@ template <class T>
     catch(...) {throw;};
 }
 template <class T>
-    void pfload_3dgrid_attributes(T& g, Metadata& par)
+    void pfload_3dgrid_attributes(T& g, const Metadata& par)
 {
     try {
         g.dx3_nom=par.get_double("dx3_nom");
@@ -59,7 +61,7 @@ template <class T>
     } catch(...) {throw;};
 }
 /* These are create and free routines for 2d, 3d, and 4d arrays in plain C.
-They are used below for C++ constructors and destructors.  The MOST 
+They are used below for C++ constructors and destructors.  The MOST
 IMPORTANT thing to note about the constructions used here is that I have
 implemented these built on contiguous blocks of memory.  This is NOT necessarily
 the way one would always build multidimension arrays in C.  This is probably a bad
@@ -72,11 +74,11 @@ and assumption it would improve performance.*/
 /* Many gcl functions work with 3d C grids.  C implements multidimensioned
 arrays pointer arrays, which makes this kind of ugly.  Anyway, this
 function will create the F90 equivalent of  x[0:n1-1][0:n2-1][0:n3-1]
-and return a ***double pointer for the 3d array.  The approach 
-used here allocates the full block of memory in one single call to 
-guarantee the result is in a contiguous block of memory. 
+and return a ***double pointer for the 3d array.  The approach
+used here allocates the full block of memory in one single call to
+guarantee the result is in a contiguous block of memory.
 This is useful for reading and writing this type of entity because
-then a single call to fread and fwrite can be used.  
+then a single call to fread and fwrite can be used.
 Note, however, that the actual order in memory remains the C convention
 not the FOTRAN form.  i.e. the rightmost index defines members contingous
 in memory.
@@ -84,7 +86,7 @@ Author:  GAry Pavlis
 Written:  June 2000
 */
 
-double ***create_3dgrid_contiguous(int n1, int n2, int n3)
+double ***create_3dgrid_contiguous(const int n1, const int n2, const int n3)
 {
 	double ***ptr3d;
 	double **ptr2ptr;
@@ -106,11 +108,11 @@ double ***create_3dgrid_contiguous(int n1, int n2, int n3)
 		}
 	}
 	return(ptr3d);
-}		
+}
 /* Free routine for a 3d array.  pointers arrays require extra attention
 to avoid a memory leak.   This function assumes standard C indexing
 */
-void free_3dgrid_contiguous(double ***x,int n1, int n2)
+void free_3dgrid_contiguous(double ***x,const int n1, const int n2)
 {
 	int i;
 	double *ptr;
@@ -119,13 +121,13 @@ void free_3dgrid_contiguous(double ***x,int n1, int n2)
 	ptr = x[0][0];
 	free((void *)ptr);
 
-	/* The pointer arrays are still then and have to be freed 
+	/* The pointer arrays are still then and have to be freed
 	seperately */
 	for(i=0;i<n1;++i)  free((void *)x[i]);
 	free((void *)x);
 }
 /* parallel routines to the above for 2d */
-double **create_2dgrid_contiguous(int n1, int n2)
+double **create_2dgrid_contiguous(const int n1, const int n2)
 {
 	double **ptr2ptr;
 	double *ptr;
@@ -137,7 +139,7 @@ double **create_2dgrid_contiguous(int n1, int n2)
 		ptr2ptr[i] = ptr + n2*i;
 	return(ptr2ptr);
 }
-void free_2dgrid_contiguous(double **x,int n1)
+void free_2dgrid_contiguous(double **x,const int n1)
 {
 	double *ptr;
 
@@ -148,7 +150,7 @@ void free_2dgrid_contiguous(double **x,int n1)
 //
 // A bit out of order, but now similar construction for 4D
 //
-double ****create_4dgrid_contiguous(int n1, int n2, int n3, int n4)
+double ****create_4dgrid_contiguous(const int n1, const int n2, const int n3, const int n4)
 {
 	double ****ptr4d;
 	double ***ptr3d;
@@ -174,14 +176,14 @@ double ****create_4dgrid_contiguous(int n1, int n2, int n3, int n4)
 		{
 			for(k=0;k<n3;++k)
 			{
-				ptr4d[i][j][k] = ptr + n2*n3*n4*i 
+				ptr4d[i][j][k] = ptr + n2*n3*n4*i
 						+ n3*n4*j + n4*k;
 			}
 		}
 	}
 	return(ptr4d);
 }
-void free_4dgrid_contiguous(double ****x,int n1, int n2, int n3)
+void free_4dgrid_contiguous(double ****x,const int n1, const int n2, const int n3)
 {
 	int i,j;
 	double *ptr;
@@ -200,9 +202,9 @@ void free_4dgrid_contiguous(double ****x,int n1, int n2, int n3)
 		free((void *)x[i]);
 	}
 	free((void *)x);
-}		
+}
 //
-// C++ constructors 
+// C++ constructors
 //
 BasicGCLgrid::BasicGCLgrid()
 {
@@ -243,7 +245,7 @@ BasicGCLgrid::BasicGCLgrid(const BasicGCLgrid& g)
 	}
 }
 
-GCLgrid::GCLgrid (int n1size, int n2size) : BasicGCLgrid()
+GCLgrid::GCLgrid (const int n1size, const int n2size) : BasicGCLgrid()
 {
 	n1=n1size;
 	n2=n2size;
@@ -252,7 +254,8 @@ GCLgrid::GCLgrid (int n1size, int n2size) : BasicGCLgrid()
 	x3=create_2dgrid_contiguous(n1size,n2size);
 }
 
-GCLgrid3d::GCLgrid3d (int n1size, int n2size, int n3size, bool fl) : BasicGCLgrid()
+GCLgrid3d::GCLgrid3d (const int n1size, const int n2size,
+       const int n3size, const bool fl) : BasicGCLgrid()
 {
 	n1=n1size;
 	n2=n2size;
@@ -262,9 +265,9 @@ GCLgrid3d::GCLgrid3d (int n1size, int n2size, int n3size, bool fl) : BasicGCLgri
 	x3=create_3dgrid_contiguous(n1size,n2size,n3size);
         fast_lookup=fl;
 }
-/* This routine is used in all file-based constructors using a 
+/* This routine is used in all file-based constructors using a
    pf to store attributes. */
-Metadata pfload_GCLmetadata(string fname)
+Metadata pfload_GCLmetadata(const string fname)
 {
     try {
         PfStyleMetadata md;
@@ -272,7 +275,7 @@ Metadata pfload_GCLmetadata(string fname)
         return(dynamic_cast<Metadata&>(md));
     }catch(...){throw;};
 }
-GCLgrid::GCLgrid(string fname, string format)
+GCLgrid::GCLgrid(const string fname, const string format)
 {
     const string base_error("GCLgrid file-based constructor:  ");
     if(format==default_output_format)
@@ -280,7 +283,7 @@ GCLgrid::GCLgrid(string fname, string format)
         try{
             Metadata params=pfload_GCLmetadata(fname);
             /* This would need to be a private method if
-               attributes were not public.  Warning if interface 
+               attributes were not public.  Warning if interface
                is changed.*/
             pfload_common_GCL_attributes<GCLgrid>(*this,params);
             /* Intentionally do not check for object_type to allow
@@ -289,7 +292,7 @@ GCLgrid::GCLgrid(string fname, string format)
             /* This and other similar routines need to get info about
                the byte order of the data.  Done with this attribute.*/
             string datatype=params.get_string("datatype");
-            if( !((datatype=="u8") || (datatype=="t8") ) ) 
+            if( !((datatype=="u8") || (datatype=="t8") ) )
                 throw GCLgridError(base_error
                         + "Do not know how to handle datatype="
                         + datatype
@@ -345,7 +348,7 @@ GCLgrid::GCLgrid(string fname, string format)
                 swapdvec(x2[0],gridsize);
                 swapdvec(x3[0],gridsize);
             }
-            /* database version calls set_transformation_matrix() 
+            /* database version calls set_transformation_matrix()
                method here, but not needed because we called
                it earlier */
         } catch(SeisppError& serr)
@@ -366,7 +369,7 @@ GCLgrid::GCLgrid(string fname, string format)
 
 // copy constructors here use inheritance of the BasicGCLgrid
 // to reduce redundant code.
-GCLgrid::GCLgrid(const GCLgrid& g) 
+GCLgrid::GCLgrid(const GCLgrid& g)
 	: BasicGCLgrid(dynamic_cast<const BasicGCLgrid&>(g))
 {
 	int i,j;
@@ -377,7 +380,7 @@ GCLgrid::GCLgrid(const GCLgrid& g)
 	x3=create_2dgrid_contiguous(n1,n2);
 	//
 	//I use separate loops for each array here as this is highly
-	//optimized on most compilers 
+	//optimized on most compilers
 	//
 	for(i=0;i<n1;++i)
 		for(j=0;j<n2;++j) x1[i][j]=g.x1[i][j];
@@ -387,9 +390,9 @@ GCLgrid::GCLgrid(const GCLgrid& g)
 		for(j=0;j<n2;++j) x3[i][j]=g.x3[i][j];
 
 }
-GCLgrid3d::GCLgrid3d(string fname, string format,bool fl)
+GCLgrid3d::GCLgrid3d(const string fname, const string format,const bool fl)
 {
-    /* This code is painfully similar to GCLgrid constructor 
+    /* This code is painfully similar to GCLgrid constructor
        with same arguments */
     const string base_error("GCLgrid3d file-based constructor:  ");
     fast_lookup=fl;
@@ -398,14 +401,14 @@ GCLgrid3d::GCLgrid3d(string fname, string format,bool fl)
         try{
             Metadata params=pfload_GCLmetadata(fname);
             /* This would need to be a private method if
-               attributes were not public.  Warning if interface 
+               attributes were not public.  Warning if interface
                is changed.*/
             pfload_common_GCL_attributes<GCLgrid3d>(*this,params);
             pfload_3dgrid_attributes<GCLgrid3d>(*this,params);
             /* This and other similar routines need to get info about
                the byte order of the data.  Done with this attribute.*/
             string datatype=params.get_string("datatype");
-            if( !((datatype=="u8") || (datatype=="t8") ) ) 
+            if( !((datatype=="u8") || (datatype=="t8") ) )
                 throw GCLgridError(base_error
                         + "Do not know how to handle datatype="
                         + datatype
@@ -488,20 +491,20 @@ GCLgrid3d::GCLgrid3d(const GCLgrid3d& g)
 	x3=create_3dgrid_contiguous(n1,n2,n3);
 	// could use an memcpy call here and it might be faster
 	for(i=0;i<n1;++i)
-		for(j=0;j<n2;++j) 
+		for(j=0;j<n2;++j)
 			for(k=0;k<n3;++k) x1[i][j][k]=g.x1[i][j][k];
 	for(i=0;i<n1;++i)
-		for(j=0;j<n2;++j) 
+		for(j=0;j<n2;++j)
 			for(k=0;k<n3;++k) x2[i][j][k]=g.x2[i][j][k];
 	for(i=0;i<n1;++i)
-		for(j=0;j<n2;++j) 
+		for(j=0;j<n2;++j)
 			for(k=0;k<n3;++k) x3[i][j][k]=g.x3[i][j][k];
 
         fast_lookup=g.fast_lookup;
 }
 
 /* This small function builds a baseline vector of latitude and
-longitude values along a specified azimuth with a prescribed 
+longitude values along a specified azimuth with a prescribed
 origin.
 
 Arguments:
@@ -514,24 +517,24 @@ Arguments:
 		will change.
 	dx - distance spacing between points on the baseline (in radians)
 	n - number of points along the baseline.
-	i0 - position of the origin point along the baseline vector. 
+	i0 - position of the origin point along the baseline vector.
 		NOTE:  we use C convention so 0 is the first point in
 		the vector.
-	lat, lon - hold n vectors of latitude, longitude pairs of the 
-		baseline points.  Note that lat[i0], lon[i0] should 
+	lat, lon - hold n vectors of latitude, longitude pairs of the
+		baseline points.  Note that lat[i0], lon[i0] should
 		equal lat0, lon0 respectively.
 Author:  G Pavlis
 Written:  Aug 2000
 */
 
-void build_baseline(double lat0, double lon0, double phi, 
-			double dx,int n,int i0,
-			double *lat, double *lon)
+void build_baseline(const double lat0, const double lon0, const double phi,
+			const double dx,const int n,const int i0,
+			  const double *lat, const double *lon)
 {
 	double azimuth,az;
 	int i;
 	double delta;
-	
+
 	/* We want azimuth between 0 and 2*pi */
 	azimuth = M_PI_2 - phi;
 	if(azimuth < 0.0 ) azimuth += (2.0*M_PI);
@@ -555,18 +558,18 @@ void build_baseline(double lat0, double lon0, double phi,
 // This is the C++ constructor that uses a pf and coord routines to compute
 // a GCLgrid on the fly using the description coming from pf
 //
-GCLgrid::GCLgrid(int n1in, int n2in, 
-	string namein,
-	double lat0in, double lon0in, double r0in,
-	double azimuth_yin, double dx1_nomin, double dx2_nomin, 
-	int i0in, int j0in)
+GCLgrid::GCLgrid(const int n1in, const int n2in,
+	const string namein,
+	const double lat0in, const double lon0in, const double r0in,
+	const double azimuth_yin, const double dx1_nomin, const double dx2_nomin,
+	const int i0in, const int j0in)
 
-{		
+{
 
 	/* pole to baseline */
 	double pole_lat, pole_lon;
 	int i,j,k;
-	double deltax, deltay, delta;  
+	double deltax, deltay, delta;
 	double z;
 	double x[3],x0[3];
 	double xwork[3];
@@ -601,7 +604,7 @@ GCLgrid::GCLgrid(int n1in, int n2in,
 
 	build_baseline(lat0,lon0,
 		rotation_angle,dx1_rad,n1,i0,baseline_lat,baseline_lon);
-	/* We need to compute the pole to our base line to use as a 
+	/* We need to compute the pole to our base line to use as a
 	target for grid lines that are locally perpendicular along
 	the grid lines -- like longitude lines at the equator */
 	latlon(lat0,lon0,M_PI_2,-rotation_angle,&pole_lat,&pole_lon);
@@ -616,7 +619,7 @@ GCLgrid::GCLgrid(int n1in, int n2in,
 	x3 = create_2dgrid_contiguous(n1,n2);
 
 	/* We now complete the latitude/longitude grid by projecting
-	lines from the baseline toward the computed pole.  Grid points 
+	lines from the baseline toward the computed pole.  Grid points
 	will be equally spaced along the gcp toward the pole, but the
 	lines they form will converge.  This is complicated greatly by
 	the grid origin parameters.  We could make this a function,
@@ -651,7 +654,7 @@ GCLgrid::GCLgrid(int n1in, int n2in,
 	//
 	set_transformation_matrix();
 	Cartesian_point cpt;
-	for(i=0;i<n1;++i) 
+	for(i=0;i<n1;++i)
 	    for(j=0;j<n2;++j)
 	    {
 			cpt = gtoc(plat[i][j],plon[i][j],
@@ -661,7 +664,7 @@ GCLgrid::GCLgrid(int n1in, int n2in,
 			x2[i][j] = cpt.x2;
 			x3[i][j] = cpt.x3;
 	    }
-	/* We have to compute the extents parameters as the minimum 
+	/* We have to compute the extents parameters as the minimum
 	and maximum in each cartesian direction */
 	this->compute_extents();
 
@@ -675,20 +678,20 @@ GCLgrid::GCLgrid(int n1in, int n2in,
 // This is the C++ constructor that uses a pf and coord routines to compute
 // a GCLgrid on the fly using the description coming from pf
 //
-GCLgrid3d::GCLgrid3d(int n1in, int n2in, int n3in,
-	string namein,
-	double lat0in, double lon0in, double r0in,
-	double azimuth_yin, double dx1_nomin, double dx2_nomin,double dx3_nomin, 
-	int i0in, int j0in)
-{		
-        /* Fast lookup method is always enabled for a grid created this 
+GCLgrid3d::GCLgrid3d(const int n1in, const int n2in, const int n3in,
+	const string namein,
+	  const double lat0in, const double lon0in, const double r0in,
+	    const double azimuth_yin, const double dx1_nomin, const double dx2_nomin,
+        const double dx3_nomin, const int i0in, const int j0in)
+{
+        /* Fast lookup method is always enabled for a grid created this
            way.   Reason is this grid is alway very close to regular
            and the speed loss for lookup is ill advised. */
         fast_lookup=false;
 	/* pole to baseline */
 	double pole_lat, pole_lon;
 	int i,j,k;
-	double deltax, deltay,delta;  
+	double deltax, deltay,delta;
 	double z0,z;
 	double x[3],x0[3];
 	double xwork[3];
@@ -728,7 +731,7 @@ GCLgrid3d::GCLgrid3d(int n1in, int n2in, int n3in,
 
 	build_baseline(lat0,lon0,
 		rotation_angle,dx1_rad,n1,i0,baseline_lat,baseline_lon);
-	/* We need to compute the pole to our base line to use as a 
+	/* We need to compute the pole to our base line to use as a
 	target for grid lines that are locally perpendicular along
 	the grid lines -- like longitude lines at the equator */
 	latlon(lat0,lon0,M_PI_2,-rotation_angle,&pole_lat,&pole_lon);
@@ -746,7 +749,7 @@ GCLgrid3d::GCLgrid3d(int n1in, int n2in, int n3in,
 	azimuth_y = -rotation_angle;
 
 	/* We now complete the latitude/longitude grid by projecting
-	lines from the baseline toward the computed pole.  Grid points 
+	lines from the baseline toward the computed pole.  Grid points
 	will be equally spaced along the gcp toward the pole, but the
 	lines they form will converge.  This is complicated greatly by
 	the grid origin parameters.  We could make this a function,
@@ -800,9 +803,9 @@ GCLgrid3d::GCLgrid3d(int n1in, int n2in, int n3in,
 	//
 	set_transformation_matrix();
 	Cartesian_point cpt;
-	for(i=0;i<n1;++i) 
+	for(i=0;i<n1;++i)
 	    for(j=0;j<n2;++j)
-		for(k=0;k<n3;++k) 
+		for(k=0;k<n3;++k)
 		{
 			cpt = gtoc(plat[i][j][k],plon[i][j][k],
 					pr[i][j][k]);
@@ -811,7 +814,7 @@ GCLgrid3d::GCLgrid3d(int n1in, int n2in, int n3in,
 			x2[i][j][k] = cpt.x2;
 			x3[i][j][k] = cpt.x3;
 		}
-	/* We have to compute the extents parameters as the minimum 
+	/* We have to compute the extents parameters as the minimum
 	and maximum in each cartesian direction */
 	this->compute_extents();
 
@@ -830,7 +833,7 @@ GCLscalarfield::GCLscalarfield() : GCLgrid()
 	val=NULL;
 }
 
-GCLscalarfield::GCLscalarfield(int n1size, int n2size)
+GCLscalarfield::GCLscalarfield(const int n1size, const int n2size)
 	: GCLgrid(n1size, n2size)
 {
 	val=create_2dgrid_contiguous(n1size, n2size);
@@ -840,13 +843,13 @@ GCLvectorfield::GCLvectorfield() : GCLgrid()
 	val=NULL;
 }
 
-GCLvectorfield::GCLvectorfield(int n1size, int n2size, int n3size)
+GCLvectorfield::GCLvectorfield(const int n1size, const int n2size, const int n3size)
 	: GCLgrid(n1size, n2size)
 {
 	nv=n3size;
 	val=create_3dgrid_contiguous(n1size, n2size, n3size);
 }
-GCLscalarfield::GCLscalarfield(const GCLscalarfield& g) 
+GCLscalarfield::GCLscalarfield(const GCLscalarfield& g)
 	 : GCLgrid(dynamic_cast<const GCLgrid&>(g))
 {
 	int i,j;
@@ -855,7 +858,7 @@ GCLscalarfield::GCLscalarfield(const GCLscalarfield& g)
 		for(j=0;j<n2;++j)
 			val[i][j]=g.val[i][j];
 }
-GCLscalarfield::GCLscalarfield(GCLgrid& g)
+GCLscalarfield::GCLscalarfield(const GCLgrid& g)
 	: GCLgrid(g)
 {
 	// Used to copy scalar attributes and grid data here.
@@ -865,7 +868,7 @@ GCLscalarfield::GCLscalarfield(GCLgrid& g)
 	for(i=0;i<n1;++i)
 		for(j=0;j<n2;++j)val[i][j]=0.0;
 }
-GCLvectorfield::GCLvectorfield(const GCLvectorfield& g) 
+GCLvectorfield::GCLvectorfield(const GCLvectorfield& g)
 	: GCLgrid(dynamic_cast<const GCLgrid&>(g))
 {
 	int i,j,k;
@@ -876,7 +879,7 @@ GCLvectorfield::GCLvectorfield(const GCLvectorfield& g)
 			for(k=0;k<nv;++k)
 				val[i][j][k]=g.val[i][j][k];
 }
-GCLvectorfield::GCLvectorfield(GCLgrid& g, int n3) : GCLgrid(g)
+GCLvectorfield::GCLvectorfield(const GCLgrid& g, const int n3) : GCLgrid(g)
 {
 	int i,j,k;
 	nv=n3;
@@ -893,7 +896,7 @@ GCLscalarfield3d::GCLscalarfield3d() : GCLgrid3d()
 	val=NULL;
 }
 
-GCLscalarfield3d::GCLscalarfield3d(int n1size, int n2size, int n3size)
+GCLscalarfield3d::GCLscalarfield3d(const int n1size, const int n2size, const int n3size)
 	: GCLgrid3d(n1size, n2size, n3size)
 {
 	val=create_3dgrid_contiguous(n1size, n2size, n3size);
@@ -903,13 +906,13 @@ GCLvectorfield3d::GCLvectorfield3d() : GCLgrid3d()
 	val=NULL;
 }
 
-GCLvectorfield3d::GCLvectorfield3d(int n1size, int n2size, int n3size, int n4)
-	: GCLgrid3d(n1size, n2size, n3size)
+GCLvectorfield3d::GCLvectorfield3d(const int n1size, const int n2size,
+  const int n3size, const int n4) : GCLgrid3d(n1size, n2size, n3size)
 {
 	nv=n4;
 	val=create_4dgrid_contiguous(n1size, n2size, n3size, n4);
 }
-GCLscalarfield3d::GCLscalarfield3d(const GCLscalarfield3d& g) 
+GCLscalarfield3d::GCLscalarfield3d(const GCLscalarfield3d& g)
 	: GCLgrid3d(dynamic_cast<const GCLgrid3d&>(g))
 {
 	int i,j,k;
@@ -919,7 +922,7 @@ GCLscalarfield3d::GCLscalarfield3d(const GCLscalarfield3d& g)
 			for(k=0;k<n3;++k)
 				val[i][j][k]=g.val[i][j][k];
 }
-GCLscalarfield3d::GCLscalarfield3d(GCLgrid3d& g) 
+GCLscalarfield3d::GCLscalarfield3d(const GCLgrid3d& g)
 	: GCLgrid3d(g)
 {
 	int i,j,k;
@@ -929,7 +932,7 @@ GCLscalarfield3d::GCLscalarfield3d(GCLgrid3d& g)
 			for(k=0;k<n3;++k)
 				val[i][j][k]=0.0;
 }
-GCLvectorfield3d::GCLvectorfield3d(const GCLvectorfield3d& g) 
+GCLvectorfield3d::GCLvectorfield3d(const GCLvectorfield3d& g)
 	: GCLgrid3d(dynamic_cast<const GCLgrid3d&>(g))
 {
 	int i,j,k,l;
@@ -941,7 +944,7 @@ GCLvectorfield3d::GCLvectorfield3d(const GCLvectorfield3d& g)
 				for(l=0;l<nv;++l)
 					val[i][j][k][l]=g.val[i][j][k][l];
 }
-GCLvectorfield3d::GCLvectorfield3d(GCLgrid3d& g, int n4) 
+GCLvectorfield3d::GCLvectorfield3d(const GCLgrid3d& g, const int n4)
 	: GCLgrid3d(g)
 {
 	int i,j,k,l;
@@ -954,8 +957,8 @@ GCLvectorfield3d::GCLvectorfield3d(GCLgrid3d& g, int n4)
 					val[i][j][k][l]=0.0;
 }
 /* File based constructors for field objects */
-GCLscalarfield::GCLscalarfield(string fname, string format,
-        bool enforce_object_type)
+GCLscalarfield::GCLscalarfield(const string fname, const string format,
+        const bool enforce_object_type)
     : GCLgrid(fname,format)
 {
     const string base_error("GCLscalarfield file constructor:  ");
@@ -983,7 +986,7 @@ GCLscalarfield::GCLscalarfield(string fname, string format,
                         + "fopen failed for file="
                         + dfile);
             long fvalstart;
-            // 3 is because there are 3 coordinates for each grid point 
+            // 3 is because there are 3 coordinates for each grid point
             fvalstart=sizeof(double)*n1*n2*3;
             if(fseek(fp,fvalstart,SEEK_SET))
             {
@@ -1010,7 +1013,7 @@ GCLscalarfield::GCLscalarfield(string fname, string format,
 
     }catch(...){throw;};
 }
-GCLscalarfield3d::GCLscalarfield3d(string fname, string format)
+GCLscalarfield3d::GCLscalarfield3d(const string fname, const string format)
     : GCLgrid3d(fname,format)
 {
     const string base_error("GCLscalarfield3d file constructor:  ");
@@ -1058,8 +1061,8 @@ GCLscalarfield3d::GCLscalarfield3d(string fname, string format)
 
     }catch(...){throw;};
 }
-GCLvectorfield::GCLvectorfield(string fname, string format,
-        bool enforce_object_type)
+GCLvectorfield::GCLvectorfield(const string fname, const string format,
+        const bool enforce_object_type)
     : GCLgrid(fname,format)
 {
     const string base_error("GCLvectorfield file constructor:  ");
@@ -1112,7 +1115,7 @@ GCLvectorfield::GCLvectorfield(string fname, string format,
         }
     }catch(...){throw;};
 }
-GCLvectorfield3d::GCLvectorfield3d(string fname, string format)
+GCLvectorfield3d::GCLvectorfield3d(const string fname, const string format)
     : GCLgrid3d(fname,format)
 {
     const string base_error("GCLvectorfield3d file constructor:  ");
@@ -1260,3 +1263,4 @@ void GCLgrid3d::compute_extents()
 	x3high += extents_dx;
 
 }
+} //end namespace

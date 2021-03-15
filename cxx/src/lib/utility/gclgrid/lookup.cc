@@ -10,9 +10,12 @@ extern void treex3_(double *, int *, double *, int *, double *);
 /* We use 3 element vector dot product, L2 norm, and cross products
 from this Antelope library.  This is for efficiency as blas versions of
 same have no advantage for 3 element vectors */
-#include "coords.h"
-#include "gclgrid.h"
-#include "perf.h"
+#include "pwmig/utility/coords.h"
+#include "pwmig/utility/gclgrid.h"
+#include "mspass/misc/blas.h"
+using namespace pwmig::gclgrid;
+namespace pwmig::gclgrid;
+{
 class GridCell
 {
 public:
@@ -26,12 +29,12 @@ public:
 		*point6, *point7, *point8;
 	dmatrix normals;
 	double *front, *back, *right, *left, *top, *bottom;
-	GridCell(GCLgrid3d& g, int ii, int jj, int kk);
+	GridCell(GCLgrid3d& g, const int ii, const int jj, const int kk);
 	GridCell(const GridCell& parent);
 	GridCell& operator=(const GridCell& parent);
-	bool InsideTest(double x, double y, double z, double tolerance);
+	bool InsideTest(const double x, const double y, const double z, const double tolerance);
 };
-GridCell::GridCell(GCLgrid3d& g, int i, int j, int k) 
+GridCell::GridCell(GCLgrid3d& g, const int i, const int j, const int k)
 		: points(3,8),normals(3,6)
 {
 	int l;
@@ -76,20 +79,20 @@ GridCell::GridCell(GCLgrid3d& g, int i, int j, int k)
 	// point 8
 	points(0,7)=g.x1[i+1][j+1][k];
 	points(1,7)=g.x2[i+1][j+1][k];
-	points(2,7)=g.x3[i+1][j+1][k];	
+	points(2,7)=g.x3[i+1][j+1][k];
 	point8=points.get_address(0,7);
-	// Set up similar pointers right away for normals 
+	// Set up similar pointers right away for normals
 	front=normals.get_address(0,0);
 	back=normals.get_address(0,1);
 	right=normals.get_address(0,2);
 	left=normals.get_address(0,3);
 	top=normals.get_address(0,4);
 	bottom=normals.get_address(0,5);
-	// now compute normals as average of cross products from alternate 
-	// pairs of vectors 
+	// now compute normals as average of cross products from alternate
+	// pairs of vectors
 	double a[3],b[3],cross1[3],cross2[3];
 	dr3sub(point4,point1,a);
-	dr3sub(point2,point1,b);	
+	dr3sub(point2,point1,b);
 	dr3cros(a,b,cross1);
 	dr3sub(point2,point3,a);
 	dr3sub(point4,point3,b);
@@ -159,7 +162,7 @@ GridCell::GridCell(const GridCell& parent)
 	normals=parent.normals;
 	// We can't just copy the pointers as they just point
 	// back to the dmatrix parents.  These are now copies.
-	// Might work sometimes, but very dangerous to not 
+	// Might work sometimes, but very dangerous to not
 	// refresh these
         point1=points.get_address(0,0);
         point2=points.get_address(0,1);
@@ -187,7 +190,7 @@ GridCell& GridCell::operator=(const GridCell& parent)
 	normals=parent.normals;
 	// We can't just copy the pointers as they just point
 	// back to the dmatrix parents.  These are now copies.
-	// Might work sometimes, but very dangerous to not 
+	// Might work sometimes, but very dangerous to not
 	// refresh these
         point1=points.get_address(0,0);
         point2=points.get_address(0,1);
@@ -207,14 +210,15 @@ GridCell& GridCell::operator=(const GridCell& parent)
     return *this;
 }
 /* Test if a point x,y,z is inside this cell object (distorted box).
-Tolerance gives the allowed slop.  Any point with a negative dot product 
+Tolerance gives the allowed slop.  Any point with a negative dot product
 on all 6 faces is considered inside by definition.  Outside is allowed
-a fraction value of tolerance.  By fractional I mean a dot product of 
+a fraction value of tolerance.  By fractional I mean a dot product of
 a unit vector from point 1 or point 7 (depending on face) with the unit
 normal has a projection less than that the tolerance number.  e.g. 0.1
 would mean the largest allowed outside projection is 0.1.
 */
-bool GridCell::InsideTest(double x, double y, double z, double tolerance)
+bool GridCell::InsideTest(const double x, const double y, const double z,
+	const double tolerance)
 {
 	double dx0[3];
 	double dxproj;
@@ -223,9 +227,9 @@ bool GridCell::InsideTest(double x, double y, double z, double tolerance)
 	dx0[2]=z-point1[2];
 	dr3norm(dx0);
 	dxproj=dr3dot(left,dx0);
-	if(dxproj>tolerance) return(false);	
+	if(dxproj>tolerance) return(false);
 	dxproj=dr3dot(bottom,dx0);
-	if(dxproj>tolerance) return(false);	
+	if(dxproj>tolerance) return(false);
 	dxproj=dr3dot(front,dx0);
 	if(dxproj>tolerance) return(false);
 	// Need vector from point 7 for other 3 sides
@@ -234,22 +238,22 @@ bool GridCell::InsideTest(double x, double y, double z, double tolerance)
 	dx0[2]=z-point7[2];
 	dr3norm(dx0);
 	dxproj=dr3dot(top,dx0);
-	if(dxproj>tolerance) return(false);	
+	if(dxproj>tolerance) return(false);
 	dxproj=dr3dot(back,dx0);
 	if(dxproj>tolerance) return(false);
 	dxproj=dr3dot(right,dx0);
-	if(dxproj>tolerance) return(false);	
+	if(dxproj>tolerance) return(false);
 	return(true);
-}	
-	
-	
+}
+
+
 static const double FeasibleTest(0.25);
 static const double AcceptableTest(0.1);
 static const double UnambiguousTest(1.0E-2);
 
 /* This is a recovery routines. The lookup function uses
-the direction set method which is known to fail in some situations in 
-strongly curved grid lines and at edges.  When the direction set method 
+the direction set method which is known to fail in some situations in
+strongly curved grid lines and at edges.  When the direction set method
 fails this procedures is called.  The algorithm uses a double search
 with a more loose feasability test followed by a more rigorous acceptance
 test.  The algorithm uses the GridCell object defined above.
@@ -260,13 +264,13 @@ Arguments:
 	i0, j0, k0 lookup iteration result
 	dr current computed distance range in unit cells between x,y,z
 		and lookup iteration final estimate.  Used to limit
-		grid search to + to - int(dr+1.5) 
-		Note it is a 3 component vector as I found a need to 
+		grid search to + to - int(dr+1.5)
+		Note it is a 3 component vector as I found a need to
 		make search distance variable in different directions
 		to reduce search times.
 */
-int *recover(GCLgrid3d& g, double x, double y, double z, 
-	int i0, int j0, int k0,double *dr)
+int *recover(GCLgrid3d& g, const double x, const double y, const double z,
+	const int i0, const int j0, const int k0,const double *dr)
 {
 	int i,j,k;
 	int search_range;
@@ -317,7 +321,7 @@ int *recover(GCLgrid3d& g, double x, double y, double z,
 	{
 
 		// This will silently take the first element in the list
-		// if none of the cells in the list pass the full 
+		// if none of the cells in the list pass the full
 		// acceptance test.  Assumption is that feasible means within
 		// extrapolation tolerance from any edge.
 		fptr=feasible.begin();
@@ -328,8 +332,8 @@ int *recover(GCLgrid3d& g, double x, double y, double z,
 			fptr++)
 		{
 			// hunt for the first call passing the unambiguous
-			// test.  If that fails we'll try again with 
-			// a lower tolerance 
+			// test.  If that fails we'll try again with
+			// a lower tolerance
 			if(fptr->InsideTest(x,y,z,UnambiguousTest))
 			{
 				result[0]=fptr->ii;
@@ -342,8 +346,8 @@ int *recover(GCLgrid3d& g, double x, double y, double z,
 			fptr++)
 		{
 			// hunt for the first call passing the unambiguous
-			// test.  If that fails we'll try again with 
-			// a lower tolerance 
+			// test.  If that fails we'll try again with
+			// a lower tolerance
 			if(fptr->InsideTest(x,y,z,AcceptableTest))
 			{
 				result[0]=fptr->ii;
@@ -356,35 +360,35 @@ int *recover(GCLgrid3d& g, double x, double y, double z,
 	return(result);
 }
 /* This is an indexing routine for finding the location of a point in 3 space
-within what I'm calling here a geographical curvilinear grid (gclgrid).  
-This algorithm will work only if the grid defines an object that is 
-best thought of as a distorted box filled with bricks of approximately 
+within what I'm calling here a geographical curvilinear grid (gclgrid).
+This algorithm will work only if the grid defines an object that is
+best thought of as a distorted box filled with bricks of approximately
 uniform initial size.  The grid points index the location of the bricks.
-Distortion means the bricks (and object) can be distorted in to 
+Distortion means the bricks (and object) can be distorted in to
 objects with nonorthogonal sides and variable spacing.  They are still
 indexable, however, because the grid points are assumed to be laid
-out in a regular order (C order with the last index varying most 
+out in a regular order (C order with the last index varying most
 rapidly.  The indices map positions in generalized coordinates in
-the grid.)  The algorith used here works only if the grid is not folded 
-or multivalued in any sense.  
+the grid.)  The algorith used here works only if the grid is not folded
+or multivalued in any sense.
 
-The basic  algorithm is an iterative one that computes the local 
+The basic  algorithm is an iterative one that computes the local
 transformation matrix at each step from a simple forward difference.
-That is, it essentially does a shift to the current grid position 
-defined by the generalized coordinate index positions i, j, and k.  
+That is, it essentially does a shift to the current grid position
+defined by the generalized coordinate index positions i, j, and k.
 At that point it computes a vector direction of a +1 shift in each
-grid position to define the number of unit cells to jump from the 
+grid position to define the number of unit cells to jump from the
 current position.  Because the grid spacing is not assumed to be
 uniform or rectilinear this in general requires an iteration.
-This is repeated until the requested point is in the cell 
-defined by a bounding box defined by the location 
+This is repeated until the requested point is in the cell
+defined by a bounding box defined by the location
 x1[i+1][j+1][k+1], x2[i+1][j+1][k+1], x3[i+1][j+1][k+1]  to
 x1[i][j][k], x2[i][j][k], x3[i][j][k]  This algorith converges
 rapidly if the initial starting point is not far from the final
-point.  For this reason we return the index positions through 
+point.  For this reason we return the index positions through
 the argument list.  When tracking a regular curve this approach
 should be reasonably fast if the previous index position is passed
-as the starting point for the search.  
+as the starting point for the search.
 
 Arguments:
 
@@ -394,20 +398,20 @@ Arguments:
 The primary return of this function is the variables ix1, ix2, ix3
 defined internally in the GCLgrid3d structure.  They are the index
 positions locating the cell that can be interpolated for the
-point x,y,z.  
+point x,y,z.
 
-This function returns an integer that defines the outcome of 
+This function returns an integer that defines the outcome of
 the lookup attempt.  If the lookup was successful it returns 0.
 If not, the following error codes are defined.
 	1 - requested point is outside the bounding box (normally this
 		should be handled silently)
-	-1 - convergence error;  could not locate x,y,z in the grid 
+	-1 - convergence error;  could not locate x,y,z in the grid
 		(this most likely indicates a ill defined grid that
 		does not match the expectations of the library)
 The following former return codes have been depricated May 2007:
-	2 - requested point is in a grey area near the edge of the 
+	2 - requested point is in a grey area near the edge of the
 		grid.  Caller may want to attempt interpolation, but
-		should be warned it is dangerous.  i.e. it is 
+		should be warned it is dangerous.  i.e. it is
 		algorithm dependent how this case should be handled.
 	-2 - total failure.  Attempted nothing because either the
 		cartesian grid is not defind.
@@ -427,7 +431,7 @@ randomly when applied to grids with strongly distorted cells.  The
 problem was eventually tracked to a fundamental error in the original
 version of this algorithm.  Previously I used the projection of points
 onto the cell edges as basis vectors for generalized coordinates
-defined by grid lines.  This failed in curved grids because the 
+defined by grid lines.  This failed in curved grids because the
 correct approach is to compute the Jacobian of the transformation for
 each cell.  When the cells have nearly orthogonal sides this algorithm
 and the older one are nearly equivalent because then the Jacobian is
@@ -440,12 +444,12 @@ const int MAXIT=50;	//convergence count limit
 // with current magic number of 1.5 added to this number in recover
 // function above. Change these if that number changes.
 const double maximum_search_distance(5.0);
-const double minimum_search_distance(1.0);  
+const double minimum_search_distance(1.0);
 // If convergence final delta is more than this many grid cells away in any
 // generalized coordinate direction, recover is not attempted
 // This saves time in curved grids inside the bounding box
 const double border_cutoff(2.0);
-int GCLgrid3d::lookup(double x, double y, double z) 
+int GCLgrid3d::lookup(const double x, const double y, const double z)
 {
 	int i,j,k;
 	int ilast, jlast, klast;
@@ -468,8 +472,8 @@ int GCLgrid3d::lookup(double x, double y, double z)
 
 
 	/* return immediately if outside the extents bounding box */
-	if( (x > (x1high)) || (x < (x1low)) 
-	  ||  (y > (x2high)) || (y < (x2low)) 
+	if( (x > (x1high)) || (x < (x1low))
+	  ||  (y > (x2high)) || (y < (x2low))
 	  ||  (z > (x3high)) || (z < (x3low)) ) return(1);
 
 	i = ix1;
@@ -526,7 +530,7 @@ int GCLgrid3d::lookup(double x, double y, double z)
 		treex3_(J.get_address(0,0),&three,
 			Jinv.get_address(0,0),&three,&det);
 		dxunit=Jinv*dxraw;
-		
+
 		// This is necessary as int truncation for
 		// negative numbers removes the fractional
 		// part.  The effectively rounds the opposite
@@ -553,25 +557,25 @@ int GCLgrid3d::lookup(double x, double y, double z)
 		}
 		/* We reset i, j, or k if they move outside the grid
 		and just continue the iteration.  We catch nonconvergence
-		when the loop is exited and try to decide if the 
-		nonconvergence is nonconvergence or a point in the 
+		when the loop is exited and try to decide if the
+		nonconvergence is nonconvergence or a point in the
 		grey zone between the bounding box and the actual grid. */
-		if(i >= (n1-1) ) 
+		if(i >= (n1-1) )
 			i = n1-2;
-		if(j >= (n2-1) ) 
+		if(j >= (n2-1) )
 			j = n2-2;
-		if(k >= (n3-1) ) 
+		if(k >= (n3-1) )
 			k = n3-2;
-		if(i<0) 
+		if(i<0)
 			i=0;
-		if(j<0) 
+		if(j<0)
 			j=0;
-		if(k<0) 
+		if(k<0)
 			k=0;
 		drunit_last=drunit;
 		ctest = abs(di)+abs(dj)+abs(dk);
 		++count;
-		if(i==ilast && j==jlast && k==klast && ctest>0) 
+		if(i==ilast && j==jlast && k==klast && ctest>0)
 			break;
 		else
 		{
@@ -584,7 +588,7 @@ int GCLgrid3d::lookup(double x, double y, double z)
 	ix1 = i;
 	ix2 = j;
 	ix3 = k;
- 
+
 	if(ctest==0)
 	{
             if(fast_lookup)
@@ -600,7 +604,7 @@ int GCLgrid3d::lookup(double x, double y, double z)
 	}
 
 	// Use dxunit values to define search distance in each direction
-	double nrmdel,search_distance[3]; 
+	double nrmdel,search_distance[3];
 	for(ii=0;ii<3;++ii)search_distance[ii]=fabs(dxunit(ii));
 	// This is aimed to reduce search time for points outside the actual
 	// boundary.
@@ -609,7 +613,7 @@ int GCLgrid3d::lookup(double x, double y, double z)
 	{
 		for(ii=0;ii<3;++ii)
 		{
-			if(search_distance[ii]>border_cutoff) 
+			if(search_distance[ii]>border_cutoff)
 			{
 				return(1);
 			}
@@ -624,10 +628,10 @@ int GCLgrid3d::lookup(double x, double y, double z)
 
 	}
 
-	
+
 	int *irecov=recover(*this,x,y,z,ix1,ix2,ix3,search_distance);
 	int iret;
-	if(irecov[0]<0) 
+	if(irecov[0]<0)
 	{
 		this->reset_index();
 		iret=-1;
@@ -643,11 +647,11 @@ int GCLgrid3d::lookup(double x, double y, double z)
 	return(iret);
 }
 //
-// 2d version here.  General algorithm and symbols are the same but 
+// 2d version here.  General algorithm and symbols are the same but
 // there are major differences in details.  These are noted below.
 // Error's thrown have the same pattern as 3d case.
 //
-int GCLgrid::lookup(double target_lat, double target_lon) 
+int GCLgrid::lookup(const double target_lat, const double target_lon)
 {
 	int i,j;
 	double dxi[3],dxj[3];
@@ -663,7 +667,7 @@ int GCLgrid::lookup(double target_lat, double target_lon)
 
 	//
 	// This can incorrectly throw an error if the 2d grid is highly
-	// warped, but it seems the safest initial value for this 
+	// warped, but it seems the safest initial value for this
 	//
 	r0p=r0;
 	target_x = gtoc(target_lat, target_lon, r0p);
@@ -672,8 +676,8 @@ int GCLgrid::lookup(double target_lat, double target_lon)
 	z=target_x.x3;
 
 	/* return immediately if outside the extents bounding box */
-	if( (x > (x1high)) || (x < (x1low)) 
-	  ||  (y > (x2high)) || (y < (x2low)) 
+	if( (x > (x1high)) || (x < (x1low))
+	  ||  (y > (x2high)) || (y < (x2low))
 	  ||  (z > (x3high)) || (z < (x3low)) ) return(1);
 
 	i = ix1;
@@ -688,7 +692,7 @@ int GCLgrid::lookup(double target_lat, double target_lon)
 	{
 		//
 		//  A 2d GCLgrid is a warped surface.  To allow the surface
-		//  to be not just be radial shell we have to constantly 
+		//  to be not just be radial shell we have to constantly
 		//  update the radius vector and the effective target vector
 		//  Confusing difference from 3D case, but necessary
 		//
@@ -736,8 +740,9 @@ int GCLgrid::lookup(double target_lat, double target_lon)
 	if(ctest==0) return(0);
 	if((abs(di)<=1) && (abs(dj)<=1))
 		return(2);
-	if((count>=MAXIT)) 
+	if((count>=MAXIT))
 		return(-1);
 	else
 		return(1);
 }
+} //end namespace
