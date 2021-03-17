@@ -1,11 +1,14 @@
 #include <sstream>
-#include "PfStyleMetadata.h"
+#include "mspass/utility/Metadata.h"
+#include "mspass/utility/AntelopePf.h"
 #include "pwmig/utility/gclgrid.h"
 //#include "seispp.h"
 using namespace std;
 using namespace pwmig::gclgrid;
+using mspass::utility::Metadata;
+using mspass::utility::AntelopePf;
 //using namespace SEISPP;
-namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
 {
 /*! \brief Object to apply tapers at the edges of GCLfield objects.
 
@@ -111,8 +114,8 @@ TaperGrid::TaperGrid(const Metadata& md)
 TaperGrid::TaperGrid(const string fname)
 {
     try {
-        PfStyleMetadata mdtmp=pfread(fname);
-	*this=TaperGrid(mdtmp);
+			AntelopePf mdtmp(fname);
+			*this=TaperGrid(mdtmp);
     }catch(...){throw;};
 }
 TaperGrid::TaperGrid(const TaperGrid& parent)
@@ -166,7 +169,7 @@ void TaperGrid::apply(GCLscalarfield3d& g)
 	if(applylow[0])
 	{
 		if( (widthlow[0]>(g.n1)/2) || (widthlow[0]<0.0))
-			throw SeisppError(build_apply_error_message(baseerror,g.n1,widthlow[0]));
+			throw GCLgridError(build_apply_error_message(baseerror,g.n1,widthlow[0]));
 		slope=(1.0-xlvalues[0])/widthlow[0];
 		endtaper=static_cast<int>(widthlow[0]);
 		for(i=0;i<endtaper;++i)
@@ -180,7 +183,7 @@ void TaperGrid::apply(GCLscalarfield3d& g)
 	if(applylow[1])
 	{
 		if( (widthlow[1]>(g.n2)/2) || (widthlow[1]<0.0))
-			throw SeisppError(build_apply_error_message(baseerror,g.n2,widthlow[1]));
+			throw GCLgridError(build_apply_error_message(baseerror,g.n2,widthlow[1]));
 		slope=(1.0-xlvalues[1])/widthlow[1];
 		endtaper=static_cast<int>(widthlow[1]);
 		for(j=0;j<endtaper;++j)
@@ -194,7 +197,7 @@ void TaperGrid::apply(GCLscalarfield3d& g)
 	if(applylow[2])
 	{
 		if( (widthlow[2]>(g.n2)/2) || (widthlow[2]<0.0))
-			throw SeisppError(build_apply_error_message(baseerror,g.n3,widthlow[2]));
+			throw GCLgridError(build_apply_error_message(baseerror,g.n3,widthlow[2]));
 		slope=(1.0-xlvalues[2])/widthlow[2];
 		endtaper=static_cast<int>(widthlow[2]);
 		for(k=0;k<endtaper;++k)
@@ -208,7 +211,7 @@ void TaperGrid::apply(GCLscalarfield3d& g)
 	if(applyhigh[0])
 	{
 		if( (widthhigh[0]>(g.n1)/2) || (widthhigh[0]<0.0))
-			throw SeisppError(build_apply_error_message(baseerror,g.n1,widthhigh[0]));
+			throw GCLgridError(build_apply_error_message(baseerror,g.n1,widthhigh[0]));
 		slope=(1.0-xhvalues[0])/widthhigh[0];
 		endtaper=static_cast<int>(widthhigh[0]);
 		for(ii=0,i=(g.n1)-1;ii<endtaper;--i,++ii)
@@ -222,7 +225,7 @@ void TaperGrid::apply(GCLscalarfield3d& g)
 	if(applyhigh[1])
 	{
 		if( (widthhigh[1]>(g.n2)/2) || (widthhigh[1]<0.0))
-			throw SeisppError(build_apply_error_message(baseerror,g.n2,widthhigh[1]));
+			throw GCLgridError(build_apply_error_message(baseerror,g.n2,widthhigh[1]));
 		slope=(1.0-xhvalues[1])/widthhigh[1];
 		endtaper=static_cast<int>(widthhigh[1]);
 		for(ii=0,j=(g.n2)-1;ii<endtaper;--j,++ii)
@@ -236,7 +239,7 @@ void TaperGrid::apply(GCLscalarfield3d& g)
 	if(applyhigh[2])
 	{
 		if( (widthhigh[2]>(g.n2)/2) || (widthhigh[2]<0.0))
-			throw SeisppError(build_apply_error_message(baseerror,g.n3,widthhigh[2]));
+			throw GCLgridError(build_apply_error_message(baseerror,g.n3,widthhigh[2]));
 		slope=(1.0-xhvalues[2])/widthhigh[2];
 		endtaper=static_cast<int>(widthhigh[2]);
 		for(ii=0,k=(g.n2)-1;ii<endtaper;--k,++ii)

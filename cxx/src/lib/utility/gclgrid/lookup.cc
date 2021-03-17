@@ -10,11 +10,14 @@ extern void treex3_(double *, int *, double *, int *, double *);
 /* We use 3 element vector dot product, L2 norm, and cross products
 from this Antelope library.  This is for efficiency as blas versions of
 same have no advantage for 3 element vectors */
+#include "mspass/utility/dmatrix.h"
 #include "pwmig/utility/coords.h"
 #include "pwmig/utility/gclgrid.h"
-#include "mspass/misc/blas.h"
+#include "misc/blas.h"
 using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+using mspass::utility::dmatrix;
+using mspass::utility::dvector;
+namespace pwmig::gclgrid
 {
 class GridCell
 {
@@ -296,7 +299,6 @@ int *recover(GCLgrid3d& g, const double x, const double y, const double z,
 	if(kmax>=(g.n3-1))kmax=g.n3-2;
 	list<GridCell> feasible;
 	list<GridCell>::iterator fptr;
-	double drm;
 	for(i=imin;i<=imax;++i)
 	  for(j=jmin;j<=jmax;++j)
 	    for(k=kmin;k<=kmax;++k)
@@ -455,8 +457,8 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 	int ilast, jlast, klast;
 	int ii;
 	double dxi[3],dxj[3],dxk[3];
-	double nrmdxi,nrmdxj,nrmdxk;
-	double dxiunit,dxjunit,dxkunit;
+	//double nrmdxi,nrmdxj,nrmdxk;
+	//double dxiunit,dxjunit,dxkunit;
 	int di, dj, dk;
 	int ctest;
 	int count=0;
@@ -506,9 +508,9 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 		dxk[1] = (x2[i][j][k+1]) - (x2[i][j][k]);
 		dxk[2] = (x3[i][j][k+1]) - (x3[i][j][k]);
 
-		nrmdxi = dr3mag(dxi);
-		nrmdxj = dr3mag(dxj);
-		nrmdxk = dr3mag(dxk);
+		//nrmdxi = dr3mag(dxi);
+		//nrmdxj = dr3mag(dxj);
+		//nrmdxk = dr3mag(dxk);
 
 		dxraw(0) = x - (x1[i][j][k]);
 		dxraw(1) = y - (x2[i][j][k]);
@@ -604,7 +606,7 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 	}
 
 	// Use dxunit values to define search distance in each direction
-	double nrmdel,search_distance[3];
+	double search_distance[3];
 	for(ii=0;ii<3;++ii)search_distance[ii]=fabs(dxunit(ii));
 	// This is aimed to reduce search time for points outside the actual
 	// boundary.

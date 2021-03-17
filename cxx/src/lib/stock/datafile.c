@@ -17,8 +17,8 @@
 
 #include "stock.h"
 
-//static char PWMIGpath[FILENAME_MAX] ; 
-/* This was the old version of this.   Changed to a home directory to be 
+//static char PWMIGpath[FILENAME_MAX] ;
+/* This was the old version of this.   Changed to a home directory to be
 less restrictive.
 static char *Default_pwmigpath = "/opt/pwmig" ;
 */
@@ -29,62 +29,62 @@ char *getpwmig()
     const char *defaultpath="~/pwmig";
 
     if ( (pwmigpath = getenv ( "PWMIG" )) != 0 ) {
-	return pwmigpath ; 
+	return pwmigpath ;
     }
     else
         return strdup(defaultpath);
 }
     /*Original had all this stuff - removed that functionality to get rid of elog
-      I am retaining it during debug in case I need to restore some of this 
+      I am retaining it during debug in case I need to restore some of this
       functionality.  Eventually this debris should be removed. */
 
-//    elog_query ( ELOG_ARGV, 0, (void *) &argv ) ; 
+//    elog_query ( ELOG_ARGV, 0, (void *) &argv ) ;
 //    if ( argv == 0 ) { /* elog not initialized, give up */
-//	return Default_pwmigpath ; 
-//    } else { 
+//	return Default_pwmigpath ;
+//    } else {
 //	me = argv[0] ;
 //    }
 //
-//    if ( strchr(me, '/') == 0 ) { 
+//    if ( strchr(me, '/') == 0 ) {
 //	/* bare name -- have to find along PATH */
-//	char *path ; 
-//	if ( (path = datapath ( "PATH", 0, me, "" )) == 0 ) { 
+//	char *path ;
+//	if ( (path = datapath ( "PATH", 0, me, "" )) == 0 ) {
 //	    return Default_pwmigpath ; /* can't figure out path to program */
-//	} else { 
-//	    strncpy ( PWMIGpath, path, FILENAME_MAX ) ; 
-//	    free ( path ) ; 
+//	} else {
+//	    strncpy ( PWMIGpath, path, FILENAME_MAX ) ;
+//	    free ( path ) ;
 //	}
 //    } else {
 //      strcpy ( PWMIGpath, me ) ;
-//      slash = strrchr(PWMIGpath, '/' ) ; 
-//      *slash = 0 ; 
+//      slash = strrchr(PWMIGpath, '/' ) ;
+//      *slash = 0 ;
 //      if ( *me != '/' ) {
-//	  char *old, *pwd ; 
+//	  char *old, *pwd ;
 //	  /* relative path! */
-//	  old = getcwd(0, FILENAME_MAX) ; 
+//	  old = getcwd(0, FILENAME_MAX) ;
 //	  if ( chdir(PWMIGpath) != 0 ) {
 //	    return Default_pwmigpath ; /* die ( 1, "Can't cd to bin directory '%s'\n", PWMIGpath ) ; */
 //	  }
 //	  pwd = getcwd(0, FILENAME_MAX);
-//	  strcpy ( PWMIGpath, pwd ) ; 
-//	  free ( pwd ) ; 
+//	  strcpy ( PWMIGpath, pwd ) ;
+//	  free ( pwd ) ;
 //	  if ( chdir(old) != 0 ) {
-//	    die ( 1, "getpwmig can't return to original directory '%s'\n", old ) ; 
+//	    die ( 1, "getpwmig can't return to original directory '%s'\n", old ) ;
 //	  }
-//	  free ( old ) ; 
+//	  free ( old ) ;
 //      }
 //    }
 //
-//    n = strlen(PWMIGpath) ; 
+//    n = strlen(PWMIGpath) ;
 //    if (   PWMIGpath[n-4] != '/'
 //	|| PWMIGpath[n-3] != 'b'
 //	|| PWMIGpath[n-2] != 'i'
 //	|| PWMIGpath[n-1] != 'n' ) {
-//	return Default_pwmigpath ; /* 
+//	return Default_pwmigpath ; /*
 //	    die ( 0, "bad configuration: '%s' has no final bin component.\n",
 //	    PWMIGpath ) ; */
 //	}
-//    PWMIGpath[n-4] = 0 ; 
+//    PWMIGpath[n-4] = 0 ;
 //
 //    return PWMIGpath;
 //}
@@ -119,7 +119,7 @@ char *datafile (const char *envname,const char *filename)
     basename = strrchr (filename, '/');
     if (basename)
 	basename++;
-    /* This chain of conditionals strikes me as a tad 
+    /* This chain of conditionals strikes me as a tad
        dangerous, but known to work.   To work it depends on
        an assumption about how this is executed that is pretty
        subtle.   That is, it requires the set of conditionals

@@ -3,7 +3,7 @@
 using namespace std;
 using namespace pwmig::gclgrid;
 using mspass::utility::dmatrix;
-namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
 {
 /* Extracts the Cartesian components of a GCLgrid3d object along
 a desired gridline from a specified offset.  The result is returned
@@ -30,7 +30,7 @@ to extract from the x3 offset of 8 use
 
 Some testing is performed on the offset values. If the request is
 inconsistent with a dimensions of the grid the routine will throw a
-GCLgrid_error object with a diagnostic message.
+GCLgridError object with a diagnostic message.
 
 Author:  Gary Pavlis
 Written:  June 2003
@@ -41,7 +41,7 @@ dmatrix *extract_gridline(const GCLgrid3d& grid,
     const int comp, const bool reverse)
 {
 	dmatrix coords;
-	int npts, i0, di;
+	int npts, di;
 	int i,ii;
 	if(reverse)
 		di = -1;
@@ -54,7 +54,7 @@ dmatrix *extract_gridline(const GCLgrid3d& grid,
 			npts = ix1 + 1;
 		else
 			npts = grid.n1 - ix1;
-		if(npts<0)throw(GCLgrid_error("extract_gridline:  requested offset inconsistent with grid dimensions\n"));
+		if(npts<0)throw(GCLgridError("extract_gridline:  requested offset inconsistent with grid dimensions\n"));
 		coords=dmatrix(3,npts);
 		for(i=ix1,ii=0;ii<npts;i+=di,++ii)
 		{
@@ -68,7 +68,7 @@ dmatrix *extract_gridline(const GCLgrid3d& grid,
 			npts = ix2 + 1;
 		else
 			npts = grid.n2 - ix2;
-		if(npts<0)throw(GCLgrid_error("extract_gridline:  requested offset inconsistent with grid dimensions\n"));
+		if(npts<0)throw(GCLgridError("extract_gridline:  requested offset inconsistent with grid dimensions\n"));
 		coords=dmatrix(3,npts);
 		for(i=ix2,ii=0;ii<npts;i+=di,++ii)
 		{
@@ -82,7 +82,7 @@ dmatrix *extract_gridline(const GCLgrid3d& grid,
 			npts = ix3 + 1;
 		else
 			npts = grid.n3 - ix3;
-		if(npts<0)throw(GCLgrid_error("extract_gridline:  requested offset inconsistent with grid dimensions\n"));
+		if(npts<0)throw(GCLgridError("extract_gridline:  requested offset inconsistent with grid dimensions\n"));
 		coords=dmatrix(3,npts);
 		for(i=ix3,ii=0;ii<npts;i+=di,++ii)
 		{
@@ -92,7 +92,7 @@ dmatrix *extract_gridline(const GCLgrid3d& grid,
 		}
 		break;
 	default:
-		throw(GCLgrid_error("extract_gridline function: Illegal component requested.  Must be 1 2 or 3"));
+		throw(GCLgridError("extract_gridline function: Illegal component requested.  Must be 1 2 or 3"));
 	}
 	dmatrix *dmptr=new dmatrix(coords);
 	return dmptr;

@@ -1,7 +1,8 @@
+#include <sstream>
 #include "pwmig/utility/gclgrid.h"
 using namespace std;
 using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
 {
 /* This file contains a pair of functions that extract a single component
 from a vector field and return the result as a scalar field defined
@@ -16,12 +17,12 @@ GCLscalarfield *extract_component(const GCLvectorfield& f,const int component)
 	int i,j;
 	if( (component<0) || (component>=f.nv) )
 	{
-		elog_notify(0,
-		 "extract_component:  requested component %d is not consistent with field dimension %d\n",
-		 component, f.nv);
-		throw 1;
+		stringstream ss;
+		ss << "extract_component:  requested component"<<component
+		  << " is not consistent with field vector size="<<f.nv<<endl;
+		throw GCLgridError(ss.str());
 	}
-	GCLscalarfield *sf = new GCLscalarfield(dynamic_cast<GCLgrid&>(f));
+	GCLscalarfield *sf = new GCLscalarfield(dynamic_cast<const GCLgrid&>(f));
 	for(i=0;i<f.n1;++i)
 		for(j=0;j<f.n2;++j)
 		{
@@ -34,12 +35,12 @@ GCLscalarfield3d *extract_component(const GCLvectorfield3d& f,const int componen
 	int i,j,k;
 	if( (component<0) || (component>=f.nv) )
 	{
-		elog_notify(0,
-		 "extract_component:  requested component %d is not consistent with field3d dimension %d\n",
-		 component, f.nv);
-		throw 1;
+		stringstream ss;
+		ss << "extract_component:  requested component"<<component
+		  << " is not consistent with field vector size="<<f.nv<<endl;
+		throw GCLgridError(ss.str());
 	}
-	GCLscalarfield3d *sf = new GCLscalarfield3d(dynamic_cast<GCLgrid3d&>(f));
+	GCLscalarfield3d *sf = new GCLscalarfield3d(dynamic_cast<const GCLgrid3d&>(f));
 	for(i=0;i<f.n1;++i)
 	    for(j=0;j<f.n2;++j)
 		for(k=0;k<f.n3;++k)

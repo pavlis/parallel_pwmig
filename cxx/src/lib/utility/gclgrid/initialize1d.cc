@@ -1,10 +1,9 @@
-#include "interpolator1d.h"
 #include "pwmig/utility/gclgrid.h"
 #include "pwmig/utility/interpolator1d.h"
 using namespace std;
 using namespace INTERPOLATOR1D;
 using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
 {
 /* This group of functions initialize 3d fields with an input 1d function.  This can be used, for
 example, to initialize a grid defining a 3d velocity model with a 1d velocity model background.
@@ -26,7 +25,7 @@ void  initialize_1Dscalar(GCLscalarfield3d& field,
 	int i,j,k,kk;
 	// First make sure the input is valid
 	if( (val1d.size()!= z1d.size()) || (z1d.size()!=grad.size()) )
-		throw(GCLgrid_error(string("initialize_1Dscalar:  input 1d model vector sizes do not match")));
+		throw(GCLgridError(string("initialize_1Dscalar:  input 1d model vector sizes do not match")));
 	// a few useful variables that are best set once as they are used many times below
 	int n1dsize=val1d.size();
 	int grid_top=field.n3-1;  // index to top surface of grid
@@ -44,7 +43,9 @@ void  initialize_1Dscalar(GCLscalarfield3d& field,
 			for(k=0;k<field.n3;++k)
 			{
 				grid_depth=field.depth(i,j,k);
-				igrid=irregular_lookup(grid_depth,&(z1d[0]),n1dsize);
+				/* An obnoxious const api collision.  z1d is not altered but
+				the function doesn't declare these const */
+				igrid=irregular_lookup(grid_depth,const_cast<double*>(&(z1d[0])),n1dsize);
 				if(igrid<0)
 					// case for above top 1d grid point (surface)
 					field.val[i][j][k]=val1d[0];

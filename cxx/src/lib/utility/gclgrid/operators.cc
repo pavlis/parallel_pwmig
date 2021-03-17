@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <float.h>
-#include "elog.h"
+#include <sstream>
+#include "mspass/utility/SphericalCoordinate.h"
 #include "pwmig/utility/gclgrid.h"
 using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+using mspass::utility::deg;
+namespace pwmig::gclgrid
 {
 /* modified Nov. 2003.  Original assumed cartesian frames for g and the current object were
 identical.  We have no reason to believe this should always be so.  Now all these operators
@@ -435,7 +437,8 @@ void GCLscalarfield3d::operator+=(GCLscalarfield3d& g)
 		remap=true;
 
 	g.reset_index();
-
+  // Used only if there are errors but needs to be defined here
+	stringstream ss;
 	for(i=0;i<n1;++i)
 	{
 		for(j=0;j<n2;++j)
@@ -459,7 +462,8 @@ void GCLscalarfield3d::operator+=(GCLscalarfield3d& g)
 
 				case -2:
 				case 2:
-					elog_die(0,(char*)"Coding error:  return code %d from GCLgrid3d::lookup method depricated\n",err);
+					ss << "Coding error:  return code "<<err<<" from GCLgrid3d::lookup method depricated"<<endl;
+					throw GCLgridError(ss.str());
 				case 1:
 				case -1:
 					g.reset_index();
@@ -470,7 +474,8 @@ void GCLscalarfield3d::operator+=(GCLscalarfield3d& g)
 
 					break;
 				default:
-					elog_die(0,(char*)"Illegal return code %d from GCLgrid3d::lookup function\n",err);
+				  ss << "Illegal return code "<<err<<" from GCLgrid3d::lookup function"<<endl;
+					throw GCLgridError(ss.str());
 				};
 			}
 		}
@@ -496,7 +501,7 @@ void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
 		remap=false;
 	else
 		remap=true;
-
+  stringstream ss;
 	for(i=0;i<n1;++i)
 	{
 		for(j=0;j<n2;++j)
@@ -520,7 +525,8 @@ void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
 				{
 				case -2:
 				case 2:
-					elog_die(0,(char*)"Coding error:  return code %d from GCLgrid3d::lookup method depricated\n",err);
+				  ss << "Coding error:  return code "<<err<<" from GCLgrid3d::lookup method depricated"<<endl;
+				  throw GCLgridError(ss.str());
 				case 1:
 				case -1:
 					g.reset_index();
@@ -531,7 +537,9 @@ void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
 					delete [] valnew;
 					break;
 				default:
-					elog_die(0,(char*)"Illegal return code %d from GCLgrid3d::lookup function\n",err);
+				  stringstream ss;
+				  ss << "Illegal return code "<<err<<" from GCLgrid3d::lookup function"<<endl;
+				  throw GCLgridError(ss.str());
 				};
 			}
 		}
@@ -559,7 +567,7 @@ void GCLscalarfield::operator += (GCLscalarfield& g)
 				g.reset_index();
 				break;
 			case -2:
-				elog_die(0,(char*)"Coding error:  incomplete GCLgrid object cannot be mapped\n");
+			  throw GCLgridError("Coding error:  incomplete GCLgrid object cannot be mapped\n");
 			case -1:
 				g.reset_index();
 				// Try again after a reset index
@@ -573,7 +581,9 @@ void GCLscalarfield::operator += (GCLscalarfield& g)
 
 				break;
 			default:
-				elog_die(0,(char*)"Illegal return code %d from lookup function\n",err);
+			  stringstream ss;
+		    ss << "Illegal return code "<<err<<" from GCLgrid3d::lookup function"<<endl;
+			  throw GCLgridError(ss.str());
 			};
 		}
 	}
@@ -586,12 +596,12 @@ void GCLvectorfield::operator += (GCLvectorfield& g)
 	int err;
 
 	g.reset_index();
-
+  stringstream ss;
 	for(i=0;i<n1;++i)
 	{
 		for(j=0;j<n2;++j)
 		{
-                        Cartesian_point cx;
+      Cartesian_point cx;
 
 			err=g.lookup(lat(i,j),lon(i,j));
 			switch(err)
@@ -601,7 +611,7 @@ void GCLvectorfield::operator += (GCLvectorfield& g)
 				g.reset_index();
 				break;
 			case -2:
-				elog_die(0,(char*)"Coding error:  incomplete GCLgrid object cannot be mapped\n");
+			  throw GCLgridError("Coding error:  incomplete GCLgrid object cannot be mapped\n");
 			case -1:
 				g.reset_index();
 				// Try again after a reset index
@@ -616,7 +626,8 @@ void GCLvectorfield::operator += (GCLvectorfield& g)
 
 				break;
 			default:
-				elog_die(0,(char*)"Illegal return code %d from lookup function\n",err);
+			  ss << "Illegal return code "<<err<<" from GCLgrid3d::lookup function"<<endl;
+			  throw GCLgridError(ss.str());
 			};
 		}
 	}
@@ -641,14 +652,14 @@ void GCLvectorfield3d::operator *= (const double c1)
 }
 void GCLscalarfield::operator *= (const double c1)
 {
-	int i,j,k;
+	int i,j;
 	for(i=0;i<n1;++i)
 		for(j=0;j<n2;++j)
 			val[i][j]*=c1;
 }
 void GCLvectorfield::operator *= (const double c1)
 {
-	int i,j,k,l;
+	int i,j,l;
 	for(i=0;i<n1;++i)
 		for(j=0;j<n2;++j)
 			for(l=0;l<nv;++l)

@@ -10,6 +10,8 @@
 namespace pwmig::gclgrid
 {
 using namespace std;
+using mspass::utility::dmatrix;
+using namespace pwmig::gclgrid;
 
 //==================================================================
 /*!
@@ -195,13 +197,13 @@ public:
 /*!
  Returns the transformation matrix for this grid as a 3x3 dmatrix object.
 */
-	dmatrix fetch_transformation_matrix();
+	dmatrix fetch_transformation_matrix() const;
 /*!
  Returns a newly allocated 3 vector of double containing a copy of the translation
  vector defining the GCLgrid transformation property.  The user must be sure to
  call delete [] after using this vector to avoid a memory leak.
 */
-	double *fetch_translation_vector();
+	double *fetch_translation_vector() const;
 /*!
  Convert Cartesian coordinates to geographical coordinates.
  \return Geographic_point data structure
@@ -210,13 +212,13 @@ public:
  \param x2p - Cartesian x2 coordinate of point to convert
  \param x3p - Cartesian x3 coordinate of point to convert
 */
-	Geographic_point ctog(const double x1p,const double x2p, const double x3p);
+	Geographic_point ctog(const double x1p,const double x2p, const double x3p) const;
 /*!
  Convert from Cartesian coordinates to geographical coordinates.
  \return Geographic_point data structure
  \param p point to convert stored in a Cartesian_point data structure
 */
-	Geographic_point ctog(const Cartesian_point p);
+	Geographic_point ctog(const Cartesian_point p) const;
 /*!
  Convert from geographical to Cartesian coordinates in the GCLgrid
  coordinate system.
@@ -226,7 +228,7 @@ public:
  \param plon Longitude (radians) of point to convert.
  \param pr Earth radius (km) of point to convert.
 */
-	Cartesian_point gtoc(const double plat, const double plon, const double pr);
+	Cartesian_point gtoc(const double plat, const double plon, const double pr) const;
 /*!
  Convert from geographical to Cartesian coordinates in the GCLgrid
  coordinate system.
@@ -234,9 +236,9 @@ public:
  \return Cartesian_point data structure
  \param p point to convert stored in a Geographic_point data structure.
 */
-	Cartesian_point gtoc(const Geographic_point p);
-	double depth(const Cartesian_point p);
-	double depth(const Geographic_point p);
+	Cartesian_point gtoc(const Geographic_point p) const;
+	double depth(const Cartesian_point p) const;
+	double depth(const Geographic_point p) const;
 /*!
  This member function sets the x1min, x1max, x2min, x2max, x3min, and x3max bounding
  box attribute.  These define the "extents" of the name.  Should be needed only if one
@@ -263,7 +265,7 @@ an assumption that the next point requested will be nearby.  This method
 is used to ask what the current index position.
 \param ind vector of ints of length sufficient to hold the index  (2 for 2d and 3 for 3d grids)
 */
-	virtual void get_index(const int *ind)=0;
+	virtual void get_index(int *ind)=0;
 /*!
  Comparison of two grids for equality.  Equality in this context is NOT the obvious.
  Equality means the transformation properties of the two grids being compared are the same.
@@ -443,7 +445,7 @@ public:
 	*/
 	int lookup(const double x1p, const double x2p);
 	void reset_index() {ix1=i0; ix2=j0;};
-	void get_index(const int *ind) {ind[0]=ix1; ind[1]=ix2;};
+	void get_index(int *ind) {ind[0]=ix1; ind[1]=ix2;};
 	/*!
 	 Returns the geographical coordinates of a point in the grid specified by grid index positions.
 
@@ -496,8 +498,6 @@ public:
 private:
 	int ix1, ix2;
 };
-3d version is identical except it requires 3 indexes instead of 2 for
-coordinates.  We use inheritance to simply this description.
 /*!
  Three-dimensional version of a GCLgrid object.
 
@@ -744,14 +744,13 @@ public:
         {
             fast_lookup=true;
         };
-/*!
+
 /*!  Destructor.
  Nontrivial destructor has to destroy the coordinate arrays correctly
  and handle case when they are never defined.  Handles this by checking for
  NULL pointers for these arrays.  If the pointers are NULL the free routines
  are not called.  This is important to know if you try to create a GCLgrid
  object by the default constructor.
-*/
 */
 	~GCLgrid3d();
 private:
@@ -1570,7 +1569,7 @@ value at a depth that has to be determined from applying uflatz to z.
 \return true velocity with flattening correction removed
 */
 double uflatvel(const double v, const double z);
-}
+
 /*!
 Extract one component from a 2d vector field into a parallel scalar.
 

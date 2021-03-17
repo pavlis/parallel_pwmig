@@ -1,6 +1,6 @@
 #include "pwmig/utility/gclgrid.h"
 using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
 {
 /* This set of functions implement methods on GCLgrid field objects
 to initialize all field variables to zero.  This is necessary in

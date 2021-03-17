@@ -1,13 +1,19 @@
 #include <typeinfo>
 #include <string.h>
 #include <math.h>
-#include "mspass/utility/PfStyleMetadata.h"
+#include "mspass/utility/AntelopePf.h"
+#include "mspass/utility/SphericalCoordinate.h"
 #include "pwmig/utility/gclgrid.h"
-//#include "seispp.h"  // needed here for byte swap procedures
+#include "pwmig/utility/swapbytes_pwmig.h"
 using namespace std;
 using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+using namespace pwmig::utility;
+namespace pwmig::gclgrid
 {
+using mspass::utility::Metadata;
+using mspass::utility::AntelopePf;
+using mspass::utility::MsPASSError;
+using mspass::utility::rad;
 /* This series of internal procedures contain duplicate code
    for file-based constructors.  They follow the class hierarchy.
    Very convenient to put these in one place because the namespace
@@ -45,9 +51,9 @@ template <class T>
         /* This perhaps should be set by caller, but since all
            callers will need this do it here.*/
         g.set_transformation_matrix();
-    } catch(MetadataGetError& mderr)
+    } catch(MsPASSError& mderr)
     {
-        throw GCLgridError(mderr.message);
+        throw GCLgridError(mderr.what());
     }
     catch(...) {throw;};
 }
@@ -270,8 +276,7 @@ GCLgrid3d::GCLgrid3d (const int n1size, const int n2size,
 Metadata pfload_GCLmetadata(const string fname)
 {
     try {
-        PfStyleMetadata md;
-        md=pfread(fname+".pf");
+        AntelopePf md(fname);
         return(dynamic_cast<Metadata&>(md));
     }catch(...){throw;};
 }
@@ -351,7 +356,7 @@ GCLgrid::GCLgrid(const string fname, const string format)
             /* database version calls set_transformation_matrix()
                method here, but not needed because we called
                it earlier */
-        } catch(SeisppError& serr)
+        } catch(MsPASSError& serr)
         {
             /* Translate message to common error for this package.*/
             throw GCLgridError(base_error
@@ -463,7 +468,7 @@ GCLgrid3d::GCLgrid3d(const string fname, const string format,const bool fl)
                 swapdvec(x2[0][0],gridsize);
                 swapdvec(x3[0][0],gridsize);
             }
-        } catch(SeisppError& serr)
+        } catch(MsPASSError& serr)
         {
             /* Translate message to common error for this package.*/
             throw GCLgridError(base_error
@@ -529,9 +534,9 @@ Written:  Aug 2000
 
 void build_baseline(const double lat0, const double lon0, const double phi,
 			const double dx,const int n,const int i0,
-			  const double *lat, const double *lon)
+			  double *lat, double *lon)
 {
-	double azimuth,az;
+	double azimuth;
 	int i;
 	double delta;
 
@@ -568,11 +573,8 @@ GCLgrid::GCLgrid(const int n1in, const int n2in,
 
 	/* pole to baseline */
 	double pole_lat, pole_lon;
-	int i,j,k;
-	double deltax, deltay, delta;
-	double z;
-	double x[3],x0[3];
-	double xwork[3];
+	int i,j;
+	double delta;
 	double rotation_angle,azimuth_i;
 	double dx1_rad,dx2_rad;
 	// temporary grids to hold lat-lon-r
@@ -691,10 +693,8 @@ GCLgrid3d::GCLgrid3d(const int n1in, const int n2in, const int n3in,
 	/* pole to baseline */
 	double pole_lat, pole_lon;
 	int i,j,k;
-	double deltax, deltay,delta;
+	double delta;
 	double z0,z;
-	double x[3],x0[3];
-	double xwork[3];
 	double dx1_rad,dx2_rad;
 	double rotation_angle, azimuth_i;
 	double ***plat, ***plon, ***pr;

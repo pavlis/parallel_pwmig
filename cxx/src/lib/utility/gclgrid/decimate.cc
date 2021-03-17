@@ -1,7 +1,7 @@
 #include "pwmig/utility/gclgrid.h"
 using namespace pwmig::gclgrid;
 using namespace std;
-namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
 {
 /*! \brief Decimate a GCLgrid3d.
 
@@ -27,10 +27,10 @@ GCLgrid3d *decimate(const GCLgrid3d& g,const int dec1, const int dec2, const int
 	n2=(g.n2)/dec2;
 	n3=(g.n3)/dec3;
 	if( (n1<dec1) || (n2<dec2) || (n3<dec3) )
-	  throw GCLgrid_error(string("GLCgrid3d decimator:  decimation factor larger than grid dimension"));
+	  throw GCLgridError(string("GLCgrid3d decimator:  decimation factor larger than grid dimension"));
 	/* Call an appropriate constructor here.  May need to reset
 	some attributes of the grid object */
-	GCLgrid3d *result=new GCLgrid3d(n1,n2,n3);;
+	GCLgrid3d *result=new GCLgrid3d(n1,n2,n3);
 
 	int i,j,k,ii,jj,kk;
 	for(i=0,ii=0;i<g.n1 && ii<n1;i+=dec1,++ii)

@@ -7,13 +7,15 @@
 #include "pwmig/utility/Hypocenter.h"
 #include "mspass/seismic/keywords.h"
 #include "mspass/utility/MsPASSError.h"
-/* needed for rad function for conversion */
-#include "mspass/utility/SphericalCoordinates.h"
+#include "mspass/utility/SphericalCoordinate.h"
+
 using namespace std;
 using namespace pwmig::utility;
 using namespace mspass::seismic;
+using namespace mspass::utility;
 
-namespace SEISPP
+
+namespace pwmig::utility
 {
 
 // copy constructor and = operators commonly are implicitly needed

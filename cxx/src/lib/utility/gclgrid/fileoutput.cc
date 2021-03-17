@@ -1,11 +1,16 @@
 #include <fstream>
 #include <typeinfo>
-#include "seispp.h"
-#include "Metadata.h"
+#include "pwmig/utility/swapbytes_pwmig.h"
+#include "pwmig/utility/stock.h"
+#include "mspass/utility/Metadata.h"
+#include "mspass/utility/SphericalCoordinate.h"
 #include "pwmig/utility/gclgrid.h"
 using namespace std;
 using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+using namespace pwmig::utility;
+using namespace mspass::utility;
+
+namespace pwmig::gclgrid
 {
 /* Common code to load attributes to Metadata object for saving */
 Metadata load_common_GCL_attributes(const BasicGCLgrid *g)
@@ -80,7 +85,12 @@ void pfsave_attributes(const Metadata& attributes,const string base)
     try {
         ofstream outstrm;
         outstrm.open(pffilename.c_str(),ios::out);
-        outstrm << attributes;
+        /* this is needed because mspass api has  operator<< defined only
+        for a stringstream.  The weird const_cast seems necessary
+        to get this to compile because the declaration is not const */
+        ostringstream ss;
+        ss << const_cast<Metadata&>(attributes);
+        outstrm<<ss.str();;
         outstrm.close();
     }catch(...){
         throw GCLgridError(string("pfsave_attributes failed on file")

@@ -4,7 +4,7 @@
 using namespace std;
 using namespace pwmig::gclgrid;
 using mspass::utility::dmatrix;
-namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
 {
 using mspass::utility::dmatrix;
 /* General purpose utility to integrate a scalar field variable
@@ -32,25 +32,21 @@ Author:  Gary L. Pavlis
 Written:  June 2003
 */
 vector <double> pathintegral(GCLscalarfield3d& field,const dmatrix& path)
-				throw(GCLgrid_error)
 {
-	int *sz;
+	int sz;
 	int npts;
 	double outval,outval_last;
-	int index[3];
 	double val1,val2;  // averaged to get field value for interval
 	double dx;  // path increment
 	vector<double> outvec;
 	int i;
 
-	sz=path.size();
-	npts = sz[1];
-	if(sz[0]!=3)
+	sz=path.rows();
+	npts = path.columns();
+	if(sz!=3)
 	{
-	  delete [] sz;
-	  throw(GCLgrid_error("pathintegral:  input matrix of path coordinates has incorrect dimensions"));
+	  throw GCLgridError("pathintegral:  input matrix of path coordinates has incorrect dimensions");
 	}
-	delete [] sz;  // no longer needed
 	outvec.reserve(npts);
 	// push 0 to the first point
 	outvec.push_back(0.0);
@@ -90,7 +86,7 @@ dmatrix remap_path(const GCLgrid3d& pathgrid, const dmatrix& path, const GCLgrid
 	int i;
 	int m=path.columns();
 	if( (path.rows()!=3) || (m<=0) )
-		throw(GCLgrid_error("remap_path:  input path matrix dimensions are invalid"));
+		throw GCLgridError("remap_path:  input path matrix dimensions are invalid");
 	dmatrix newpath(3,m);
 	Geographic_point geo;
 	Cartesian_point p;

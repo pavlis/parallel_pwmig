@@ -1,7 +1,7 @@
 #include "pwmig/utility/gclgrid.h"
 #include "mspass/utility/dmatrix.h"
 using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
 {
 using mspass::utility::dmatrix;
 /* Sometimes it is useful to work in unit spherical coordinates.  That is,

@@ -1,11 +1,12 @@
-#include <exception>
+#include "mspass/seismic/TimeWindow.h"
+#include "mspass/utility/MsPASSError.h"
 #include "pwmig/utility/coords.h"
+#include "pwmig/utility/Hypocenter.h"
 #include "pwmig/utility/EventCatalog.h"
-// This file should be completely ignored if antelope is not defined.
-// This is here to allow simple compilation of all seispp with the NO_ANTELOPE option
-#ifndef NO_ANTELOPE
 using namespace std;
 using namespace pwmig::utility;
+using mspass::utility::MsPASSError;
+using mspass::seismic::TimeWindow;
 namespace pwmig::utility
 {
 EventCatalog::EventCatalog(const MetadataList& mdl)
@@ -16,7 +17,7 @@ EventCatalog::EventCatalog(const MetadataList& mdl)
 
 TimeWindow EventCatalog::range() const
 {
-	map<Hypocenter,Metadata,SpaceTimeCompare>::iterator hs,he;
+	map<Hypocenter,Metadata,SpaceTimeCompare>::const_iterator hs,he;
 	hs=catalog.begin();
 	he=catalog.end();
 	return(TimeWindow(hs->first.time,he->first.time));
@@ -58,7 +59,7 @@ bool EventCatalog::replace(const Metadata& md)
 	}catch(...){throw;};
 }
 
-bool EventCatalog::find(Hypocenter& h)
+bool EventCatalog::find(const Hypocenter& h)
 {
 	bool result;
 	map<Hypocenter,Metadata,SpaceTimeCompare>::iterator hptr;
@@ -74,11 +75,11 @@ bool EventCatalog::find(Hypocenter& h)
 	}
 	return result;
 }
-Hypocenter EventCatalog::current()
+Hypocenter EventCatalog::current() const
 {
 	return(current_hypo->first);
 }
-Metadata EventCatalog::current_aux()
+Metadata EventCatalog::current_aux() const
 {
 	return(current_hypo->second);
 }
@@ -120,5 +121,4 @@ EventCatalog& EventCatalog::operator=(const EventCatalog& parent)
     return(*this);
 }
 
-} /* End SEISPP namespace encapsulation*/
-#endif
+} /* End pwmig namespace encapsulation*/

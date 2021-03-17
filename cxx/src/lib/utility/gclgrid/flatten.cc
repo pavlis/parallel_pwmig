@@ -1,6 +1,6 @@
 #include "pwmig/utility/gclgrid.h"
 using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
 {
 /*  forward and backward flattening transformation routines
 are in this file.

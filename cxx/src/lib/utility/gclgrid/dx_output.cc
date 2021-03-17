@@ -3,7 +3,7 @@
 #include "pwmig/utility/gclgrid.h"
 using namespace std;
 using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
 {
 void dx_output(const GCLscalarfield3d& g, ostream& out)
 {

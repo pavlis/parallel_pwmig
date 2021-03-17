@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <math.h>
-#include "dmatrix.h"
-#include "gclgrid.h"
-#include "perf.h"
-using namespace pwmig::gclgrid;
-using namespace std;
-namespace pwmig::gclgrid;
+#include "mspass/utility/dmatrix.h"
+#include "pwmig/utility/gclgrid.h"
+#include "misc/blas.h"
+namespace pwmig::gclgrid
 {
-
+using namespace std;
+using mspass::utility::dmatrix;
 void BasicGCLgrid::set_transformation_matrix()
 {
 	double pole_lat, pole_lon;
@@ -29,7 +28,7 @@ void BasicGCLgrid::set_transformation_matrix()
 	dcopy(3,x0,1,translation_vector,1);
 	dscal(3,r0,translation_vector,1);
 }
-dmatrix BasicGCLgrid::fetch_transformation_matrix()
+dmatrix BasicGCLgrid::fetch_transformation_matrix() const
 {
 	dmatrix U(3,3);
 	int i,j;
@@ -38,7 +37,7 @@ dmatrix BasicGCLgrid::fetch_transformation_matrix()
 			U(i,j) = gtoc_rmatrix[i][j];
 	return(U);
 }
-double *BasicGCLgrid::fetch_translation_vector()
+double *BasicGCLgrid::fetch_translation_vector() const
 {
 	int i;
 	double *t = new double[3];
@@ -57,7 +56,10 @@ Cartesian_point BasicGCLgrid::gtoc(const double plat,
 	//
 	//Remove the origin translation vector
 	//
-	dr3sub(xp,translation_vector,dxp);
+	/* Weird const cast is necessary because const tag for this method
+	collides with the api for d3rsub which is an old C function that does not
+	have any const declarations */
+	dr3sub(xp,const_cast<double *>(translation_vector),dxp);
 	//
 	//Rotate by transformation matrix and that is it
 	//

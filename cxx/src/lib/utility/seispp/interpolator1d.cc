@@ -1,6 +1,6 @@
 #include <float.h>
 #include "pwmig/utility/interpolator1d.h"
-#include "mspass/misc/blas.h"
+#include "misc/blas.h"
 #include "mspass/utility/dmatrix.h"
 /* This is a collection of interpolators for 1D scalar or vector
 functions of one variable.  I have stolen portions from Igor Morozov, but
@@ -8,8 +8,8 @@ changed the wrapper completely.  The collection is wrapped in a namespace
 called INTERPOLATOR1D with the idea that normal use of these functions
 would use the scope resolution operator to make it's relation to these
 functions crystal clear.  e.g. INTERPOLATOR1D::linear_scalar() instead of
-linear_scale() or you are likely to have a name conflict.  This 
-library could have been fully objectized, but I chose to keep it 
+linear_scale() or you are likely to have a name conflict.  This
+library could have been fully objectized, but I chose to keep it
 procedural because these operations are commonly done on primitives.*/
 #include <math.h>
 using namespace INTERPOLATOR1D;
@@ -17,8 +17,8 @@ namespace INTERPOLATOR1D
 {
 using mspass::utility::dmatrix;
 /* primitive for 2 point linear interpolation.  Uses a weight formula
-instead of an explicit point-slope to reduce operation counts.  
-Probably a trivial detail, but it uses it anyway.  
+instead of an explicit point-slope to reduce operation counts.
+Probably a trivial detail, but it uses it anyway.
 
 Arguments:
 	x - abscissa value to interpolate at
@@ -43,11 +43,11 @@ double linear_scalar ( double x, double x1, double y1,
 Arguments are the same as above but y1 and y2 are assumed to be
 vectors of length nv.  Result is returned in y.  I considered
 this subroutine like behaviour less error prone that the potential
-memory leak from allocating y internally and returning it.  
-Note carefully that no checking on array bounds is done for 
+memory leak from allocating y internally and returning it.
+Note carefully that no checking on array bounds is done for
 efficiency.  We use the blas, which will be slower for small
 vectors but makes this more general.  A quadrature weight is used
-instead of the explicit point slope form to allow the vector 
+instead of the explicit point slope form to allow the vector
 operations.
 */
 void linear_vector (double x, double x1, double *y1,
@@ -71,7 +71,7 @@ void linear_vector (double x, double x1, double *y1,
 		dscal(nv,w1,y,1);
 		daxpy(nv,w2,y2,1,y,1);
 	}
-	
+
 }
 
 /* lookup function for a regular grid.  Returns index for point at xp in grid
@@ -123,7 +123,7 @@ double linear_scalar_irregular(double xp,double *x, double *y, int nx)
 	yout = INTERPOLATOR1D::linear_scalar(xp,x[i],y[i],x[i+1],y[i+1]);
 	return(yout);
 }
-/* top level functions that call the above primitives many times to 
+/* top level functions that call the above primitives many times to
 interpolate one mesh onto another */
 void linear_scalar_regular_to_regular(int nin, double x0in, double dxin, double *yin,
 		int nout, double x0out, double dxout, double *yout)
@@ -177,7 +177,7 @@ double *linear_vector_regular ( double	xp, double x0, double dx,dmatrix& y)
 	i = INTERPOLATOR1D::regular_lookup(xp,x0,dx);
 	if(i<0)
 		dcopy(nv,&y(0,0),1,yout,1);
-	else if(i>(nx-2)) 
+	else if(i>(nx-2))
 		dcopy(nv,&y(0,nx-1),1,yout,1);
 	else
 	{
@@ -199,7 +199,7 @@ double *linear_vector_irregular(double xp,double *x, dmatrix& y)
 	i = INTERPOLATOR1D::irregular_lookup(xp,x,nx);
 	if(i<0)
 		dcopy(nv,&y(0,0),1,yout,1);
-	else if(i>(nx-2)) 
+	else if(i>(nx-2))
 		dcopy(nv,&y(0,nx-1),1,yout,1);
 	else
 	{
@@ -212,7 +212,6 @@ double *linear_vector_irregular(double xp,double *x, dmatrix& y)
 void linear_vector_regular_to_regular(double x0in, double dxin, dmatrix& yin,
 		double x0out, double dxout, dmatrix& yout)
 {
-	int nin = yin.columns();
 	int nout = yout.columns();
 	int nv = yin.rows();
 	double *ytmp;
@@ -229,7 +228,6 @@ void linear_vector_regular_to_regular(double x0in, double dxin, dmatrix& yin,
 void linear_vector_irregular_to_regular(double *xin, dmatrix& yin,
 		double x0out, double dxout, dmatrix& yout)
 {
-	int nin = yin.columns();
 	int nout = yout.columns();
 	int nv = yin.rows();
 	double *ytmp;
@@ -246,7 +244,6 @@ void linear_vector_irregular_to_regular(double *xin, dmatrix& yin,
 void linear_vector_regular_to_irregular(double x0in, double dxin, dmatrix& yin,
 		double *xout, dmatrix& yout)
 {
-	int nin = yin.columns();
 	int nout = yout.columns();
 	int nv = yin.rows();
 	double *ytmp;
@@ -261,7 +258,6 @@ void linear_vector_regular_to_irregular(double x0in, double dxin, dmatrix& yin,
 void linear_vector_irregular_to_irregular(double *xin, dmatrix& yin,
 		double *xout, dmatrix& yout)
 {
-	int nin = yin.columns();
 	int nout = yout.columns();
 	int nv = yin.rows();
 	double *ytmp;

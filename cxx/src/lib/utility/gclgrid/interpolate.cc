@@ -1,13 +1,15 @@
-#include "dmatrix.h"
+#include "mspass/utility/dmatrix.h"
 #include "pwmig/utility/gclgrid.h"
-#include "perf.h"
+#include "misc/blas.h"
+using mspass::utility::dmatrix;
+using mspass::utility::dvector;
+using namespace pwmig::gclgrid;
 /* function prototype used only here (FORTRAN routine) */
 extern "C" {
 extern void fmeweights_(double *,double *,double *,int *);
 extern void treex3_(double *, int *, double *, int *, double *);
-}
-using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+};
+namespace pwmig::gclgrid
 {
 /*This is an interpolation function for 3d grids.
 This function is mostly an interface function to the fme_interpolate
@@ -124,7 +126,6 @@ void compute_element_weights(const GCLgrid3d *g,
 #define BLAS_LIMIT 10
 double *GCLvectorfield3d::interpolate(const double xp1, const double xp2, const double xp3)
 {
-	double coord[24];
 	int l;
 	/* This depends on a static being initialized once on first call */
 	static double xplast[3]={0.0,0.0,0.0};
@@ -146,7 +147,6 @@ double *GCLvectorfield3d::interpolate(const double xp1, const double xp2, const 
 
 	if( (xp1!=xplast[0]) || (xp2!=xplast[1]) || (xp3!=xplast[2]) )
 	{
-		int ciwret;
 		double xp[3];
 		xp[0]=xp1;
 		xp[1]=xp2;
@@ -194,15 +194,14 @@ double *GCLvectorfield3d::interpolate(const double xp1, const double xp2, const 
 //
 // parallel routine to above for scalar fields
 //
-double GCLscalarfield3d::interpolateconst (const double xp1, const double xp2, const double xp3)
+double GCLscalarfield3d::interpolate (const double xp1, const double xp2, const double xp3)
 {
-	double coord[24];
 	/* This depends on a static being initialized once on first call */
 	static double xplast[3]={0.0,0.0,0.0};
 	static double weights[8];
 	double f;
 	int ix[3];
-	int i,j,k,l;
+	int i,j,k;
 
 	get_index(ix);
 	i=ix[0];
@@ -211,7 +210,6 @@ double GCLscalarfield3d::interpolateconst (const double xp1, const double xp2, c
 
 	if( (xp1!=xplast[0]) || (xp2!=xplast[1]) || (xp3!=xplast[2]) )
 	{
-		int ciwret;
 		double xp[3];
 		xp[0]=xp1;
 		xp[1]=xp2;
@@ -350,7 +348,7 @@ double GCLscalarfield::interpolate(const double xp1, const double xp2, const dou
 	static double weights[8];
 	double f;
 	int ix[2];
-	int i,j,l,ierr;
+	int i,j,ierr;
 
 	get_index(ix);
 	i=ix[0];

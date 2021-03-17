@@ -2,7 +2,7 @@
 #include "pwmig/utility/gclgrid.h"
 using namespace std;
 using namespace pwmig::gclgrid;
-namespace pwmig::gclgrid;
+namespace pwmig::gclgrid
 {
 /* Standize functions to handle ellipticity corrections */
 
