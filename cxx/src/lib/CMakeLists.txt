@@ -4,8 +4,8 @@ add_subdirectory(stock)
 add_subdirectory(utility)
 
 
-#file(WRITE ${CMAKE_BINARY_DIR}/src/dummy.cc "")
-#add_library(mspass ${CMAKE_BINARY_DIR}/src/dummy.cc)
-#target_link_libraries(mspass PUBLIC seismic utility deconvolution algorithms)
+file(WRITE ${CMAKE_BINARY_DIR}/src/dummy.cc "")
+add_library(pwmig ${CMAKE_BINARY_DIR}/src/dummy.cc)
+target_link_libraries(pwmig PUBLIC pwmigutil)
 #
-#install (TARGETS mspass DESTINATION lib)
+#install (TARGETS pwmig DESTINATION lib)
