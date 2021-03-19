@@ -1,6 +1,7 @@
 add_subdirectory(dsap)
 add_subdirectory(gclgrid)
-add_subdirectory(pwmigcore)
+# Temporarily disable to get other libraries functional first
+#add_subdirectory(pwmigcore)
 add_subdirectory(seispp)
 
 
