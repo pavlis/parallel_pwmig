@@ -15,7 +15,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "stock.h"
+#include "pwmig/dsap/stock.h"
 
 //static char PWMIGpath[FILENAME_MAX] ;
 /* This was the old version of this.   Changed to a home directory to be

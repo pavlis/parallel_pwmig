@@ -11,8 +11,8 @@ extern void treex3_(double *, int *, double *, int *, double *);
 from this Antelope library.  This is for efficiency as blas versions of
 same have no advantage for 3 element vectors */
 #include "mspass/utility/dmatrix.h"
-#include "pwmig/utility/coords.h"
-#include "pwmig/utility/gclgrid.h"
+#include "pwmig/dsap/coords.h"
+#include "pwmig/gclgrid/gclgrid.h"
 #include "misc/blas.h"
 using namespace pwmig::gclgrid;
 using mspass::utility::dmatrix;

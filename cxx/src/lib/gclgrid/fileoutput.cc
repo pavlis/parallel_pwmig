@@ -1,13 +1,12 @@
 #include <fstream>
 #include <typeinfo>
-#include "pwmig/utility/swapbytes_pwmig.h"
-#include "pwmig/utility/stock.h"
+#include "pwmig/gclgrid/swapbytes_pwmig.h"
+#include "pwmig/dsap/stock.h"
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/SphericalCoordinate.h"
-#include "pwmig/utility/gclgrid.h"
+#include "pwmig/gclgrid/gclgrid.h"
 using namespace std;
 using namespace pwmig::gclgrid;
-using namespace pwmig::utility;
 using namespace mspass::utility;
 
 namespace pwmig::gclgrid

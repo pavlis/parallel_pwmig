@@ -2,7 +2,7 @@
 #include <float.h>
 #include <sstream>
 #include "mspass/utility/SphericalCoordinate.h"
-#include "pwmig/utility/gclgrid.h"
+#include "pwmig/gclgrid/gclgrid.h"
 using namespace pwmig::gclgrid;
 using mspass::utility::deg;
 namespace pwmig::gclgrid

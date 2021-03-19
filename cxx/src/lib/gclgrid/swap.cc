@@ -1,12 +1,13 @@
 #include <typeinfo>
 #include <sys/types.h>
 #include <iostream>
-#include "swapbytes_pwmig.h"
+#include "pwmig/gclgrid/swapbytes_pwmig.h"
 
+
+namespace pwmig::gclgrid
+{
 using namespace std;
-using namespace SEISPP;
-namespace SEISPP{
-
+using namespace pwmig::gclgrid;
 /* This is the old antelope routine to swap bit endian 32 bit vectors  of
    length n*/
 void vectorswap4(int *in,int *out,int n)
@@ -49,7 +50,7 @@ void swap4_float(float *d)
 /*! \brief Test for little endian condition.
 
 To handle mixed processors it is essential to know if the
-word structure of this machine you are on is little or big 
+word structure of this machine you are on is little or big
 endian.  Intel processors are dominate today and are little
 endian while Sun machines, which are commonly used in geophysics,
 are big endian.  Because it is common today to mix these platforms
@@ -69,7 +70,7 @@ bool IntelByteOrder()
         else
                 return(true);
 }
-/*! \brief Architecture indedependent procedure 
+/*! \brief Architecture indedependent procedure
 to byte swap a vector of doubles.
 
 In the seispp library most data are stored internally as doubles.
@@ -87,8 +88,8 @@ is necessary as this will always swap bytes one way or the other.
 void swapdvec(double *x,int nx)
 {
     int i;
-    for(i=0;i<nx;++i) 
+    for(i=0;i<nx;++i)
         SwapEnd(x[i]);
 }
 
-} // End SEISPP namespace declaration
+} // End mspass::gclgrid namespace declaration

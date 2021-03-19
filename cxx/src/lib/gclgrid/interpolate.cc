@@ -1,5 +1,5 @@
 #include "mspass/utility/dmatrix.h"
-#include "pwmig/utility/gclgrid.h"
+#include "pwmig/gclgrid/gclgrid.h"
 #include "misc/blas.h"
 using mspass::utility::dmatrix;
 using mspass::utility::dvector;

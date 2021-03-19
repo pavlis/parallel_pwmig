@@ -1,10 +1,10 @@
 
 #include <string.h>
-#include "stock.h"
+#include "pwmig/dsap/stock.h"
 
 int blank ( char *s )
 {
-	/* This is not Dan Quinlan's original code.  This procedure is supposed to 
+	/* This is not Dan Quinlan's original code.  This procedure is supposed to
 	return nonzero if s is all blank characters. He did this a very obscure
 	way so I just rewrote it.   There rest of the file retains the odd method
 	as it was known to work*/
@@ -23,23 +23,23 @@ int whitespace ( char *s )
 
 /* Remove this function to avoid Tbl */
 /*
-Tbl *split (char *s,char *c ) 
+Tbl *split (char *s,char *c )
 {
-    Tbl *tbl ; 
+    Tbl *tbl ;
 
     tbl = newtbl(5) ;
 
     while ( *s != '\0' )
 	{
 	while ( *s == *c ) s++ ;
-	if ( *s != '\0' ) 
-	    pushtbl ( tbl, s ) ; 
-	while ( *s != *c && *s != '\0' ) 
-	    s++ ; 
-	if ( *s == *c ) *s++ = '\0' ; 
+	if ( *s != '\0' )
+	    pushtbl ( tbl, s ) ;
+	while ( *s != *c && *s != '\0' )
+	    s++ ;
+	if ( *s == *c ) *s++ = '\0' ;
 	}
-    
-    return tbl ; 
+
+    return tbl ;
 }
 */
 
@@ -67,25 +67,24 @@ void szcopy(char *dest,const char *source,int n)
 /* copy source to dest, add trailing zero, strip leading, trailing blanks */
 void copystrip(char *dest,const char *source,int n)
 {
-    int i, start, last ; 
+    int i, start, last ;
 
-    for (start=0 ; start<n && source[start] == ' ' ; start++ ) 
+    for (start=0 ; start<n && source[start] == ' ' ; start++ )
 	;
-    for (last=n-1 ; last>=0 && source[last] == ' ' ; last-- ) 
+    for (last=n-1 ; last>=0 && source[last] == ' ' ; last-- )
 	;
     last++ ;
 
-    for(i=start ; i<last ; i++ ) 
-	*(dest++) = source[i] ; 
+    for(i=start ; i<last ; i++ )
+	*(dest++) = source[i] ;
 
     *dest = '\0';
 }
 
-void *memdup ( void *a, int n ) 
+void *memdup ( void *a, int n )
 {
     char *b ;
-    allot ( char *, b, n ) ; 
-    memcpy(b,a,n) ; 
+    allot ( char *, b, n ) ;
+    memcpy(b,a,n) ;
     return (void *) b ;
 }
-

@@ -1,6 +1,6 @@
 // Writes dx test file to output stream out
 #include <iostream>
-#include "pwmig/utility/gclgrid.h"
+#include "pwmig/gclgrid/gclgrid.h"
 using namespace std;
 using namespace pwmig::gclgrid;
 namespace pwmig::gclgrid

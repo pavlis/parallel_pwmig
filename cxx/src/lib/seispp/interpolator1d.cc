@@ -1,5 +1,5 @@
 #include <float.h>
-#include "pwmig/utility/interpolator1d.h"
+#include "pwmig/seispp/interpolator1d.h"
 #include "misc/blas.h"
 #include "mspass/utility/dmatrix.h"
 /* This is a collection of interpolators for 1D scalar or vector

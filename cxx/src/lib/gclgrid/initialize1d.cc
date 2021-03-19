@@ -1,5 +1,5 @@
-#include "pwmig/utility/gclgrid.h"
-#include "pwmig/utility/interpolator1d.h"
+#include "pwmig/gclgrid/gclgrid.h"
+#include "pwmig/seispp/interpolator1d.h"
 using namespace std;
 using namespace INTERPOLATOR1D;
 using namespace pwmig::gclgrid;

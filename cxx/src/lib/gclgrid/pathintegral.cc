@@ -1,5 +1,5 @@
 #include <vector>
-#include "pwmig/utility/gclgrid.h"
+#include "pwmig/gclgrid/gclgrid.h"
 #include "mspass/utility/dmatrix.h"
 using namespace std;
 using namespace pwmig::gclgrid;

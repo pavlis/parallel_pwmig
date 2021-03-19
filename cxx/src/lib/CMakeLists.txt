@@ -1,11 +1,11 @@
-add_subdirectory(coords)
-#add_subdirectory(pwmigcore)
-add_subdirectory(stock)
-add_subdirectory(utility)
+add_subdirectory(dsap)
+add_subdirectory(gclgrid)
+add_subdirectory(pwmigcore)
+add_subdirectory(seispp)
 
 
 file(WRITE ${CMAKE_BINARY_DIR}/src/dummy.cc "")
 add_library(pwmig ${CMAKE_BINARY_DIR}/src/dummy.cc)
-target_link_libraries(pwmig PUBLIC pwmigutil)
+target_link_libraries(pwmig PUBLIC dsap gclgrid pwmigcore seispp)
 #
 #install (TARGETS pwmig DESTINATION lib)

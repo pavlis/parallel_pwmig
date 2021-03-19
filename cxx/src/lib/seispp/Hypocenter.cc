@@ -2,20 +2,20 @@
 // These are mostly interface routines to Antelopes coords library.
 // Note all returns are distances and angles are returned in units of radians.
 
-#include "pwmig/utility/coords.h"
-#include "pwmig/utility/stock.h"
-#include "pwmig/utility/Hypocenter.h"
+#include "pwmig/dsap/coords.h"
+#include "pwmig/dsap/stock.h"
+#include "pwmig/seispp/Hypocenter.h"
 #include "mspass/seismic/keywords.h"
 #include "mspass/utility/MsPASSError.h"
 #include "mspass/utility/SphericalCoordinate.h"
 
 using namespace std;
-using namespace pwmig::utility;
+using namespace pwmig::seispp;
 using namespace mspass::seismic;
 using namespace mspass::utility;
 
 
-namespace pwmig::utility
+namespace pwmig::seispp
 {
 
 // copy constructor and = operators commonly are implicitly needed

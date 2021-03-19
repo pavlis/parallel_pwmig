@@ -1,5 +1,5 @@
 #include <math.h>
-#include "pwmig/utility/gclgrid.h"
+#include "pwmig/gclgrid/gclgrid.h"
 using namespace std;
 using namespace pwmig::gclgrid;
 namespace pwmig::gclgrid

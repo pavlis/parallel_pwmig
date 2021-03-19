@@ -1,7 +1,7 @@
 #include <sstream>
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/AntelopePf.h"
-#include "pwmig/utility/gclgrid.h"
+#include "pwmig/gclgrid/gclgrid.h"
 //#include "seispp.h"
 using namespace std;
 using namespace pwmig::gclgrid;

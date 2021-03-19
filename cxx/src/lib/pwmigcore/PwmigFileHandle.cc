@@ -6,7 +6,7 @@
 #include <string.h>
 #include <sstream>
 #include <algorithm>
-#include "PwmigFileHandle.h"
+#include "pwmig/pwmigcore/PwmigFileHandle.h"
 using namespace std;
 /* This appears necessary on quarray to allow large file support */
 #define _FILE_OFFSET_BITS 64
@@ -49,14 +49,14 @@ PwmigFileHandle::PwmigFileHandle(string fname, bool smode, bool cohmode)
 			 + string("Cannot open input data file=")
 			 + dfile);
 	hdrfd=open(hfile.c_str(),O_RDONLY);
-	if(hdrfd<0)	
+	if(hdrfd<0)
 	{
 		close(datafd);
 		throw SeisppError(base_error
 			 + string("Cannot open input header data file=")
 			 + dfile);
 	}
-	/* First read the global data block */	
+	/* First read the global data block */
 	ssize_t read_count;
 	read_count=read(hdrfd,static_cast<void *>(&filehdr),sizeof(PwmigFileGlobals));
 	if(read_count!=sizeof(PwmigFileGlobals))
@@ -102,10 +102,10 @@ PwmigFileHandle::PwmigFileHandle(string fname, bool smode,RectangularSlownessGri
 	string dfile=fname+"."+dfile_ext;
 	string hfile=fname+"."+hdr_ext;
 	scalar_mode=smode;
-	/* Copy in needed ug data.   A bit complicated by need to require ug geometry to 
+	/* Copy in needed ug data.   A bit complicated by need to require ug geometry to
 	have a zero delta u position - error thrown to abort pwmig in that situation. */
 	strncpy(this->filehdr.gridname,ug.name.c_str(),16);  //16 is the size of name - maintenance warning
-	/* uxlow and uylow are always negative so this formula is a bit odd.   
+	/* uxlow and uylow are always negative so this formula is a bit odd.
 	Computation is for C indexing starting at 0 */
 	filehdr.i0=SEISPP::nint(-ug.uxlow/ug.dux);
 	filehdr.j0=SEISPP::nint(-ug.uylow/ug.duy);
@@ -113,14 +113,14 @@ PwmigFileHandle::PwmigFileHandle(string fname, bool smode,RectangularSlownessGri
 	double dux0test,duy0test;
 	dux0test=ug.uxlow+ug.dux*((double)(filehdr.i0));
 	duy0test=ug.uylow+ug.duy*((double)(filehdr.j0));
-	if( (fabs(dux0test)>FLT_EPSILON) 
+	if( (fabs(dux0test)>FLT_EPSILON)
 		    || (fabs(duy0test)>FLT_EPSILON) )
 	{
 		throw SeisppError(base_error
 		  + "Unacceptable Slowness_Grid_Definition parameters\n"
 		  + "Grid must hit 0,0 slowness vector delta - ulow+i*du must = 0 for some i\n");
 	}
-	
+
 	mode_t fumask=0775;
 	/* In output mode all we do is open the file in write mode */
 	datafd=open(dfile.c_str(),
@@ -189,8 +189,8 @@ PwmigFileHandle::~PwmigFileHandle()
 	/* In read mode the slowness data file is kept open until destruction here */
 		fclose(svmfp);
 }
-template <class T> void PwmigFileRecord_load(T& ts, 
-	PwmigFileRecord& hdr) 
+template <class T> void PwmigFileRecord_load(T& ts,
+	PwmigFileRecord& hdr)
 {
 	try {
 		hdr.gridid=ts.get_int("gridid");
@@ -302,7 +302,7 @@ void PwmigFileHandle::save(ThreeComponentSeismogram& tcs)
         }
 }
 /* This is the reciprocal of PwmigFileRecord_load above */
-template <class T> void PwmigFileRecord_load_Metadata(PwmigFileRecord& hdr, T& d) 
+template <class T> void PwmigFileRecord_load_Metadata(PwmigFileRecord& hdr, T& d)
 {
 	d.put("gridid",hdr.gridid);
 	d.put("ix1",hdr.ix1);
@@ -467,7 +467,7 @@ void PwmigFileHandle::save_slowness_vectors(SlownessVectorMatrix& u0,
                 RectangularSlownessGrid& ugrid)
 {
     const string base_error("PwmigFileHandle::save_slowness_vector:  ");
-    /* This method is kind of showhorned into this object, but this is 
+    /* This method is kind of showhorned into this object, but this is
        a more maintainable approach than carrying around a file name and
        another set of read/write procedures.   First we create a file name
        from the base name and then try to open such a file in write mode. */
@@ -548,7 +548,7 @@ SlownessVectorMatrix PwmigFileHandle::plane_wave_slowness_vectors(int iux,
 	   return (this->plane_wave_slowness_vectors(gridid));
     }catch(...){throw;};
 }
-/* This is the main read routine for the slowness grid data file.   Others are 
+/* This is the main read routine for the slowness grid data file.   Others are
 just wrappers on this one */
 SlownessVectorMatrix PwmigFileHandle::plane_wave_slowness_vectors(int gridid)
 {
@@ -576,15 +576,15 @@ SlownessVectorMatrix PwmigFileHandle::plane_wave_slowness_vectors(int gridid)
         throw SeisppError(base_error
             + "fread error while reading array dimensions at head of file");
     }
-   /* The gridid is the count (starting at 0) working through the slowness grid in C order 
+   /* The gridid is the count (starting at 0) working through the slowness grid in C order
       (column index runs fastest).  The slowness data file is stored in the order
-      pwmig needs it, which is the gridid components are the slowest varying index.  
+      pwmig needs it, which is the gridid components are the slowest varying index.
       We can then compute the file offset to the start of the needed data by the following
       simple formula.*/
    long pwblocksize=2*sizeof(double)*(psgn1)*(psgn2);
-    
+
    long foff=gridid*pwblocksize + 4*sizeof(int);   // this is foff from file start
-   if(fseek(svmfp,foff,SEEK_SET)<0) 
+   if(fseek(svmfp,foff,SEEK_SET)<0)
    {
        stringstream ss;
        ss << base_error << "fseek failed of file "<<fname<<endl
@@ -618,4 +618,3 @@ SlownessVectorMatrix PwmigFileHandle::incident_wave_slowness_vectors()
                     this->filehdr.j0));
     }catch(...){throw;};
 }
-

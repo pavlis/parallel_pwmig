@@ -673,15 +673,15 @@ char *EP_text;
 #include <math.h>
 #include <time.h>
 
-#include "coords.h"
-#include "stock.h"
+#include "pwmig/dsap/coords.h"
+#include "pwmig/dsap/stock.h"
 
-static char *Cp ; 
+static char *Cp ;
 /* Lex input, unput
 #undef input
 #undef unput
-#define input() *Cp++ 
-#define unput(c) Cp-- 
+#define input() *Cp++
+#define unput(c) Cp--
 */
 
 /* Flex input, unput */
@@ -709,9 +709,9 @@ static int Hour ;
 static int Minute ;
 static int Doy ;
 static int Num ;
-static double Second ;		
+static double Second ;
 static double Etime ;
-static int Am ; 
+static int Am ;
 
 int mday2doy();
 double h2e();
@@ -955,11 +955,11 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-{ sscanf(EP_text, "%lf", &Etime); 
-			if ( Etime < 60.0 ) 
+{ sscanf(EP_text, "%lf", &Etime);
+			if ( Etime < 60.0 )
 			    {
-			    Second = Etime ; 
-			    Etime = 0.0 ; 
+			    Second = Etime ;
+			    Etime = 0.0 ;
 			    }
 			}
 	YY_BREAK
@@ -1053,23 +1053,23 @@ sscanf(EP_text, "%d", &Year);
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-sscanf(EP_text, "(%d)", &Doy ) ; 
+sscanf(EP_text, "(%d)", &Doy ) ;
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-sscanf(EP_text, "%lf", &Etime); 
+sscanf(EP_text, "%lf", &Etime);
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
 {
-			int num ; 
+			int num ;
 			sscanf(EP_text, "%d", &num);
 			if (num > 31 && num < 2100)
 				Year = num;
 			else if (Day == -1 && num < 32)
 				Day = num;
 			else
-			    Etime = (double) num ; 
+			    Etime = (double) num ;
 			}
 	YY_BREAK
 case 24:
@@ -1083,9 +1083,9 @@ sscanf(EP_text, "%d:%d:%lf", &Hour, &Minute, &Second);
 case 26:
 YY_RULE_SETUP
 {
-		int jday ; 
+		int jday ;
 		sscanf(EP_text, "%d:%d:%d:%lf", &jday, &Hour, &Minute, &Second);
-		Year = jday/1000 ; 
+		Year = jday/1000 ;
 		Doy = jday % 1000 ;
 		}
 	YY_BREAK
@@ -1098,9 +1098,9 @@ YY_RULE_SETUP
 case 28:
 YY_RULE_SETUP
 {
-		int second, msec ; 
+		int second, msec ;
 		sscanf(EP_text, "%d:%d:%d:%d:%d:%d", &Year, &Doy, &Hour, &Minute, &second, &msec);
-		Second = second + msec/1000.0 ; 
+		Second = second + msec/1000.0 ;
 		}
 	YY_BREAK
 case 29:
@@ -1209,11 +1209,11 @@ sscanf(EP_text, "%d:%d", &Hour, &Minute);
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-Am = 1 ; 
+Am = 1 ;
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-Am = 0 ; 
+Am = 0 ;
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
@@ -1230,12 +1230,12 @@ YY_RULE_SETUP
 case 48:
 YY_RULE_SETUP
 {
-		    strcpy(Timezone, EP_text ) ; 
+		    strcpy(Timezone, EP_text ) ;
 		    if (check_tz () ) {
-			Retcode ++ ; 
+			Retcode ++ ;
 			register_error ( 0, "str2epoch: can't interpret '%s'\n", EP_text ) ;
 			*(Timezone) = 0 ;
-		    } 
+		    }
 		}
 	YY_BREAK
 case 49:
@@ -2138,19 +2138,19 @@ int main()
 #endif
 
 
-int EP_wrap() { return 1 ; } 
+int EP_wrap() { return 1 ; }
 
 static int
 check_tz ()
 {
     int retcode = 0 ;
-    char *tz ; 
-    tz = getenv("TZ") ; 
-    strcpy(OldTZ+3, tz) ; 
-    putenv ( ETimezone ) ; 
-    tz = getenv("TZ") ; 
+    char *tz ;
+    tz = getenv("TZ") ;
+    strcpy(OldTZ+3, tz) ;
+    putenv ( ETimezone ) ;
+    tz = getenv("TZ") ;
     errno = 0 ;
-    tzset() ; 
+    tzset() ;
     /* show_tz("str2epoch: check_tz" ) ; */
     if ( errno != 0 ) {
 	errno = 0 ;
@@ -2159,12 +2159,12 @@ check_tz ()
     return retcode ;
 }
 
-int zstr2epoch ( char *s, double *e ) 
-{ 
-    Cp = s ; 
+int zstr2epoch ( char *s, double *e )
+{
+    Cp = s ;
     Retcode = 0 ;
 
-    *Timezone = 0 ; 
+    *Timezone = 0 ;
     Year = 1970 ;
     Month = -1;
     Day = -1;
@@ -2172,15 +2172,15 @@ int zstr2epoch ( char *s, double *e )
     Minute = 0;
     Doy = 0;
     Num = 0;
-    Second = 0;		
+    Second = 0;
     Etime = 0.0;
-    Am = - 1 ; 
+    Am = - 1 ;
 
-    EP_lex () ; 
-    EP_restart(stdin) ; 
+    EP_lex () ;
+    EP_restart(stdin) ;
 
-    if ( Month < 1 ) Month = 1 ; 
-    if ( Day < 1 ) Day = 1 ; 
+    if ( Month < 1 ) Month = 1 ;
+    if ( Day < 1 ) Day = 1 ;
     if ( Am == 1 && Hour == 12) Hour -= 12; /* allow 12:30 am to mean 0:30 am */
     if ( Am == 0 && Hour <  12) Hour += 12;
 
@@ -2188,64 +2188,64 @@ int zstr2epoch ( char *s, double *e )
 	if (Doy == 0) {
 	    Doy = mday2doy(Year, Month, Day) ;
 	}
-	if ( Year < 100 ) Year += 1900 ; 
-	Etime = h2e ( Year, Doy, Hour, Minute, Second ) ; 
+	if ( Year < 100 ) Year += 1900 ;
+	Etime = h2e ( Year, Doy, Hour, Minute, Second ) ;
     }
 
     if (*Timezone != 0 ) {
-	    struct tm utm ; 
-	    time_t utime ; 
-	    int year, doy, hour, minute, month, mday ; 
+	    struct tm utm ;
+	    time_t utime ;
+	    int year, doy, hour, minute, month, mday ;
 	    double second, msec ;
 	    /* don't have to run tzset, because it was already done in check_tz above */
-	    e2h ( Etime, &year, &doy, &hour, &minute, &second ) ; 
+	    e2h ( Etime, &year, &doy, &hour, &minute, &second ) ;
 	    msec = Etime - floor(Etime) ;
-	    doy2mday ( doy, year, &month, &mday ) ; 
-	    utm.tm_sec = second ; 
-	    utm.tm_min = minute ; 
-	    utm.tm_hour = hour ; 
+	    doy2mday ( doy, year, &month, &mday ) ;
+	    utm.tm_sec = second ;
+	    utm.tm_min = minute ;
+	    utm.tm_hour = hour ;
 	    utm.tm_mon = month-1 ;
-	    utm.tm_mday = mday ; 
-	    utm.tm_year = year - 1900 ; 
+	    utm.tm_mday = mday ;
+	    utm.tm_year = year - 1900 ;
 	    utm.tm_isdst = -1 ;
-	    utime = mktime ( &utm ) ; 
+	    utime = mktime ( &utm ) ;
 	    if ( utime == -1 ) {
-		register_error ( 0, "Can't convert to local timezone before 1970\n" ) ; 
+		register_error ( 0, "Can't convert to local timezone before 1970\n" ) ;
 		Retcode++ ;
 	    }
-	    Etime = ((double) utime) + msec ; 
+	    Etime = ((double) utime) + msec ;
 	    /* now restore the original timezone */
-	    putenv ( OldTZ ) ; 
-	    tzset() ; 
+	    putenv ( OldTZ ) ;
+	    tzset() ;
 	    /* show_tz ( "str2epoch: restoring" ) ; */
     }
 
-    *e = Etime ; 
+    *e = Etime ;
 
     return Retcode ;
 }
 
 
-double str2epoch ( s ) 
-char *s ; 
-{ 
-    double e ; 
+double str2epoch ( s )
+char *s ;
+{
+    double e ;
 
     zstr2epoch ( s, &e ) ;
 
     return e ;
 }
 
-static int my_yyinput ( buf, ms ) 
-char *buf ; 
-int ms ; 
+static int my_yyinput ( buf, ms )
+char *buf ;
+int ms ;
 {
-    int n ; 
+    int n ;
 
-    n = MIN ( ms, strlen(Cp)) ; 
-    memcpy ( buf, Cp, n ) ; 
-    Cp += n ; 
-    return n ; 
+    n = MIN ( ms, strlen(Cp)) ;
+    memcpy ( buf, Cp, n ) ;
+    Cp += n ;
+    return n ;
 }
 
 /* $Id: str2epoch.l,v 1.2 1997/04/29 12:57:39 danq Exp $ */

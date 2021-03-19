@@ -3,11 +3,10 @@
 #include <math.h>
 #include "mspass/utility/AntelopePf.h"
 #include "mspass/utility/SphericalCoordinate.h"
-#include "pwmig/utility/gclgrid.h"
-#include "pwmig/utility/swapbytes_pwmig.h"
+#include "pwmig/gclgrid/gclgrid.h"
+#include "pwmig/gclgrid/swapbytes_pwmig.h"
 using namespace std;
 using namespace pwmig::gclgrid;
-using namespace pwmig::utility;
 namespace pwmig::gclgrid
 {
 using mspass::utility::Metadata;

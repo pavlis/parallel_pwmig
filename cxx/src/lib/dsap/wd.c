@@ -3,11 +3,11 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "stock.h"
+#include "pwmig/dsap/stock.h"
 //#include "dsap_regex.h"
 #include <errno.h>
 #include <dirent.h>
-/* Most of this file is commented out to get rid of Tbl 
+/* Most of this file is commented out to get rid of Tbl
    dependency.   Some may need to be converted if we
    find a hidden dependency */
 
@@ -52,13 +52,13 @@ void setmapcf (char *cfname)
     if ((f = fopen (cfname, "r")) == NULL)
 			return;
     while ( fgets(aline, STRSZ, f) != NULL ) {
-	// skip comments 
-	for ( s=aline ; *s == ' ' ; s++ ) ; 
-	if ( *s == '#' ) 
+	// skip comments
+	for ( s=aline ; *s == ' ' ; s++ ) ;
+	if ( *s == '#' )
 	    continue ;
 
 	if (sscanf (aline, "%s %s\n", pattern, replacement) != 2)
-	    // skip bad lines 
+	    // skip bad lines
 	    continue ;
 
 	allot (struct re_pattern_buffer *, pattern_buffer, 1);

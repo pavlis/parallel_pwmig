@@ -1,4 +1,4 @@
-#include "pwmig/utility/gclgrid.h"
+#include "pwmig/gclgrid/gclgrid.h"
 using namespace pwmig::gclgrid;
 using namespace std;
 namespace pwmig::gclgrid

@@ -1,13 +1,13 @@
 #include "mspass/seismic/TimeWindow.h"
 #include "mspass/utility/MsPASSError.h"
-#include "pwmig/utility/coords.h"
-#include "pwmig/utility/Hypocenter.h"
-#include "pwmig/utility/EventCatalog.h"
+#include "pwmig/dsap/coords.h"
+#include "pwmig/seispp/Hypocenter.h"
+#include "pwmig/seispp/EventCatalog.h"
 using namespace std;
-using namespace pwmig::utility;
+using namespace pwmig::seispp;
 using mspass::utility::MsPASSError;
 using mspass::seismic::TimeWindow;
-namespace pwmig::utility
+namespace pwmig::seispp
 {
 EventCatalog::EventCatalog(const MetadataList& mdl)
 {

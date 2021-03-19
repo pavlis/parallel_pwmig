@@ -1,5 +1,5 @@
 #include <math.h>
-#include "coords.h"
+#include "pwmig/dsap/coords.h"
 
 void dsphcar(lng, lat, x)
 double  lng, lat;
