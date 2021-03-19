@@ -8,6 +8,6 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/include)
 
 add_library(gclgrid STATIC ${sources_gclgrid})
-target_link_libraries(gclgrid PRIVATE utility ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+target_link_libraries(gclgrid PRIVATE dsap ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
 install (TARGETS gclgrid DESTINATION lib)
