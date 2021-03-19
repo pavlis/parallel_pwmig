@@ -17,7 +17,7 @@ using namespace std;
 using mspass::utility::Metadata;
 using namespace pwmig::seispp;
 
-PYBIND11_MODULE(utility, m) {
+PYBIND11_MODULE(seispp, m) {
 py::class_<Hypocenter>(m,"Hypocenter","Class to hold earthquake space-time coordinates")
   .def(py::init<>())
   .def(py::init<const mspass::utility::Metadata&>())
