@@ -4,6 +4,8 @@
 /*
 #include "pwmig/dsap/stock.h"
 */
+#define deg(r)    ((r) * 180.0/M_PI)
+#define rad(d)    ((d) * M_PI/180.0)
 
 double ddistance ( xlat1, xlon1, xlat2, xlon2 )
 double xlat1, xlon1, xlat2, xlon2 ;

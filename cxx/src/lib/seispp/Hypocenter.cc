@@ -7,7 +7,6 @@
 #include "pwmig/seispp/Hypocenter.h"
 #include "mspass/seismic/keywords.h"
 #include "mspass/utility/MsPASSError.h"
-#include "mspass/utility/SphericalCoordinate.h"
 
 using namespace std;
 using namespace pwmig::seispp;
@@ -46,6 +45,7 @@ Hypocenter& Hypocenter::operator=(const Hypocenter& h0)
 // Note that things like TimeSeries objects can be used to create
 // a Hypocenter through this mechanism through the use of a dynamic_cast
 //
+const double d2rad(M_PI/180.0);
 Hypocenter::Hypocenter(const Metadata& md)
 {
 	try {
@@ -55,8 +55,8 @@ Hypocenter::Hypocenter(const Metadata& md)
 		time=md.get_double(SEISMICMD_stime);
 		/* Assume lat and lon are in degrees so we have to convert them
 		to radians.  Assume depth is already in km*/
-		lat=mspass::utility::rad(lat);
-		lon=mspass::utility::rad(lon);
+		lat *= d2rad;
+		lon *= d2rad;
 	} catch (MsPASSError& mderr) {throw mderr;};
 }
 // the obvious fully parameterized constructor
