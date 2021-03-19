@@ -2,7 +2,7 @@
 #define _HYPOCENTER_H_
 #include <string>
 #include "mspass/utility/Metadata.h"
-namespace pwmig::utility
+namespace pwmig::seispp
 {
 /*! \brief Defines a source position and a set of useful methods with which a source
 position can be associated.

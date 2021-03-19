@@ -3,12 +3,12 @@
 #include <map>
 #include <memory>
 #include "mspass/seismic/TimeWindow.h"
-#include "pwmig/utility/Hypocenter.h"
 #include "mspass/utility/Metadata.h"
-namespace pwmig::utility
+#include "pwmig/seispp/Hypocenter.h"
+namespace pwmig::seispp
 {
 using namespace std;
-using pwmig::utility::Hypocenter;
+using pwmig::seispp::Hypocenter;
 using mspass::utility::MetadataList;
 using mspass::utility::Metadata;
 using mspass::seismic::TimeWindow;

@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string>
 using namespace std;
+namespace pwmig::gclgrid
+{
 /* \brief Error class thrown for errors in this package.
 
 Simple child of stdlib abstract exception class.  Handler should catch a
@@ -24,4 +26,5 @@ public:
 protected:
     string message;
 };
+}  // end namespace
 #endif

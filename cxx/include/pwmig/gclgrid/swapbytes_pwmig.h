@@ -1,4 +1,4 @@
-namespace pwmig::utility
+namespace pwmig::gclgrid
 {
 /* This is a local include file to define glp implementation of
    swapbyte routines in antelope.   Needed only for prototypes.*/
