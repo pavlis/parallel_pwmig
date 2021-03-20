@@ -2,7 +2,7 @@
 //#include <pybind11/numpy.h>
 //#include <pybind11/stl.h>
 //#include <pybind11/stl_bind.h>
-//#include <pybind11/operators.h>
+#include <pybind11/operators.h>
 //#include <pybind11/embed.h>
 
 #include "pwmig/seispp/Hypocenter.h"
@@ -48,6 +48,12 @@ py::class_<EventCatalog>(m,"EventCatalog","In memory earthquake source data mana
   .def("current_aux",&EventCatalog::current_aux,"Return Metadata component of event marked current")
   .def("current",&EventCatalog::current,"Return Hpocenter defined as current (after a find or in iteration)")
   .def("delete_current",&EventCatalog::delete_current,"Delete the event defined as current")
+  .def("size",&EventCatalog::size,"Return number of events in the catalog")
+  /* this won't work because python doesn't have the ++ or -- operators
+  If needed will need to implement operator+
+  .def(py::self ++ py::self)
+  */
+  .def("advance",&EventCatalog::advance,"Advance the current event pointer by number of slots requested")
 ;
 }
 }  // end namespace pwmigpy

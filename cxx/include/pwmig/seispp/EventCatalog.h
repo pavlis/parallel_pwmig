@@ -225,7 +225,7 @@ public:
 	/*! brief Generic subset method.
 
 	It is frequently of interest to produce a subset of an event catalog.  This provides
-	a generic method to do this using the STL concept of a type of function object
+	a generic method to do this using the C++ concept of a type of function object
 	called a predicate.  To be instantiated this template requires a function object that
 	returns true if a Hypocenter object satisfies a subset condition.  This allows the
 	subset specification to be totally generic.
@@ -246,6 +246,23 @@ public:
 	the "current" Hypocenter.  This operator is used to work through the catalog
 	in an linear way from beginning to end (time order).  */
 	void operator++();
+  /*! \brief Advance the pointer to the current event a specfied amount.
+
+  This method is necesary for the python wrappers of this class because
+  python does not have operator++.  It advances the current event pointer
+  by n.
+
+  \param n number of slots to advance the current event pointer
+
+  \exception Will throw a MsPASSError if current slot + n slots is beyond
+   the end of the container.
+  */
+  void advance(const size_t n)
+  {
+    try{
+      for(size_t i=0;i<n;++i) ++(*this);
+    }catch(...){throw;};
+  }
 private:
 	map<Hypocenter,Metadata,SpaceTimeCompare> catalog;
 	map<Hypocenter,Metadata,SpaceTimeCompare>::iterator current_hypo;
