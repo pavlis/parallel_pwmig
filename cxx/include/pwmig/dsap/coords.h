@@ -7,8 +7,8 @@
 /* Physics Vade Mecum, Herbert Anderson, pp 67 */
 #define EQUATORIAL_EARTH_RADIUS 6378.164
 
-//#define deg(r)    ((r) * 180.0/M_PI)
-//#define rad(d)    ((d) * M_PI/180.0)
+#define deg(r)    ((r) * 180.0/M_PI)
+#define rad(d)    ((d) * M_PI/180.0)
 
 
 /* 3D geometry and Spherical Geometry */
