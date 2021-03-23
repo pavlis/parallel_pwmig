@@ -142,8 +142,6 @@ def telecluster(dbname,pfname="telecluster.pf",query={},othermd=[]):
     # Now attempt to load the source data
     dbclient=Client()
     db=Database(dbclient,dbname)
-    # for debug - remove when done with debugging
-    db.drop_collection('telecluster')
     cluster_collection=db['telecluster']
     evcat=dbload_EventCatalog(db,mdlist=othermd,query=query)
     for i in range(grid.number_azimuth_bins()):
