@@ -142,6 +142,8 @@ def telecluster(dbname,pfname="telecluster.pf",query={},othermd=[]):
     # Now attempt to load the source data
     dbclient=Client()
     db=Database(dbclient,dbname)
+    # for debug - remove when done with debugging
+    db.drop_collection('telecluster')
     cluster_collection=db['telecluster']
     evcat=dbload_EventCatalog(db,mdlist=othermd,query=query)
     for i in range(grid.number_azimuth_bins()):
@@ -163,8 +165,13 @@ def telecluster(dbname,pfname="telecluster.pf",query={},othermd=[]):
                 # may not be groked by mongodb - didn't test but why 
                 # gamble for this tiny cost.
                 doc['events']=list(hypos.keys())
+                celldata=grid.cell(i,j)
+                cellsubdoc=dict()
+                for k in celldata:
+                    cellsubdoc[k]=celldata[k]
+                doc['gridcell']=cellsubdoc
                 print(doc)
                 cluster_collection.insert_one(doc)
 
-           
+telecluster('usarraytest')          
     
