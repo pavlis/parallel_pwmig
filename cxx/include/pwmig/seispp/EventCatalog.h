@@ -9,7 +9,6 @@ namespace pwmig::seispp
 {
 using namespace std;
 using pwmig::seispp::Hypocenter;
-using mspass::utility::MetadataList;
 using mspass::utility::Metadata;
 using mspass::seismic::TimeWindow;
 /*! \brief Function object for weak ordering of Hypocenters in space-time order.
@@ -86,23 +85,22 @@ are a convenient means of manipulating such a catalog.  Be aware this is
 object loads the entire catalog into memory so it is ill advised for huge
 catalogs.  On the other hand, with modern computers I'm not sure there
 is a single catalog large enough to make this a serious issue.
+
+this version is adapted from seispp with the intent to be used largely
+from python.  The previous version enforced some rules on metadata types
+but here we assume that is enforced by mspass's database schema mechanism.
+further the original had a constructor pointing at an antelope database.
+This has none and the only constructor is one that creates an empty
+catalog object.  In python the idea it would be loaded by accessing the
+mspass source collection.
 */
 class EventCatalog
 {
 public:
 	/*! \brief Default constructor.
 
-	Explicitly set to do nothing. */
+	Creates an empty catalog */
 	EventCatalog(){};
-	/*! \brief Create and empty catalog enabling a restricted list of auxiliary attributes.
-
-	This constructor creates an empty catalog and enables a list of allowed auxiliary attributes
-	passed via the MetadataList argument.
-
-	\param mdl list of attributes that can be expected to be loaded with each hypocenter to
-		 be added later to the object.
-	*/
-	EventCatalog(const MetadataList& mdl);
 
 	/*! \brief Standard copy constructor.
 	*/
@@ -235,7 +233,7 @@ public:
 	\return shared_ptr to new EventCatalog containing the subset.  The current pointer of
 		subset is set to first event in the new catalog (time order).
 	*/
-	template<class Predicate> shared_ptr<EventCatalog> subset(Predicate pred);
+	template<class Predicate> EventCatalog subset(Predicate pred);
 	/*! \brief Return the count of current number of Hypocenters in the catalog.*/
 	int size();
 	/*! \brief Standard assignment operator.*/
@@ -266,19 +264,16 @@ public:
 private:
 	map<Hypocenter,Metadata,SpaceTimeCompare> catalog;
 	map<Hypocenter,Metadata,SpaceTimeCompare>::iterator current_hypo;
-	/* There is no guarantee every hypo has all entries in this loaded unless
-	the data are loaded from a db.  Otherwise just a guideline */
-	MetadataList mdloaded;
 };
 
 template <class Predicate>
-shared_ptr<EventCatalog> EventCatalog::subset(Predicate pred)
+EventCatalog EventCatalog::subset(Predicate pred)
 {
 	map<Hypocenter,Metadata,SpaceTimeCompare>::iterator cptr;
-	shared_ptr<EventCatalog> result(new EventCatalog());
+	EventCatalog result;
 	for(cptr=catalog.begin();cptr!=catalog.end();++cptr)
 	{
-		if(pred(cptr->first)) result->catalog.insert(*cptr);
+		if(pred(cptr->first)) result.catalog.insert(*cptr);
 	}
 	return(result);
 }

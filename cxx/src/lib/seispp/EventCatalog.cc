@@ -9,10 +9,6 @@ using mspass::utility::MsPASSError;
 using mspass::seismic::TimeWindow;
 namespace pwmig::seispp
 {
-EventCatalog::EventCatalog(const MetadataList& mdl)
-{
-	mdloaded=mdl;
-}
 
 
 TimeWindow EventCatalog::range() const
@@ -107,7 +103,6 @@ EventCatalog::EventCatalog(const EventCatalog& parent)
 {
 	catalog=parent.catalog;
 	current_hypo=parent.current_hypo;
-	mdloaded=parent.mdloaded;
 }
 
 EventCatalog& EventCatalog::operator=(const EventCatalog& parent)
@@ -116,7 +111,6 @@ EventCatalog& EventCatalog::operator=(const EventCatalog& parent)
     {
 	catalog=parent.catalog;
 	current_hypo=parent.current_hypo;
-	mdloaded=parent.mdloaded;
     }
     return(*this);
 }
