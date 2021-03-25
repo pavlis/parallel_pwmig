@@ -255,7 +255,7 @@ extern int ReTuRn(int) ;
  * sqr(a++) will give an undefined result which is probably not what you
  * wanted and may differ among compilers. */
 
-#define sqr(d) 		((d)*(d))
+//#define sqr(d) 		((d)*(d))
 
 #ifndef SQR
 #define SQR(d) 		((d)*(d))
