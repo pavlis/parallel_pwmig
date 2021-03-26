@@ -1,15 +1,21 @@
 #include <pybind11/pybind11.h>
-//#include <pybind11/numpy.h>
-//#include <pybind11/stl.h>
-//#include <pybind11/stl_bind.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 #include <pybind11/operators.h>
-//#include <pybind11/embed.h>
+#include <pybind11/embed.h>
 
 #include "pwmig/seispp/Hypocenter.h"
 #include "pwmig/seispp/RadialGrid.h"
 #include "pwmig/seispp/EventCatalog.h"
+#include "pwmig/seispp/Stack.h"
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/AntelopePf.h"
+
+/* these are needed to make std::vector containers function propertly.
+This was borrowed from mspass pybind11 cc files */
+PYBIND11_MAKE_OPAQUE(std::vector<double>);
+PYBIND11_MAKE_OPAQUE(std::vector<mspass::seismic::TimeSeries>);
 
 namespace pwmig {
 namespace pwmigpy {
@@ -18,9 +24,23 @@ namespace py=pybind11;
 using namespace std;
 using mspass::utility::Metadata;
 using mspass::utility::AntelopePf;
-using namespace pwmig::seispp;
+using mspass::seismic::TimeSeries;
+using mspass::seismic::TimeSeriesEnsemble;
+using mspass::seismic::TimeWindow;
+//using namespace pwmig::seispp;
+using pwmig::seispp::Hypocenter;
+using pwmig::seispp::RadialGrid;
+using pwmig::seispp::EventCatalog;
+using pwmig::seispp::SectorTest;
+using pwmig::seispp::Stack;
+
 
 PYBIND11_MODULE(seispp, m) {
+/* more std::vector requirements borrowed from mspass */
+py::bind_vector<std::vector<double>>(m, "DoubleVector");
+py::bind_vector<std::vector<TimeSeries>>(m, "TimeSeriesVector", pybind11::module_local(false));
+
+
 py::class_<Hypocenter>(m,"Hypocenter","Class to hold earthquake space-time coordinates")
   .def(py::init<>())
   .def(py::init<const mspass::utility::Metadata&>())
@@ -75,6 +95,15 @@ py::class_<EventCatalog>(m,"EventCatalog","In memory earthquake source data mana
   .def("advance",&EventCatalog::advance,"Advance the current event pointer by number of slots requested")
   .def("sector_subset",&EventCatalog::subset<SectorTest>,"Subset using a radial grid")
 ;
+py::class_<Stack>(m,"RobustStack","Ensemble stacker with simple and multiple robust stacking methods")
+  .def(py::init<>())
+  .def(py::init<TimeSeriesEnsemble&,const TimeWindow>())
+  .def(py::init<TimeSeriesEnsemble&,const TimeWindow,const TimeWindow,
+      pwmig::seispp::StackType,double>())
+  .def_readwrite("stack",&Stack::stack,"Stack produced on construction form input ensemble")
+  .def_readwrite("sumwt",&Stack::sumwt,"sum of weights (usuall < fold with robust stacking)")
+  .def_readwrite("fold",&Stack::fold,"Number of live TimeSeries in computed stack")
+  ;
 }
 }  // end namespace pwmigpy
 }  // end namespace pwmig
