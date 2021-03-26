@@ -3,6 +3,13 @@
 #include <string>
 #include "mspass/utility/AntelopePf.h"
 #include "pwmig/gclgrid/gclgrid.h"
+/* Include this explicit prototype here normally foudn in coords.h.
+that file has some namespace collisions.  To avoid them we just give
+the prototype for dist */
+extern "C" {
+	extern void dist ( double xlat1, double xlong1, double xlat2, double xlong2,
+		double *del, double *az );
+};
 namespace pwmig::seispp
 {
 /*! \brief Define a global radial grid.

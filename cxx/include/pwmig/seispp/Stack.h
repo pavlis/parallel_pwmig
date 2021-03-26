@@ -2,7 +2,6 @@
 #define _PWMIG_STACK_H_
 
 #include <vector>
-#include "SeisppKeywords.h"
 #include "mspass/seismic/TimeWindow.h"
 #include "mspass/seismic/TimeSeries.h"
 #include "mspass/seismic/Ensemble.h"

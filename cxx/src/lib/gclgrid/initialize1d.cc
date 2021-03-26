@@ -1,3 +1,4 @@
+#include <math.h>
 #include "pwmig/gclgrid/gclgrid.h"
 #include "pwmig/seispp/interpolator1d.h"
 using namespace std;
@@ -22,13 +23,12 @@ input recognizes this. */
 void  initialize_1Dscalar(GCLscalarfield3d& field,
 	const vector<double>val1d,const vector<double> z1d, const vector<double>grad)
 {
-	int i,j,k,kk;
+	int i,j,k;
 	// First make sure the input is valid
 	if( (val1d.size()!= z1d.size()) || (z1d.size()!=grad.size()) )
 		throw(GCLgridError(string("initialize_1Dscalar:  input 1d model vector sizes do not match")));
 	// a few useful variables that are best set once as they are used many times below
 	int n1dsize=val1d.size();
-	int grid_top=field.n3-1;  // index to top surface of grid
 	int igrid;
 	// Use a simple array here to interface with 1d interpolation library
 	double grid_depth;

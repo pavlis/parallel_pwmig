@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <float.h>
 #include <sstream>
+#include <math.h>
 #include "mspass/utility/SphericalCoordinate.h"
 #include "pwmig/gclgrid/gclgrid.h"
 using namespace pwmig::gclgrid;

@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
-#include "pwmig/dsap/stock.h"
-#include "pwmig/dsap/coords.h"
+//#include "pwmig/dsap/stock.h"
+//#include "pwmig/dsap/coords.h"
 #include "mspass/utility/dmatrix.h"
 #include "GCLgridError.h"
 namespace pwmig::gclgrid

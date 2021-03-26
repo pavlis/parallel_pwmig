@@ -1,3 +1,4 @@
+#include <math.h>
 #include "pwmig/gclgrid/gclgrid.h"
 #include "mspass/utility/dmatrix.h"
 using namespace pwmig::gclgrid;

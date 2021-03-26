@@ -3,6 +3,8 @@
 #include <math.h>
 #include "mspass/utility/AntelopePf.h"
 #include "mspass/utility/SphericalCoordinate.h"
+#include "pwmig/dsap/stock.h"
+#include "pwmig/dsap/coords.h"
 #include "pwmig/gclgrid/gclgrid.h"
 #include "pwmig/gclgrid/swapbytes_pwmig.h"
 using namespace std;
