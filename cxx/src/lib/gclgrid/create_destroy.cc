@@ -100,11 +100,25 @@ double ***create_3dgrid_contiguous(const int n1, const int n2, const int n3)
 	double *ptr;
 	int i,j;
 
-	allot(double *,ptr,n1*n2*n3);
-	allot(double ***,ptr3d,n1);
+	/* Previous version used an datascope/antelope macro allot 
+	that handled malloc errors automatically. Made manual here. 
+	*/
+	//allot(double *,ptr,n1*n2*n3);
+	//allot(double ***,ptr3d,n1);
+	ptr=(double *)calloc(n1*n2*n3,sizeof(double));
+	ptr3d=(double ***)calloc(n1,sizeof(double **));
+	if( ptr==NULL || ptr3d==NULL)
+	{
+	  throw GCLgridError("create_3dgrid_contiguous:  calloc failure");
+	}
 	for(i=0;i<n1;++i)
 	{
-		allot(double **,ptr2ptr,n2);
+		//allot(double **,ptr2ptr,n2);
+		ptr2ptr=(double **)calloc(n2,sizeof(double *));
+		if(ptr2ptr==NULL)
+		{
+		  throw GCLgridError("create_3dgrid_contingous:  calloc failure while creating pointer to pointer indexing array");
+		}
 		ptr3d[i] = ptr2ptr;
 	}
 	for(i=0;i<n1;++i)
@@ -140,8 +154,16 @@ double **create_2dgrid_contiguous(const int n1, const int n2)
 	double *ptr;
 	int i;
 
-	allot(double *,ptr,n1*n2);
-	allot(double **,ptr2ptr,n1);
+	/* As above this used to used these antelope allot functions from 
+	stock.h*/
+	//allot(double *,ptr,n1*n2);
+	//allot(double **,ptr2ptr,n1);
+	ptr=(double *)calloc(n1*n2,sizeof(double));
+	ptr2ptr=(double **)calloc(n1,sizeof(double *));
+	if(ptr==NULL || ptr2ptr==NULL)
+	{
+	  throw GCLgridError("create_2dgrid_contiguous:  malloc failure creating 2d grid workspace");
+	}
 	for(i=0;i<n1;++i)
 		ptr2ptr[i] = ptr + n2*i;
 	return(ptr2ptr);
@@ -159,21 +181,59 @@ void free_2dgrid_contiguous(double **x,const int n1)
 //
 double ****create_4dgrid_contiguous(const int n1, const int n2, const int n3, const int n4)
 {
+	const string base_error("create_4dgrid_continuous:  ");
 	double ****ptr4d;
 	double ***ptr3d;
 	double **ptr2ptr;
 	double *ptr;
 	int i,j,k;
 
-	allot(double *,ptr,n1*n2*n3*n4);
-	allot(double ****,ptr4d,n1);
+	/* As above these previously used antelope's allot macro*/
+	//allot(double *,ptr,n1*n2*n3*n4);
+	//allot(double ****,ptr4d,n1);
+	ptr=(double *)calloc(n1*n2*n3*n4,sizeof(double));
+	if(ptr==NULL)
+	{
+	  stringstream ss;
+	  ss << base_error 
+	    << "memory allocation failed for 4d array of size="
+	    << n1<<"X"<<n2<<"X"<<n3<<"X"<<n4<<endl;
+	  throw GCLgridError(ss.str());
+	}
+	ptr4d=(double ****)calloc(n1,sizeof(double ***));
+	if(ptr4d==NULL)
+	{
+	  stringstream ss;
+	  ss<< base_error
+	    << "memory allocation failed for top level point array of length="
+	    << n1<<endl;
+	  throw GCLgridError(ss.str());
+	}
 	for(i=0;i<n1;++i)
 	{
-		allot(double ***,ptr3d,n2);
+		//allot(double ***,ptr3d,n2);
+		ptr3d=(double ***)calloc(n2,sizeof(double **));
+		if(ptr3d==NULL)
+		{
+		  stringstream ss;
+		  ss << base_error
+		    << "memory allocation failed for 2nd level pointer array"
+		    << " of length="<<n2<<endl;
+		  throw GCLgridError(ss.str());
+		}
 		ptr4d[i] = ptr3d;
 		for(j=0;j<n2;++j)
 		{
-			allot(double **,ptr2ptr,n3);
+			//allot(double **,ptr2ptr,n3);
+			ptr2ptr=(double **)calloc(n2,sizeof(double *));
+			if(ptr2ptr==NULL)
+			{
+			  stringstream ss;
+			  ss<<base_error
+			    << "memory allocation failed for 3rd level pointer array of length="
+			    << n3<<endl;
+			  throw GCLgridError(ss.str());
+			}
 			ptr4d[i][j]=ptr2ptr;
 		}
 	}
