@@ -1,4 +1,4 @@
-FILE(GLOB sources_gclgrid *.f *.cc)
+FILE(GLOB sources_gclgrid *.cc *.f)
 include_directories(
   ${Boost_INCLUDE_DIRS}
   ${pybind11_INCLUDE_DIR}
