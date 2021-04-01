@@ -138,6 +138,10 @@ def telecluster(dbname,pfname="telecluster.pf",query={},othermd=[]):
     # First make sure the pf file can be read and contains everything 
     # we need
     pf=AntelopePf(pfname)
+    # This parameter is not used in the radial grid constructor so 
+    # we fetch it immediately. We let it throw an exception and abort if 
+    # it is missing
+    gridname=pf.get_string('gridname')
     grid=pfload_radial_grid(pf)
     # Now attempt to load the source data
     dbclient=Client()
@@ -154,6 +158,7 @@ def telecluster(dbname,pfname="telecluster.pf",query={},othermd=[]):
                 hypos=cat2dict(catsubset)
                 centroid=compute_centroid(hypos)
                 doc=dict()
+                doc['gridname']=gridname
                 doc['hypocentroid']={'lat' : np.rad2deg(centroid.lat),
                                      'lon' : np.rad2deg(centroid.lon),
                                      'depth' : centroid.depth,
