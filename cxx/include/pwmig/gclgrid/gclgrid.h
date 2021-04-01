@@ -38,9 +38,14 @@ const string dfileext("dat");
  or inside the earth using a geographical (spherical geometry) reference
  system.  Note that geographical angles are always assumed to be radians
  in any internal use of this package.
+
+ These were previously C struct.  for mspass python conversion
+ changed to class and added default constructor with initalization.
 */
 
-typedef struct  Geographic_point {
+class  Geographic_point
+{
+public:
 /*!
   Latitude of the point (radians).
 */
@@ -53,16 +58,26 @@ typedef struct  Geographic_point {
  Radius of point from Earth's center (kilometers).
 */
 	double r;
-}Geographic_point;
+	Geographic_point()
+	{
+		lat=0.0; lon=0.0; r=0.0;
+	};
+	Geographic_point(const Geographic_point& parent)
+	{
+		lat=parent.lat;
+		lon=parent.lon;
+		r=parent.r;
+	};
+};
 /*!
  GCLgrid objects hold points internally in a Cartesian reference fram.
  This data structure encapsulates such a coordinate.  It perhaps should
  be a class with a member to return a 3 vector alternative to the
  verbose naming.
 */
-typedef struct  Cartesian_point
+class Cartesian_point
 {
-    public:
+public:
 /*!
  The coordinate in the internal x1 direction.
 */
@@ -75,7 +90,25 @@ typedef struct  Cartesian_point
  The coordinate in the internal x3 direction.
 */
 	double x3;
-}Cartesian_point;
+	Cartesian_point()
+	{
+		x1=0.0; x2=-0.0; x3=0.0;
+	};
+	Cartesian_point(const Cartesian_point& parent)
+	{
+		x1=parent.x1;
+		x2=parent.x2;
+		x3=parent.x3;
+	};
+	std::vector<double> coordinates()
+	{
+		std::vector<double> v;
+		v.push_back(x1);
+		v.push_back(x2);
+		v.push_back(x3);
+		return v;
+	}
+};
 
 /*!
  This is a base class that contains common attributes and virtual
@@ -931,7 +964,7 @@ public:
 	 \param n2size number of grid points on generalized coordinate axis 2.
 	 \param n3size number of grid points on generalized coordinate axis 3.
 	*/
-	GCLvectorfield(int,int,int);
+	GCLvectorfield(const int,const int,const int);
 	/** Standard copy constructor. */
 	GCLvectorfield(const GCLvectorfield& parent);
 	/*!  \brief Construct a vector field using a parent grid geometry.

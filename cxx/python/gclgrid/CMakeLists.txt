@@ -9,14 +9,14 @@ include_directories(
   ${PROJECT_BINARY_DIR}/include)
 
 
-pybind11_add_module(pyseispp seispp_py.cc)
+pybind11_add_module(pygclgrid gclgrid_py.cc)
 
-target_link_libraries(pyseispp PRIVATE seispp dsap gclgrid 
+target_link_libraries(pygclgrid PRIVATE seispp dsap gclgrid 
   $ENV{MSPASS_HOME}/lib/libutility.a 
   $ENV{MSPASS_HOME}/lib/libmspass.a 
   $ENV{MSPASS_HOME}/lib/libseismic.a 
   ${Boost_LIBRARIES})
-set_target_properties(pyseispp PROPERTIES OUTPUT_NAME "seispp")
+set_target_properties(pygclgrid PROPERTIES OUTPUT_NAME "gclgrid")
 if(DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-  set_target_properties(pyseispp PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/ccore)
+  set_target_properties(pygclgrid PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/ccore)
 endif()
