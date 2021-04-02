@@ -116,7 +116,8 @@ py::class_<BasicGCLgrid,PyBasicGCLgrid>(m,"BasicGCLgrid","Base class for family 
   .def_readwrite("x3high",&BasicGCLgrid::x3high)
 ;
 
-py::class_<GCLgrid,BasicGCLgrid>(m,"GCLgrid","Two-dimensional GCL grid object")
+py::class_<GCLgrid,BasicGCLgrid>(m,"GCLgrid",py::buffer_protocol(),
+                  "Two-dimensional GCL grid object")
   .def(py::init<>())
   .def(py::init<const int, const int>())
   .def(py::init<const int, const int, const string,const double, const double,
@@ -133,8 +134,18 @@ py::class_<GCLgrid,BasicGCLgrid>(m,"GCLgrid","Two-dimensional GCL grid object")
   .def("r",&GCLgrid::r,"Get radial distance from earth center (km) of a grid point specified by two index ints")
   .def("depth",&GCLgrid::depth,"Get depth (km) from 0 reference ellipsoid radius of a grid point specified by two index ints")
   .def("compute_extents",&GCLgrid::compute_extents,"Call after manually building a grid")
+  .def("coordinates",[](const GCLgrid& g,const int i, const int j)->Cartesian_point
+  {
+    Cartesian_point result;
+    result.x1=g.x1[i][j];
+    result.x2=g.x2[i][j];
+    result.x3=g.x3[i][j];
+    return result;
+  })
+  .def("geo_coordinates",&GCLgrid::geo_coordinates,"Fetch grid point defined as geo coordinates")
 ;
-py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d","Three-dimensional GCL grid object")
+py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
+                     "Three-dimensional GCL grid object")
   .def(py::init<>())
   .def(py::init<const int, const int, const int>())
   .def(py::init<const int, const int, const int, const string,
