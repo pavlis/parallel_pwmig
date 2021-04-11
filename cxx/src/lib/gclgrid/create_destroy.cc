@@ -67,6 +67,28 @@ template <class T>
         g.k0=par.get_int("k0");
     } catch(...) {throw;};
 }
+bool byte_swap_is_needed(const Metadata& md) const
+{
+  try{
+    string datatype("u8");
+    if(md.is_defined("datatype"))
+    {
+      datatype=md.get_string("datatype");
+    }
+	  if( !((datatype=="u8") || (datatype=="t8") ) )
+		  throw GCLgridError(base_error
+						+ "Do not know how to handle datatype="
+						+ datatype
+						+"\nMust be u8 or t8");
+	  bool little_endian=IntelByteOrder();
+	  if( (datatype=="t8") && little_endian)
+      return true;
+	  else if( (datatype=="u8") && !little_endian)
+      return true;
+	  else
+      return false;
+  }catch(...){throw;};
+}
 /* These are create and free routines for 2d, 3d, and 4d arrays in plain C.
 They are used below for C++ constructors and destructors.  The MOST
 IMPORTANT thing to note about the constructions used here is that I have
@@ -100,8 +122,8 @@ double ***create_3dgrid_contiguous(const int n1, const int n2, const int n3)
 	double *ptr;
 	int i,j;
 
-	/* Previous version used an datascope/antelope macro allot 
-	that handled malloc errors automatically. Made manual here. 
+	/* Previous version used an datascope/antelope macro allot
+	that handled malloc errors automatically. Made manual here.
 	*/
 	//allot(double *,ptr,n1*n2*n3);
 	//allot(double ***,ptr3d,n1);
@@ -154,7 +176,7 @@ double **create_2dgrid_contiguous(const int n1, const int n2)
 	double *ptr;
 	int i;
 
-	/* As above this used to used these antelope allot functions from 
+	/* As above this used to used these antelope allot functions from
 	stock.h*/
 	//allot(double *,ptr,n1*n2);
 	//allot(double **,ptr2ptr,n1);
@@ -195,7 +217,7 @@ double ****create_4dgrid_contiguous(const int n1, const int n2, const int n3, co
 	if(ptr==NULL)
 	{
 	  stringstream ss;
-	  ss << base_error 
+	  ss << base_error
 	    << "memory allocation failed for 4d array of size="
 	    << n1<<"X"<<n2<<"X"<<n3<<"X"<<n4<<endl;
 	  throw GCLgridError(ss.str());
@@ -341,6 +363,7 @@ Metadata pfload_GCLmetadata(const string fname)
         return(dynamic_cast<Metadata&>(md));
     }catch(...){throw;};
 }
+
 GCLgrid::GCLgrid(const string fname, const string format)
 {
     const string base_error("GCLgrid file-based constructor:  ");
@@ -354,7 +377,7 @@ GCLgrid::GCLgrid(const string fname, const string format)
             pfload_common_GCL_attributes<GCLgrid>(*this,params);
             /* Intentionally do not check for object_type to allow
              field constructors to use this */
-            //string otype=params.get_string("object_type");
+           //string otype=params.get_string("object_type");
             /* This and other similar routines need to get info about
                the byte order of the data.  Done with this attribute.*/
             string datatype=params.get_string("datatype");
@@ -431,6 +454,13 @@ GCLgrid::GCLgrid(const string fname, const string format)
                 + format
                 + "\nCurrently only accept format="
                 +default_output_format);
+}
+GCLgrid::GCLgrid(const Metadata& md)
+{
+  try{
+    pfload_common_GCL_attributes<GCLgrid>(*this,md);
+    read_GCL2d_coord_arrays<GCLgrid>(md);
+  }catch(...){throw;};
 }
 
 // copy constructors here use inheritance of the BasicGCLgrid
@@ -543,6 +573,14 @@ GCLgrid3d::GCLgrid3d(const string fname, const string format,const bool fl)
                 + format
                 + "\nCurrently only accept format="
                 +default_output_format);
+}
+GCLgrid3d::GCLgrid3d(const Metadata& md)
+{
+  try{
+    pfload_common_GCL_attributes<GCLgrid3d>(*this,md);
+    pfload_3dgrid_attributes<GCLgrid3d>(*this,md);
+    read_GCL3d_coord_arrays<GCLgrid3d>(md);
+  }catch(...){throw;};
 }
 GCLgrid3d::GCLgrid3d(const GCLgrid3d& g)
 	: BasicGCLgrid(dynamic_cast<const BasicGCLgrid&>(g))
@@ -1227,7 +1265,46 @@ GCLvectorfield3d::GCLvectorfield3d(const string fname, const string format)
 
     }catch(...){throw;};
 }
-
+GCLscalarfield::GCLscalarfield(const Metadata& md) : GCLgrid(md)
+{
+  try{
+    vector<int> dim;
+    dim.push_back(this->n1);
+    dim.push_back(this->n2);
+    read_fielddata<GCLscalarfield>(md,dim);;
+  }catch(...){throw;};
+}
+GCLscalarfield3d::GCLscalarfield3d(const Metadata& md) : GCLgrid3d(md)
+{
+  try{
+    vector<int> dim;
+    dim.push_back(this->n1);
+    dim.push_back(this->n2);
+    dim.push_back(this->n3);
+    read_fielddata<GCLscalarfield>(md,dim);
+  }catch(...){throw;};
+}
+GCLvectorfield::GCLvectorfield(const Metadata& md) : GCLgrid(md)
+{
+  try{
+    vector<int> dim;
+    dim.push_back(this->n1);
+    dim.push_back(this->n2);
+    dim.push_back(this->nv);
+    read_fielddata<GCLscalarfield>(md,dim);
+  }catch(...){throw;};
+}
+GCLvectorfield3d::GCLvectorfield3d(const Metadata& md) : GCLgrid3d(md)
+{
+  try{
+    vector<int> dim;
+    dim.push_back(this->n1);
+    dim.push_back(this->n2);
+    dim.push_back(this->n3);
+    dim.push_back(this->nv);
+    read_fielddata<GCLscalarfield>(md,dim);
+  }catch(...){throw;};
+}
 
 //
 //C++ destructors

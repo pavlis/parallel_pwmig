@@ -415,6 +415,7 @@ public:
 
           */
   GCLgrid(const string fname, const string format=default_output_format);
+	GCLgrid(const Metadata& md);
 /*! Standard copy constructor.*/
 	GCLgrid(const GCLgrid&);  //standard copy constructor
 /*!
@@ -451,9 +452,12 @@ public:
         file names like myfile.dat.)
 
 
+			\return copy of Metadata container with attributes defining the
+			 object sans grid data.
+
       \exception GCLgridError is throw if save fails.
     */
-    void save(const string fname, const string dir,
+    Metadata save(const string fname, const string dir,
             const string format=default_output_format);
 	/*!
 	 Find the index position of a point in a GCLgrid.
@@ -649,6 +653,7 @@ public:
           */
         GCLgrid3d(const string fname, const string format=default_output_format,
                 const bool fl=true);
+	GCLgrid3d(const Metadata& md);
 	/** Standard copy constructor. */
 	GCLgrid3d(const GCLgrid3d&);
 	/** Standard assignment operator. */
@@ -673,10 +678,11 @@ public:
             (current default is a two file output separating the
             header and data.  Hence users should avoid .ext
             file names like myfile.dat.)
-
+					\return copy of Metadata container with attributes defining the
+						 object sans grid data.
           \exception GCLgridError is throw if save fails.
         */
-        void save(const string fname, const string dir,
+        Metadata save(const string fname, const string dir,
                 const string format=default_output_format);
 	/*!
 	 Find the index position of a point in a GCLgrid3d object.
@@ -851,6 +857,7 @@ public:
           */
   GCLscalarfield(const string fname, const string format=default_output_format,
                 const bool enforce_object_type=true);
+  GCLscalarfield(const Metadata& md);
 	/*!
 	 Destructor.
 	 Nontrivial destructor as it has to destroy components
@@ -881,10 +888,12 @@ public:
             (current default is a two file output separating the
             header and data.  Hence users should avoid .ext
             file names like myfile.dat.)
+					\return copy of Metadata container with attributes defining the
+						 object sans grid data.
 
           \exception GCLgridError is throw if save fails.
         */
-  void save(const string fname, const string dir,
+  Metadata save(const string fname, const string dir,
                 const string format=default_output_format);
 	/*! \brief Add one field to another.
 
@@ -1002,6 +1011,7 @@ public:
           */
         GCLvectorfield(const string fname, const string format=default_output_format,
                 const bool enforce_object_type=true);
+	GCLvectorfield(const Metadata& md);
 	/** Standard assignment operator. */
 	GCLvectorfield& operator=(const GCLvectorfield&);
 	/*!
@@ -1032,10 +1042,11 @@ public:
             (current default is a two file output separating the
             header and data.  Hence users should avoid .ext
             file names like myfile.dat.)
-
+					\return copy of Metadata container with attributes defining the
+						 object sans grid data.
           \exception GCLgridError is throw if save fails.
         */
-  void save(const string fname, const string dir,
+  Metadata save(const string fname, const string dir,
                 const string format=default_output_format);
 	/*! Add one field to another.
 
@@ -1150,6 +1161,7 @@ public:
           */
         GCLscalarfield3d(const string fname,
 					const string format=default_output_format);
+	GCLscalarfield3d(const Metadata& md);
 	/*!
 	Destructor.
 	Note the same precautions about application of the default constructor as noted
@@ -1181,10 +1193,11 @@ public:
             (current default is a two file output separating the
             header and data.  Hence users should avoid .ext
             file names like myfile.dat.)
-
+					\return copy of Metadata container with attributes defining the
+						 object sans grid data.
           \exception GCLgridError is throw if save fails.
         */
-        void save(const string fname, const string dir,
+        Metadata save(const string fname, const string dir,
                 const string format=default_output_format);
 	/*!
 	Add one field to another.
@@ -1287,6 +1300,7 @@ public:
           this constructor.
           */
   GCLvectorfield3d(const string fname, const string format=default_output_format);
+	GCLvectorfield3d(const Metadata& md);
 	/*!
 	Destructor.
 	Note the same precautions about application of the default constructor as noted
@@ -1317,10 +1331,11 @@ public:
             (current default is a two file output separating the
             header and data.  Hence users should avoid .ext
             file names like myfile.dat.)
-
+					\return copy of Metadata container with attributes defining the
+						 object sans grid data.
           \exception GCLgridError is throw if save fails.
         */
-  void save(const string fname, const string dir,
+  Metadata save(const string fname, const string dir,
                 const string format=default_output_format);
 	/*!
 	Add one field to another.
@@ -1364,14 +1379,208 @@ public:
 	*/
 	friend ostream& operator << (ostream&,GCLvectorfield3d&);
 };
+/*! Establish if binary data needs to be type swapped.
 
-/*
-//
-//C++ helpers
-//
-*/
-/*!
-Returns distance from the center of the Earth (km) of the standard ellipsoid at a specified latitude.
+This function tries to fetch the name "datatype" from the received Metadata
+container.   If it is defined it fetches the value.  If defined it must be
+one of two values:  "u8" or "t8".   If it is neither it will throw a
+GCLgridError exception.  It then determines the byte order of the
+machine this code is running on.  "t8" is little endian and "u8" is
+assumed big endian.  If the datatype and the actual do not match
+the function returns true.   If they match it returns false.  Note the
+default if datatype is not defined is little endian because Intel won the
+byte order wars a while back. */
+bool byte_swap_is_needed(const Metadata& md) const;
+template typename<GCLtype> void read_GCL2d_coord_arrays(const Metadata& md,const GCLtype& d)
+{
+	try{
+		base_error("read_GCL2d_coord_arrays:  ")
+		pfload_common_GCL_attributes(d,md);
+		bool need_to_swap_bytes;
+		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
+	  string dfile=fname+"."+dfileext;
+	  FILE *fp = fopen(dfile.c_str(),"r");
+	  if(fp == NULL)
+		  throw GCLgridError(base_error
+						+ "fopen failed on file "
+						+ dfile);
+    d.x1 = create_2dgrid_contiguous(d.n1,d.n2);
+	  d.x2 = create_2dgrid_contiguous(d.n1,d.n2);
+	  d.x3 = create_2dgrid_contiguous(d.n1,d.n2);
+	  /* Database stores data in geographic coordinates.
+	  File stores Cartesian form.  A bit inconsistent,
+	  but a design choice.  Storing geo coordinates
+	  would be a future format choice.*/
+	  int gridsize = d.n1*d.n2;
+		if(md.is_defined("griddata_foff"))
+		{
+			long foff;
+			foff=md.get_long("griddata_foff");
+			if(fseek(fp,foff,SEEK_SET))
+			{
+				stringstream ss;
+				ss << base_error
+				  << "fseek to offset="<<foff<<" failed for file="<<dfile;
+				throw GCLgridError(ss.str());
+			}
+		}
+	  if(fread(d.x1[0],sizeof(double),gridsize,fp) != gridsize)
+	  {
+		  fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x1 coordinate  array"
+						+ dfile);
+	  }
+	  if(fread(d.x2[0],sizeof(double),gridsize,fp) != gridsize)
+    {
+	  	fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x2 coordinate  array"
+						+ dfile);
+    }
+    if(fread(d.x3[0],sizeof(double),gridsize,fp) != gridsize)
+    {
+		  fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x3 coordinate array"
+						+ dfile);
+    }
+	  fclose(fp);
+	  if(need_to_swap_bytes)
+	  {
+		  swapdvec(d.x1[0],gridsize);
+		  swapdvec(d.x2[0],gridsize);
+		  swapdvec(d.x3[0],gridsize);
+	  }
+  }catch(...){throw;}l
+}
+/* this is version for 3d grids - different because of dimensions of arrays */
+template typename<GCLtype> void read_GCL3d_coord_arrays(const Metadata& md,const GCLtype& d)
+{
+	try{
+		base_error("read_GCL3d_coord_arrays:  ")
+		pfload_common_GCL_attributes(d,md);
+		bool need_to_swap_bytes;
+		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
+		string fname;
+		fname=md.get_string("grid_data_file");
+	  string dfile=fname+"."+dfileext;
+	  FILE *fp = fopen(dfile.c_str(),"r");
+	  if(fp == NULL)
+		  throw GCLgridError(base_error
+						+ "fopen failed on file "
+						+ dfile);
+    d.x1 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
+	  d.x2 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
+	  d.x3 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
+	  /* Database stores data in geographic coordinates.
+	  File stores Cartesian form.  A bit inconsistent,
+	  but a design choice.  Storing geo coordinates
+	  would be a future format choice.*/
+	  int gridsize = d.n1*d.n2*d.n3;
+		if(md.is_defined("griddata_foff"))
+		{
+			long foff;
+			foff=md.get_long("griddata_foff");
+			if(fseek(fp,foff,SEEK_SET))
+			{
+				stringstream ss;
+				ss << base_error
+				  << "fseek to offset="<<foff<<" failed for file="<<dfile;
+				throw GCLgridError(ss.str());
+			}
+		}
+	  if(fread(d.x1[0][0],sizeof(double),gridsize,fp) != gridsize)
+	  {
+		  fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x1 coordinate  array"
+						+ dfile);
+	  }
+	  if(fread(d.x2[0][0],sizeof(double),gridsize,fp) != gridsize)
+    {
+	  	fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x2 coordinate  array"
+						+ dfile);
+    }
+    if(fread(d.x3[0][0],sizeof(double),gridsize,fp) != gridsize)
+    {
+		  fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x3 coordinate array"
+						+ dfile);
+    }
+	  fclose(fp);
+	  if(need_to_swap_bytes)
+	  {
+		  swapdvec(d.x1[0][0],gridsize);
+		  swapdvec(d.x2[0][0],gridsize);
+		  swapdvec(d.x3[0][0],gridsize);
+	  }
+  }catch(...){throw;}l
+}
+template typename<GCLtype> void read_fielddata(GCLtype& d,
+	const Metadata& md,const vector<int> dimensions)
+{
+	stringstream ss;
+	try{
+		double *buffer;
+		size_t buffer_size;
+		int ndim=dimensions.size();
+		switch(ndim)
+		{
+			case 2:
+			  d.val=create_2dgrid_contiguous(dimensions[0],dimensions[1]);
+				buffer=&(d.val[0][0]);
+				break;
+			case 3:
+			  d.val=create_3dgrid_contiguous(dimensions[0],dimensions[1],dimensions[2]);
+				buffer==&(d.val[0][0][0]);
+				break;
+			case 4:
+				d.val=create_3dgrid_contiguous(dimensions[0],dimensions[1],
+					dimensions[2],dimensions[3]);
+				buffer==&(d.val[0][0][0][0]);
+				break;
+			default:
+			  ss << "read_fielddata template fuction:  illegal dimension vector"<<endl
+				   << "Number of dimensions defined by input vector="<<ndim;
+					 << "Only accept 2, 3, or 4"<<endl;
+				throw GCLgridError(ss.str());
+		};
+		size_t buffer_size(1);
+		for(size_t k=0;k<dimensions.size();++k) buffer_size *= dimensions[k];
+		fname=md.get_string("field_data_file");
+	  string dfile=fname+"."+dfileext;
+	  FILE *fp = fopen(dfile.c_str(),"r");
+	  if(fp == NULL)
+		  throw GCLgridError(base_error
+						+ "fopen failed on file "
+						+ dfile);
+		size_t foff;
+		foff=md.get_long("fielddata_foff");
+		if(fseek(fp,fvalstart,SEEK_SET))
+    {
+      fclose(fp);
+      throw GCLgridError(base_error
+              + "fseek to start of field data area of file failed");
+    }
+		if(fread(buffer,sizeof(double),buffer_size,fp) != buffer_size)
+		{
+			fclose(fp);
+			throw GCLgridError(base_error
+			  + "fread failed reading field data");
+		}
+		bool need_to_swap_bytes;
+		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
+		if(need_to_swap_bytes)
+		{
+			swapdvec(buffer,buffer_size);
+		}
+	}catch(...){throw;};
+}
+/*! \brief Returns distance from the center of the Earth (km) of the standard ellipsoid at a specified latitude.
 
 The reference ellipsoid depends only on latitude.  A GCLgrid uses the reference ellipsoid
 as the reference datum to define a depth.
