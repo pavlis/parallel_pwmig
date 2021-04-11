@@ -237,11 +237,12 @@ void pfhdr_save_field_data(const string fbase, const double *d, const size_t n)
     fclose(fp);
 }
 
-void GCLgrid::save(const string fname, string dir,const string format)
+Metadata GCLgrid::save(const string fname, string dir,const string format)
 {
     const string base_error("GCLgrid::save:  ");
+    Metadata attributes;
     try{
-        Metadata attributes=load_common_GCL_attributes(this);
+        attributes=load_common_GCL_attributes(this);
         string fbase=makepath(dir,fname);
         if(format==default_output_format)
         {
@@ -252,14 +253,16 @@ void GCLgrid::save(const string fname, string dir,const string format)
             throw GCLgridError(base_error
                     + "Do know how to write data with format tag "
                     + format);
+        return attributes;
 
     }catch(...){throw;};
 }
 void GCLgrid3d::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLgrid3d::save:  ");
+    Metadata attributes;
     try{
-        Metadata attributes=load_common_GCL_attributes(this);
+        attributes=load_common_GCL_attributes(this);
         load_3d_attributes(*this,attributes);
         string fbase=makepath(dir,fname);
         if(format==default_output_format)
@@ -271,13 +274,15 @@ void GCLgrid3d::save(const string fname, const string dir,const string format)
             throw GCLgridError(base_error
                     + "Do know how to write data with format tag "
                     + format);
+        return attributes;
     }catch(...){throw;};
 }
 void GCLscalarfield::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLscalarfield::save:  ");
+    Metadata attributes;
     try{
-        Metadata attributes=load_common_GCL_attributes(this);
+        attributes=load_common_GCL_attributes(this);
         GCLgrid *g=dynamic_cast<GCLgrid*>(this);
         g->save(fname,dir,format);
         /* To allow using common code to save the grid we have to
@@ -295,13 +300,15 @@ void GCLscalarfield::save(const string fname, const string dir,const string form
             throw GCLgridError(base_error
                     + "Do know how to write data with format tag "
                     + format);
+        return attributes;
     }catch(...){throw;};
 }
 void GCLvectorfield::save(const string fname, string dir,const string format)
 {
     const string base_error("GCLvectorfield::save:  ");
+    Metadata attributes;
     try{
-        Metadata attributes=load_common_GCL_attributes(this);
+        attributes=load_common_GCL_attributes(this);
         attributes.put("nv",nv);
         /* This duplicates code in save method for grid*/
         string fbase=makepath(dir,fname);
@@ -322,11 +329,13 @@ void GCLvectorfield::save(const string fname, string dir,const string format)
             throw GCLgridError(base_error
                     + "Do know how to write data with format tag "
                     + format);
+        return attributes;
     }catch(...){throw;};
 }
 void GCLscalarfield3d::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLscalarfield3d::save:  ");
+    Metadata attributes;
     try{
         Metadata attributes=load_common_GCL_attributes(this);
         GCLgrid3d *g=dynamic_cast<GCLgrid3d*>(this);
@@ -341,13 +350,15 @@ void GCLscalarfield3d::save(const string fname, const string dir,const string fo
             throw GCLgridError(base_error
                     + "Do know how to write data with format tag "
                     + format);
+        return attributes;
     }catch(...){throw;};
 }
 void GCLvectorfield3d::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLvectorfield3d::save:  ");
+    Metadata attributes;
     try{
-        Metadata attributes=load_common_GCL_attributes(this);
+        attributes=load_common_GCL_attributes(this);
         load_3d_attributes(*this,attributes);
         attributes.put("nv",nv);
         string fbase=makepath(dir,fname);
@@ -362,6 +373,7 @@ void GCLvectorfield3d::save(const string fname, const string dir,const string fo
             throw GCLgridError(base_error
                     + "Do know how to write data with format tag "
                     + format);
+        return attributes;
     }catch(...){throw;};
 }
 } //end namespace
