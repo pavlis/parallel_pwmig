@@ -415,6 +415,36 @@ public:
 
           */
   GCLgrid(const string fname, const string format=default_output_format);
+	/*! Metadata driven constructor.
+
+	This constructor was added to allow this package to work with MongoDB.
+	It acts very similar to the file-based constructors but instead of
+	reading a pf representation of the attributes it assumes the same and a
+	bit more are found in a Metadata container.   The idea of this constructor
+	is that it will be used with pymongo.  The pymongo function reads the
+	Metadata attributes from a MongoDB document as in MsPASS.   The grid
+	data, however, is always assumed to be present in an external file
+	accessible from the compute node calling this constructor.  I say that
+	because that model may fail in cloud systems.
+
+	One difference with this constructor compared to the file based constructor
+	is that the following attributes are required that are NOT written with
+	a file-based save to the pf file:
+
+	dir - directory name string
+	grid_data_file - file base name (with extension)
+	grid_data_file_extension - file name "extension for data portion of file extension
+	  (normally should use keyword used internally as ".dat" but constructor
+	  allows others)
+  grid_data_foff - integer file offset to locate start of block of data for
+	 grid coordinates of this object.
+
+	\param md is the Metadata container normally assumed produced by cracking a
+	  MongoDB document.
+
+	\throw GCLgridError for a long list of possible failuers.   Any
+	  exceptions mean the object was not constucted.
+	 */
 	GCLgrid(const Metadata& md);
 /*! Standard copy constructor.*/
 	GCLgrid(const GCLgrid&);  //standard copy constructor
@@ -653,6 +683,37 @@ public:
           */
         GCLgrid3d(const string fname, const string format=default_output_format,
                 const bool fl=true);
+
+	/*! Metadata driven constructor.
+
+	This constructor was added to allow this package to work with MongoDB.
+	It acts very similar to the file-based constructors but instead of
+	reading a pf representation of the attributes it assumes the same and a
+	bit more are found in a Metadata container.   The idea of this constructor
+	is that it will be used with pymongo.  The pymongo function reads the
+	Metadata attributes from a MongoDB document as in MsPASS.   The grid
+	data, however, is always assumed to be present in an external file
+	accessible from the compute node calling this constructor.  I say that
+	because that model may fail in cloud systems.
+
+	One difference with this constructor compared to the file based constructor
+	is that the following attributes are required that are NOT written with
+	a file-based save to the pf file:
+
+	dir - directory name string
+	grid_data_file - file base name (with extension)
+	grid_data_file_extension - file name "extension for data portion of file extension
+		(normally should use keyword used internally as ".dat" but constructor
+		allows others)
+	grid_data_foff - integer file offset to locate start of block of data for
+	 grid coordinates of this object.
+
+	\param md is the Metadata container normally assumed produced by cracking a
+		MongoDB document.
+
+	\throw GCLgridError for a long list of possible failuers.   Any
+		exceptions mean the object was not constucted.
+	 */
 	GCLgrid3d(const Metadata& md);
 	/** Standard copy constructor. */
 	GCLgrid3d(const GCLgrid3d&);
@@ -857,6 +918,42 @@ public:
           */
   GCLscalarfield(const string fname, const string format=default_output_format,
                 const bool enforce_object_type=true);
+
+	/*! Metadata driven constructor.
+
+	This constructor was added to allow this package to work with MongoDB.
+	It acts very similar to the file-based constructors but instead of
+	reading a pf representation of the attributes it assumes the same and a
+	bit more are found in a Metadata container.   The idea of this constructor
+	is that it will be used with pymongo.  The pymongo function reads the
+	Metadata attributes from a MongoDB document as in MsPASS.   The grid
+	data, however, is always assumed to be present in an external file
+	accessible from the compute node calling this constructor.  I say that
+	because that model may fail in cloud systems.
+
+	One difference with this constructor compared to the file based constructor
+	is that the following attributes are required that are NOT written with
+	a file-based save to the pf file:
+
+	dir - directory name string
+	grid_data_file - file base name (with extension)
+	grid_data_file_extension - file name "extension for data portion of file extension
+		(normally should use keyword used internally as ".dat" but constructor
+		allows others)
+	grid_data_foff - integer file offset to locate start of block of data for
+	 grid coordinates of this object.
+	field_data_file - file name where field data is stored (can and often is
+   same as grid_data_file with different foff)
+	field_data_extension - as in grid_data_extension and usually the same
+	field_data_foff - integer (long) file offset in bytes of block of data
+	  that defines the field data.
+
+	\param md is the Metadata container normally assumed produced by cracking a
+		MongoDB document.
+
+	\throw GCLgridError for a long list of possible failuers.   Any
+		exceptions mean the object was not constucted.
+	 */
   GCLscalarfield(const Metadata& md);
 	/*!
 	 Destructor.
@@ -1009,8 +1106,43 @@ public:
           in some situations and to read a grid linked to a field
           ignoring the field data.
           */
-        GCLvectorfield(const string fname, const string format=default_output_format,
+  GCLvectorfield(const string fname, const string format=default_output_format,
                 const bool enforce_object_type=true);
+	/*! Metadata driven constructor.
+
+	This constructor was added to allow this package to work with MongoDB.
+	It acts very similar to the file-based constructors but instead of
+	reading a pf representation of the attributes it assumes the same and a
+	bit more are found in a Metadata container.   The idea of this constructor
+	is that it will be used with pymongo.  The pymongo function reads the
+	Metadata attributes from a MongoDB document as in MsPASS.   The grid
+	data, however, is always assumed to be present in an external file
+	accessible from the compute node calling this constructor.  I say that
+	because that model may fail in cloud systems.
+
+	One difference with this constructor compared to the file based constructor
+	is that the following attributes are required that are NOT written with
+	a file-based save to the pf file:
+
+	dir - directory name string
+	grid_data_file - file base name (with extension)
+	grid_data_file_extension - file name "extension for data portion of file extension
+		(normally should use keyword used internally as ".dat" but constructor
+		allows others)
+	grid_data_foff - integer file offset to locate start of block of data for
+	 grid coordinates of this object.
+	field_data_file - file name where field data is stored (can and often is
+   same as grid_data_file with different foff)
+	field_data_extension - as in grid_data_extension and usually the same
+	field_data_foff - integer (long) file offset in bytes of block of data
+	  that defines the field data.
+
+	\param md is the Metadata container normally assumed produced by cracking a
+		MongoDB document.
+
+	\throw GCLgridError for a long list of possible failuers.   Any
+		exceptions mean the object was not constucted.
+	 */
 	GCLvectorfield(const Metadata& md);
 	/** Standard assignment operator. */
 	GCLvectorfield& operator=(const GCLvectorfield&);
@@ -1161,6 +1293,43 @@ public:
           */
         GCLscalarfield3d(const string fname,
 					const string format=default_output_format);
+
+	/*! Metadata driven constructor.
+
+	This constructor was added to allow this package to work with MongoDB.
+	It acts very similar to the file-based constructors but instead of
+	reading a pf representation of the attributes it assumes the same and a
+	bit more are found in a Metadata container.   The idea of this constructor
+	is that it will be used with pymongo.  The pymongo function reads the
+	Metadata attributes from a MongoDB document as in MsPASS.   The grid
+	data, however, is always assumed to be present in an external file
+	accessible from the compute node calling this constructor.  I say that
+	because that model may fail in cloud systems.
+
+	One difference with this constructor compared to the file based constructor
+	is that the following attributes are required that are NOT written with
+	a file-based save to the pf file:
+
+	dir - directory name string
+	grid_data_file - file base name (with extension)
+	grid_data_file_extension - file name "extension for data portion of file extension
+		(normally should use keyword used internally as ".dat" but constructor
+		allows others)
+	grid_data_foff - integer file offset to locate start of block of data for
+	 grid coordinates of this object.
+	field_data_file - file name where field data is stored (can and often is
+   same as grid_data_file with different foff)
+	field_data_extension - as in grid_data_extension and usually the same
+	field_data_foff - integer (long) file offset in bytes of block of data
+	  that defines the field data.
+
+
+	\param md is the Metadata container normally assumed produced by cracking a
+		MongoDB document.
+
+	\throw GCLgridError for a long list of possible failuers.   Any
+		exceptions mean the object was not constucted.
+	 */
 	GCLscalarfield3d(const Metadata& md);
 	/*!
 	Destructor.
@@ -1300,6 +1469,42 @@ public:
           this constructor.
           */
   GCLvectorfield3d(const string fname, const string format=default_output_format);
+	/*! Metadata driven constructor.
+
+	This constructor was added to allow this package to work with MongoDB.
+	It acts very similar to the file-based constructors but instead of
+	reading a pf representation of the attributes it assumes the same and a
+	bit more are found in a Metadata container.   The idea of this constructor
+	is that it will be used with pymongo.  The pymongo function reads the
+	Metadata attributes from a MongoDB document as in MsPASS.   The grid
+	data, however, is always assumed to be present in an external file
+	accessible from the compute node calling this constructor.  I say that
+	because that model may fail in cloud systems.
+
+	One difference with this constructor compared to the file based constructor
+	is that the following attributes are required that are NOT written with
+	a file-based save to the pf file:
+
+	dir - directory name string
+	grid_data_file - file base name (with extension)
+	grid_data_file_extension - file name "extension for data portion of file extension
+		(normally should use keyword used internally as ".dat" but constructor
+		allows others)
+	grid_data_foff - integer file offset to locate start of block of data for
+	 grid coordinates of this object.
+	field_data_file - file name where field data is stored (can and often is
+   same as grid_data_file with different foff)
+	field_data_extension - as in grid_data_extension and usually the same
+	field_data_foff - integer (long) file offset in bytes of block of data
+	  that defines the field data.
+
+
+	\param md is the Metadata container normally assumed produced by cracking a
+		MongoDB document.
+
+	\throw GCLgridError for a long list of possible failuers.   Any
+		exceptions mean the object was not constucted.
+	 */
 	GCLvectorfield3d(const Metadata& md);
 	/*!
 	Destructor.
@@ -1398,8 +1603,17 @@ template typename<GCLtype> void read_GCL2d_coord_arrays(const Metadata& md,const
 		pfload_common_GCL_attributes(d,md);
 		bool need_to_swap_bytes;
 		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
-	  string dfile=fname+"."+dfileext;
-	  FILE *fp = fopen(dfile.c_str(),"r");
+		string fname,dir,dfile,dfileext;
+		dir=md.get_string("dir");
+		dfile=md.get_string("grid_data_file");
+		fname=dir+"/"+dfile;
+		if(md.is_defined("grid_data_file_extension"))
+		{
+			dfileext=md.get_string("grid_data_file_extension");
+			fname+=".";
+			fname+=dfileext;
+		}
+	  FILE *fp = fopen(fname.c_str(),"r");
 	  if(fp == NULL)
 		  throw GCLgridError(base_error
 						+ "fopen failed on file "
@@ -1412,10 +1626,10 @@ template typename<GCLtype> void read_GCL2d_coord_arrays(const Metadata& md,const
 	  but a design choice.  Storing geo coordinates
 	  would be a future format choice.*/
 	  int gridsize = d.n1*d.n2;
-		if(md.is_defined("griddata_foff"))
+		if(md.is_defined("grid_data_foff"))
 		{
 			long foff;
-			foff=md.get_long("griddata_foff");
+			foff=md.get_long("grid_data_foff");
 			if(fseek(fp,foff,SEEK_SET))
 			{
 				stringstream ss;
@@ -1462,10 +1676,17 @@ template typename<GCLtype> void read_GCL3d_coord_arrays(const Metadata& md,const
 		pfload_common_GCL_attributes(d,md);
 		bool need_to_swap_bytes;
 		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
-		string fname;
-		fname=md.get_string("grid_data_file");
-	  string dfile=fname+"."+dfileext;
-	  FILE *fp = fopen(dfile.c_str(),"r");
+		string fname,dir,dfile,dfileext;
+		dir=md.get_string("dir");
+		dfile=md.get_string("grid_data_file");
+		fname=dir+"/"+dfile;
+		if(md.is_defined("grid_data_file_extension"))
+		{
+			dfileext=md.get_string("grid_data_file_extension");
+			fname+=".";
+			fname+=dfileext;
+		}
+	  FILE *fp = fopen(fname.c_str(),"r");
 	  if(fp == NULL)
 		  throw GCLgridError(base_error
 						+ "fopen failed on file "
@@ -1478,10 +1699,10 @@ template typename<GCLtype> void read_GCL3d_coord_arrays(const Metadata& md,const
 	  but a design choice.  Storing geo coordinates
 	  would be a future format choice.*/
 	  int gridsize = d.n1*d.n2*d.n3;
-		if(md.is_defined("griddata_foff"))
+		if(md.is_defined("grid_data_foff"))
 		{
 			long foff;
-			foff=md.get_long("griddata_foff");
+			foff=md.get_long("grid_data_foff");
 			if(fseek(fp,foff,SEEK_SET))
 			{
 				stringstream ss;
@@ -1551,15 +1772,23 @@ template typename<GCLtype> void read_fielddata(GCLtype& d,
 		};
 		size_t buffer_size(1);
 		for(size_t k=0;k<dimensions.size();++k) buffer_size *= dimensions[k];
-		fname=md.get_string("field_data_file");
-	  string dfile=fname+"."+dfileext;
-	  FILE *fp = fopen(dfile.c_str(),"r");
+		string fname,dir,dfile,dfileext;
+		dir=md.get_string("dir");
+		dfile=md.get_string("field_data_file");
+		fname=dir+"/"+dfile;
+		if(md.is_defined("field_data_file_extension"))
+		{
+			dfileext=md.get_string("field_data_file_extension");
+			fname+=".";
+			fname+=dfileext;
+		}
+	  FILE *fp = fopen(fname.c_str(),"r");
 	  if(fp == NULL)
 		  throw GCLgridError(base_error
 						+ "fopen failed on file "
 						+ dfile);
 		size_t foff;
-		foff=md.get_long("fielddata_foff");
+		foff=md.get_long("field_data_foff");
 		if(fseek(fp,fvalstart,SEEK_SET))
     {
       fclose(fp);
