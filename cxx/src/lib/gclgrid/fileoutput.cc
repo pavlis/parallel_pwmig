@@ -257,7 +257,7 @@ Metadata GCLgrid::save(const string fname, string dir,const string format)
 
     }catch(...){throw;};
 }
-void GCLgrid3d::save(const string fname, const string dir,const string format)
+Metadata GCLgrid3d::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLgrid3d::save:  ");
     Metadata attributes;
@@ -277,7 +277,7 @@ void GCLgrid3d::save(const string fname, const string dir,const string format)
         return attributes;
     }catch(...){throw;};
 }
-void GCLscalarfield::save(const string fname, const string dir,const string format)
+Metadata GCLscalarfield::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLscalarfield::save:  ");
     Metadata attributes;
@@ -303,7 +303,7 @@ void GCLscalarfield::save(const string fname, const string dir,const string form
         return attributes;
     }catch(...){throw;};
 }
-void GCLvectorfield::save(const string fname, string dir,const string format)
+Metadata GCLvectorfield::save(const string fname, string dir,const string format)
 {
     const string base_error("GCLvectorfield::save:  ");
     Metadata attributes;
@@ -332,7 +332,7 @@ void GCLvectorfield::save(const string fname, string dir,const string format)
         return attributes;
     }catch(...){throw;};
 }
-void GCLscalarfield3d::save(const string fname, const string dir,const string format)
+Metadata GCLscalarfield3d::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLscalarfield3d::save:  ");
     Metadata attributes;
@@ -353,7 +353,7 @@ void GCLscalarfield3d::save(const string fname, const string dir,const string fo
         return attributes;
     }catch(...){throw;};
 }
-void GCLvectorfield3d::save(const string fname, const string dir,const string format)
+Metadata GCLvectorfield3d::save(const string fname, const string dir,const string format)
 {
     const string base_error("GCLvectorfield3d::save:  ");
     Metadata attributes;

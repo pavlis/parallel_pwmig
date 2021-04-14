@@ -67,9 +67,10 @@ template <class T>
         g.k0=par.get_int("k0");
     } catch(...) {throw;};
 }
-bool byte_swap_is_needed(const Metadata& md) const
+bool byte_swap_is_needed(const Metadata& md)
 {
   try{
+    const string base_error("byte_swap_is_needed:  ");
     string datatype("u8");
     if(md.is_defined("datatype"))
     {
@@ -459,7 +460,7 @@ GCLgrid::GCLgrid(const Metadata& md)
 {
   try{
     pfload_common_GCL_attributes<GCLgrid>(*this,md);
-    read_GCL2d_coord_arrays<GCLgrid>(md);
+    read_GCL2d_coord_arrays<GCLgrid>(*this,md);
   }catch(...){throw;};
 }
 
@@ -579,7 +580,7 @@ GCLgrid3d::GCLgrid3d(const Metadata& md)
   try{
     pfload_common_GCL_attributes<GCLgrid3d>(*this,md);
     pfload_3dgrid_attributes<GCLgrid3d>(*this,md);
-    read_GCL3d_coord_arrays<GCLgrid3d>(md);
+    read_GCL3d_coord_arrays<GCLgrid3d>(*this,md);
   }catch(...){throw;};
 }
 GCLgrid3d::GCLgrid3d(const GCLgrid3d& g)
@@ -1268,41 +1269,78 @@ GCLvectorfield3d::GCLvectorfield3d(const string fname, const string format)
 GCLscalarfield::GCLscalarfield(const Metadata& md) : GCLgrid(md)
 {
   try{
-    vector<int> dim;
-    dim.push_back(this->n1);
-    dim.push_back(this->n2);
-    read_fielddata<GCLscalarfield>(md,dim);;
+    const string base_error("GCLscalarfield Metadata contructor:  ");
+    if(this->n1 <= 0 || this->n2 <=0)
+    {
+      stringstream ss;
+      ss << base_error
+         << "Illegal dimensions defined in Metadata received"
+         << "Parsed n1="<<this->n1<<" n2="<<this->n2<<endl
+         << "All must be nonzero, positive numbers"<<endl;
+      throw GCLgridError(ss.str());
+    }
+    this->val=(double **)create_2dgrid_contiguous(this->n1,this->n2);
+    double *buffer=(*this->val);
+    size_t bufsize=(this->n1)*(this->n2);
+    read_fielddata<GCLscalarfield>(md,buffer,bufsize);
   }catch(...){throw;};
 }
 GCLscalarfield3d::GCLscalarfield3d(const Metadata& md) : GCLgrid3d(md)
 {
   try{
-    vector<int> dim;
-    dim.push_back(this->n1);
-    dim.push_back(this->n2);
-    dim.push_back(this->n3);
-    read_fielddata<GCLscalarfield>(md,dim);
+    const string base_error("GCLscalarfield3d Metadata contructor:  ");
+    if(this->n1 <= 0 || this->n2 <=0 || this->n3 <=0)
+    {
+      stringstream ss;
+      ss << base_error
+         << "Illegal dimensions defined in Metadata received"
+         << "Parsed n1="<<this->n1<<" n2="<<this->n2<<" n3="<<this->n3<<endl
+         << "All must be nonzero, positive numbers"<<endl;
+      throw GCLgridError(ss.str());
+    }
+    this->val=(double ***)create_3dgrid_contiguous(this->n1,this->n2,this->n3);
+    double *buffer=(**this->val);
+    size_t bufsize=(this->n1)*(this->n2)*(this->n3);
+    read_fielddata<GCLscalarfield3d>(md,buffer,bufsize);
   }catch(...){throw;};
 }
 GCLvectorfield::GCLvectorfield(const Metadata& md) : GCLgrid(md)
 {
   try{
-    vector<int> dim;
-    dim.push_back(this->n1);
-    dim.push_back(this->n2);
-    dim.push_back(this->nv);
-    read_fielddata<GCLscalarfield>(md,dim);
+    const string base_error("GCLvectorfield Metadata contructor:  ");
+    if(this->n1 <= 0 || this->n2 <=0 || this->nv <=0)
+    {
+      stringstream ss;
+      ss << base_error
+         << "Illegal dimensions defined in Metadata received"
+         << "Parsed n1="<<this->n1<<" n2="<<this->n2<<" vector size nv="<<this->nv<<endl
+         << "All must be nonzero, positive numbers"<<endl;
+      throw GCLgridError(ss.str());
+    }
+    this->val=(double ***)create_3dgrid_contiguous(this->n1,this->n2,this->nv);
+    double *buffer=(**this->val);
+    size_t bufsize=(this->n1)*(this->n2)*(this->nv);
+    read_fielddata<GCLvectorfield>(md,buffer,bufsize);
   }catch(...){throw;};
 }
 GCLvectorfield3d::GCLvectorfield3d(const Metadata& md) : GCLgrid3d(md)
 {
   try{
-    vector<int> dim;
-    dim.push_back(this->n1);
-    dim.push_back(this->n2);
-    dim.push_back(this->n3);
-    dim.push_back(this->nv);
-    read_fielddata<GCLscalarfield>(md,dim);
+    const string base_error("GCLvectorfield3d Metadata contructor:  ");
+    if(this->n1 <= 0 || this->n2 <= 0 || this->n3 <= 0 || this->nv <= 0)
+    {
+      stringstream ss;
+      ss << base_error
+         << "Illegal dimensions defined in Metadata received"
+         << "Parsed n1="<<this->n1<<" n2="<<this->n2<<" n3="<<this->n3
+         << " vector size nv="<<this->nv<<endl
+         << "All must be nonzero, positive numbers"<<endl;
+      throw GCLgridError(ss.str());
+    }
+    this->val=(double ****)create_4dgrid_contiguous(this->n1,this->n2,this->n3,this->nv);
+    double *buffer=(***this->val);
+    size_t bufsize=(this->n1)*(this->n2)*(this->n3)*(this->nv);
+    read_fielddata<GCLvectorfield3d>(md,buffer,bufsize);
   }catch(...){throw;};
 }
 

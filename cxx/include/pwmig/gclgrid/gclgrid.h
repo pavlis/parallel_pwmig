@@ -6,11 +6,14 @@
 //#include "pwmig/dsap/stock.h"
 //#include "pwmig/dsap/coords.h"
 #include "mspass/utility/dmatrix.h"
-#include "GCLgridError.h"
+#include "mspass/utility/Metadata.h"
+#include "pwmig/gclgrid/GCLgridError.h"
+#include "pwmig/gclgrid/swapbytes_pwmig.h"
 namespace pwmig::gclgrid
 {
 using namespace std;
 using mspass::utility::dmatrix;
+using mspass::utility::Metadata;
 using namespace pwmig::gclgrid;
 
 //==================================================================
@@ -1584,231 +1587,9 @@ public:
 	*/
 	friend ostream& operator << (ostream&,GCLvectorfield3d&);
 };
-/*! Establish if binary data needs to be type swapped.
 
-This function tries to fetch the name "datatype" from the received Metadata
-container.   If it is defined it fetches the value.  If defined it must be
-one of two values:  "u8" or "t8".   If it is neither it will throw a
-GCLgridError exception.  It then determines the byte order of the
-machine this code is running on.  "t8" is little endian and "u8" is
-assumed big endian.  If the datatype and the actual do not match
-the function returns true.   If they match it returns false.  Note the
-default if datatype is not defined is little endian because Intel won the
-byte order wars a while back. */
-bool byte_swap_is_needed(const Metadata& md) const;
-template typename<GCLtype> void read_GCL2d_coord_arrays(const Metadata& md,const GCLtype& d)
-{
-	try{
-		base_error("read_GCL2d_coord_arrays:  ")
-		pfload_common_GCL_attributes(d,md);
-		bool need_to_swap_bytes;
-		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
-		string fname,dir,dfile,dfileext;
-		dir=md.get_string("dir");
-		dfile=md.get_string("grid_data_file");
-		fname=dir+"/"+dfile;
-		if(md.is_defined("grid_data_file_extension"))
-		{
-			dfileext=md.get_string("grid_data_file_extension");
-			fname+=".";
-			fname+=dfileext;
-		}
-	  FILE *fp = fopen(fname.c_str(),"r");
-	  if(fp == NULL)
-		  throw GCLgridError(base_error
-						+ "fopen failed on file "
-						+ dfile);
-    d.x1 = create_2dgrid_contiguous(d.n1,d.n2);
-	  d.x2 = create_2dgrid_contiguous(d.n1,d.n2);
-	  d.x3 = create_2dgrid_contiguous(d.n1,d.n2);
-	  /* Database stores data in geographic coordinates.
-	  File stores Cartesian form.  A bit inconsistent,
-	  but a design choice.  Storing geo coordinates
-	  would be a future format choice.*/
-	  int gridsize = d.n1*d.n2;
-		if(md.is_defined("grid_data_foff"))
-		{
-			long foff;
-			foff=md.get_long("grid_data_foff");
-			if(fseek(fp,foff,SEEK_SET))
-			{
-				stringstream ss;
-				ss << base_error
-				  << "fseek to offset="<<foff<<" failed for file="<<dfile;
-				throw GCLgridError(ss.str());
-			}
-		}
-	  if(fread(d.x1[0],sizeof(double),gridsize,fp) != gridsize)
-	  {
-		  fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x1 coordinate  array"
-						+ dfile);
-	  }
-	  if(fread(d.x2[0],sizeof(double),gridsize,fp) != gridsize)
-    {
-	  	fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x2 coordinate  array"
-						+ dfile);
-    }
-    if(fread(d.x3[0],sizeof(double),gridsize,fp) != gridsize)
-    {
-		  fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x3 coordinate array"
-						+ dfile);
-    }
-	  fclose(fp);
-	  if(need_to_swap_bytes)
-	  {
-		  swapdvec(d.x1[0],gridsize);
-		  swapdvec(d.x2[0],gridsize);
-		  swapdvec(d.x3[0],gridsize);
-	  }
-  }catch(...){throw;}l
-}
-/* this is version for 3d grids - different because of dimensions of arrays */
-template typename<GCLtype> void read_GCL3d_coord_arrays(const Metadata& md,const GCLtype& d)
-{
-	try{
-		base_error("read_GCL3d_coord_arrays:  ")
-		pfload_common_GCL_attributes(d,md);
-		bool need_to_swap_bytes;
-		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
-		string fname,dir,dfile,dfileext;
-		dir=md.get_string("dir");
-		dfile=md.get_string("grid_data_file");
-		fname=dir+"/"+dfile;
-		if(md.is_defined("grid_data_file_extension"))
-		{
-			dfileext=md.get_string("grid_data_file_extension");
-			fname+=".";
-			fname+=dfileext;
-		}
-	  FILE *fp = fopen(fname.c_str(),"r");
-	  if(fp == NULL)
-		  throw GCLgridError(base_error
-						+ "fopen failed on file "
-						+ dfile);
-    d.x1 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
-	  d.x2 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
-	  d.x3 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
-	  /* Database stores data in geographic coordinates.
-	  File stores Cartesian form.  A bit inconsistent,
-	  but a design choice.  Storing geo coordinates
-	  would be a future format choice.*/
-	  int gridsize = d.n1*d.n2*d.n3;
-		if(md.is_defined("grid_data_foff"))
-		{
-			long foff;
-			foff=md.get_long("grid_data_foff");
-			if(fseek(fp,foff,SEEK_SET))
-			{
-				stringstream ss;
-				ss << base_error
-				  << "fseek to offset="<<foff<<" failed for file="<<dfile;
-				throw GCLgridError(ss.str());
-			}
-		}
-	  if(fread(d.x1[0][0],sizeof(double),gridsize,fp) != gridsize)
-	  {
-		  fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x1 coordinate  array"
-						+ dfile);
-	  }
-	  if(fread(d.x2[0][0],sizeof(double),gridsize,fp) != gridsize)
-    {
-	  	fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x2 coordinate  array"
-						+ dfile);
-    }
-    if(fread(d.x3[0][0],sizeof(double),gridsize,fp) != gridsize)
-    {
-		  fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x3 coordinate array"
-						+ dfile);
-    }
-	  fclose(fp);
-	  if(need_to_swap_bytes)
-	  {
-		  swapdvec(d.x1[0][0],gridsize);
-		  swapdvec(d.x2[0][0],gridsize);
-		  swapdvec(d.x3[0][0],gridsize);
-	  }
-  }catch(...){throw;}l
-}
-template typename<GCLtype> void read_fielddata(GCLtype& d,
-	const Metadata& md,const vector<int> dimensions)
-{
-	stringstream ss;
-	try{
-		double *buffer;
-		size_t buffer_size;
-		int ndim=dimensions.size();
-		switch(ndim)
-		{
-			case 2:
-			  d.val=create_2dgrid_contiguous(dimensions[0],dimensions[1]);
-				buffer=&(d.val[0][0]);
-				break;
-			case 3:
-			  d.val=create_3dgrid_contiguous(dimensions[0],dimensions[1],dimensions[2]);
-				buffer==&(d.val[0][0][0]);
-				break;
-			case 4:
-				d.val=create_3dgrid_contiguous(dimensions[0],dimensions[1],
-					dimensions[2],dimensions[3]);
-				buffer==&(d.val[0][0][0][0]);
-				break;
-			default:
-			  ss << "read_fielddata template fuction:  illegal dimension vector"<<endl
-				   << "Number of dimensions defined by input vector="<<ndim;
-					 << "Only accept 2, 3, or 4"<<endl;
-				throw GCLgridError(ss.str());
-		};
-		size_t buffer_size(1);
-		for(size_t k=0;k<dimensions.size();++k) buffer_size *= dimensions[k];
-		string fname,dir,dfile,dfileext;
-		dir=md.get_string("dir");
-		dfile=md.get_string("field_data_file");
-		fname=dir+"/"+dfile;
-		if(md.is_defined("field_data_file_extension"))
-		{
-			dfileext=md.get_string("field_data_file_extension");
-			fname+=".";
-			fname+=dfileext;
-		}
-	  FILE *fp = fopen(fname.c_str(),"r");
-	  if(fp == NULL)
-		  throw GCLgridError(base_error
-						+ "fopen failed on file "
-						+ dfile);
-		size_t foff;
-		foff=md.get_long("field_data_foff");
-		if(fseek(fp,fvalstart,SEEK_SET))
-    {
-      fclose(fp);
-      throw GCLgridError(base_error
-              + "fseek to start of field data area of file failed");
-    }
-		if(fread(buffer,sizeof(double),buffer_size,fp) != buffer_size)
-		{
-			fclose(fp);
-			throw GCLgridError(base_error
-			  + "fread failed reading field data");
-		}
-		bool need_to_swap_bytes;
-		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
-		if(need_to_swap_bytes)
-		{
-			swapdvec(buffer,buffer_size);
-		}
-	}catch(...){throw;};
-}
+// Function prototypes and templates from here to end of file.
+
 /*! \brief Returns distance from the center of the Earth (km) of the standard ellipsoid at a specified latitude.
 
 The reference ellipsoid depends only on latitude.  A GCLgrid uses the reference ellipsoid
@@ -2193,5 +1974,211 @@ the result, not the 0 points.
 \return pointer to decimated grid object
 */
 GCLgrid3d *decimate(const GCLgrid3d& g,const int dec1, const int dec2, const int dec3);
+
+/*! Establish if binary data needs to be type swapped.
+
+This function tries to fetch the name "datatype" from the received Metadata
+container.   If it is defined it fetches the value.  If defined it must be
+one of two values:  "u8" or "t8".   If it is neither it will throw a
+GCLgridError exception.  It then determines the byte order of the
+machine this code is running on.  "t8" is little endian and "u8" is
+assumed big endian.  If the datatype and the actual do not match
+the function returns true.   If they match it returns false.  Note the
+default if datatype is not defined is little endian because Intel won the
+byte order wars a while back. */
+bool byte_swap_is_needed(const Metadata& md);
+template <typename GCLtype> void read_GCL2d_coord_arrays(GCLtype& d, const Metadata& md)
+{
+	try{
+		string base_error("read_GCL2d_coord_arrays:  ");
+		pfload_common_GCL_attributes(d,md);
+		bool need_to_swap_bytes;
+		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
+		string fname,dir,dfile,dfileext;
+		dir=md.get_string("dir");
+		dfile=md.get_string("grid_data_file");
+		fname=dir+"/"+dfile;
+		if(md.is_defined("grid_data_file_extension"))
+		{
+			dfileext=md.get_string("grid_data_file_extension");
+			fname+=".";
+			fname+=dfileext;
+		}
+	  FILE *fp = fopen(fname.c_str(),"r");
+	  if(fp == NULL)
+		  throw GCLgridError(base_error
+						+ "fopen failed on file "
+						+ dfile);
+    d.x1 = create_2dgrid_contiguous(d.n1,d.n2);
+	  d.x2 = create_2dgrid_contiguous(d.n1,d.n2);
+	  d.x3 = create_2dgrid_contiguous(d.n1,d.n2);
+	  /* Database stores data in geographic coordinates.
+	  File stores Cartesian form.  A bit inconsistent,
+	  but a design choice.  Storing geo coordinates
+	  would be a future format choice.*/
+	  int gridsize = d.n1*d.n2;
+		if(md.is_defined("grid_data_foff"))
+		{
+			long foff;
+			foff=md.get_long("grid_data_foff");
+			if(fseek(fp,foff,SEEK_SET))
+			{
+				stringstream ss;
+				ss << base_error
+				  << "fseek to offset="<<foff<<" failed for file="<<dfile;
+				throw GCLgridError(ss.str());
+			}
+		}
+	  if(fread(d.x1[0],sizeof(double),gridsize,fp) != gridsize)
+	  {
+		  fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x1 coordinate  array"
+						+ dfile);
+	  }
+	  if(fread(d.x2[0],sizeof(double),gridsize,fp) != gridsize)
+    {
+	  	fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x2 coordinate  array"
+						+ dfile);
+    }
+    if(fread(d.x3[0],sizeof(double),gridsize,fp) != gridsize)
+    {
+		  fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x3 coordinate array"
+						+ dfile);
+    }
+	  fclose(fp);
+	  if(need_to_swap_bytes)
+	  {
+		  swapdvec(d.x1[0],gridsize);
+		  swapdvec(d.x2[0],gridsize);
+		  swapdvec(d.x3[0],gridsize);
+	  }
+  }catch(...){throw;}
+};
+/* this is version for 3d grids - different because of dimensions of arrays */
+template <typename GCLtype> void read_GCL3d_coord_arrays(GCLtype& d, const Metadata& md)
+{
+	try{
+		string base_error("read_GCL3d_coord_arrays:  ");
+		pfload_common_GCL_attributes(d,md);
+		bool need_to_swap_bytes;
+		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
+		string fname,dir,dfile,dfileext;
+		dir=md.get_string("dir");
+		dfile=md.get_string("grid_data_file");
+		fname=dir+"/"+dfile;
+		if(md.is_defined("grid_data_file_extension"))
+		{
+			dfileext=md.get_string("grid_data_file_extension");
+			fname+=".";
+			fname+=dfileext;
+		}
+	  FILE *fp = fopen(fname.c_str(),"r");
+	  if(fp == NULL)
+		  throw GCLgridError(base_error
+						+ "fopen failed on file "
+						+ dfile);
+    d.x1 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
+	  d.x2 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
+	  d.x3 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
+	  /* Database stores data in geographic coordinates.
+	  File stores Cartesian form.  A bit inconsistent,
+	  but a design choice.  Storing geo coordinates
+	  would be a future format choice.*/
+	  int gridsize = d.n1*d.n2*d.n3;
+		if(md.is_defined("grid_data_foff"))
+		{
+			long foff;
+			foff=md.get_long("grid_data_foff");
+			if(fseek(fp,foff,SEEK_SET))
+			{
+				stringstream ss;
+				ss << base_error
+				  << "fseek to offset="<<foff<<" failed for file="<<dfile;
+				throw GCLgridError(ss.str());
+			}
+		}
+	  if(fread(d.x1[0][0],sizeof(double),gridsize,fp) != gridsize)
+	  {
+		  fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x1 coordinate  array"
+						+ dfile);
+	  }
+	  if(fread(d.x2[0][0],sizeof(double),gridsize,fp) != gridsize)
+    {
+	  	fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x2 coordinate  array"
+						+ dfile);
+    }
+    if(fread(d.x3[0][0],sizeof(double),gridsize,fp) != gridsize)
+    {
+		  fclose(fp);
+		  throw GCLgridError(base_error
+						+ "fread failed on file reading x3 coordinate array"
+						+ dfile);
+    }
+	  fclose(fp);
+	  if(need_to_swap_bytes)
+	  {
+		  swapdvec(d.x1[0][0],gridsize);
+		  swapdvec(d.x2[0][0],gridsize);
+		  swapdvec(d.x3[0][0],gridsize);
+	  }
+  }catch(...){throw;}
+};
+template <typename GCLtype> void read_fielddata(const Metadata& md,
+	  double *buffer,size_t buffer_size)
+{
+	const string base_error("read_fieldata:  ");
+	try{
+		string fname,dir,dfile,dfileext;
+		dir=md.get_string("dir");
+		dfile=md.get_string("field_data_file");
+		fname=dir+"/"+dfile;
+		if(md.is_defined("field_data_file_extension"))
+		{
+			dfileext=md.get_string("field_data_file_extension");
+			fname+=".";
+			fname+=dfileext;
+		}
+	  FILE *fp = fopen(fname.c_str(),"r");
+	  if(fp == NULL)
+		  throw GCLgridError(base_error
+						+ "fopen failed on file "
+						+ fname);
+		size_t foff;
+		foff=md.get_long("field_data_foff");
+		if(fseek(fp,foff,SEEK_SET))
+    {
+      fclose(fp);
+			stringstream ss;
+			ss<<base_error
+			  << "fseek to start of data area at byte offset="<<foff
+				<<" failed for file="<<fname<<endl;
+      throw GCLgridError(ss.str());
+    }
+		if(fread(buffer,sizeof(double),buffer_size,fp) != buffer_size)
+		{
+			fclose(fp);
+			stringstream ss;
+			ss<<base_error
+			  << "fread tried to read "<<buffer_size<<" bytes but failed"<<endl;
+			throw GCLgridError(ss.str());
+		}
+		bool need_to_swap_bytes;
+		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
+		if(need_to_swap_bytes)
+		{
+			swapdvec(buffer,buffer_size);
+		}
+	}catch(...){throw;};
+};
+
 }  // End of namespace
 #endif
