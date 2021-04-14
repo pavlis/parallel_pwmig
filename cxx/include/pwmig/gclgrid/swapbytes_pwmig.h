@@ -1,3 +1,5 @@
+#ifndef _GCLGRID_SWAPBYTES_H_
+#define _GCLGRID_SWAPBYTES_H_
 namespace pwmig::gclgrid
 {
 /* This is a local include file to define glp implementation of
@@ -35,3 +37,4 @@ void SwapEnd(T& var)
                           ((char*)(&var))[i] = ((char*)(&varSwapped))[i];
 }
 }
+#endif
