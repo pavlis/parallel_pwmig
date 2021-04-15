@@ -211,8 +211,13 @@ void pfhdr_save_griddata(const GCLgrid3d& g,const string base)
   recycled in a different context.  It then writes n double vavlues
   that is presumes are in a contiguous block of memory referened by
   the pointer d.
+
+  Altered April 2021 for mspass conversion.  Previous was a void
+  function.  Now returns file position where the data was written.
+  This is now posted below to metadata as the new attribute
+  field_data_foff needed by mongodb reader.
  */
-void pfhdr_save_field_data(const string fbase, const double *d, const size_t n)
+size_t pfhdr_save_field_data(const string fbase, const double *d, const size_t n)
 {
     const string base_error("pfhdr_save_field_data procedure:  ");
     string fullname=fbase+"."+dfileext;
@@ -220,7 +225,7 @@ void pfhdr_save_field_data(const string fbase, const double *d, const size_t n)
     if(fp==NULL)
         throw GCLgridError(base_error+"fopen failed on file="
                 + fullname);
-    long current_length=ftell(fp);
+    size_t current_length=ftell(fp);
     if(current_length<=0)
     {
         fclose(fp);
@@ -235,6 +240,7 @@ void pfhdr_save_field_data(const string fbase, const double *d, const size_t n)
                 + fullname);
     }
     fclose(fp);
+    return current_length;
 }
 
 Metadata GCLgrid::save(const string fname, string dir,const string format)
@@ -294,7 +300,9 @@ Metadata GCLscalarfield::save(const string fname, const string dir,const string 
         {
             string fbase=makepath(dir,fname);
             size_t npts=n1*n2;
-            pfhdr_save_field_data(fbase,&(val[0][0]),npts);
+            long foff;
+            foff=pfhdr_save_field_data(fbase,&(val[0][0]),npts);
+            attributes.put("field_data_foff",foff);
         }
         else
             throw GCLgridError(base_error
@@ -323,7 +331,9 @@ Metadata GCLvectorfield::save(const string fname, string dir,const string format
            reorganized. */
             string fbase=makepath(dir,fname);
             size_t npts=n1*n2*nv;
-            pfhdr_save_field_data(fbase,&(val[0][0][0]),npts);
+            long foff;
+            foff=pfhdr_save_field_data(fbase,&(val[0][0][0]),npts);
+            attributes.put("field_data_foff",foff);
         }
         else
             throw GCLgridError(base_error
@@ -344,7 +354,9 @@ Metadata GCLscalarfield3d::save(const string fname, const string dir,const strin
         {
             string fbase=makepath(dir,fname);
             size_t npts=n1*n2*n3;
-            pfhdr_save_field_data(fbase,&(val[0][0][0]),npts);
+            long foff;
+            foff=pfhdr_save_field_data(fbase,&(val[0][0][0]),npts);
+            attributes.put("field_data_foff",foff);
         }
         else
             throw GCLgridError(base_error
@@ -367,7 +379,9 @@ Metadata GCLvectorfield3d::save(const string fname, const string dir,const strin
             pfsave_attributes(attributes,fbase);
             pfhdr_save_griddata(*this,fbase);
             size_t npts=n1*n2*n3*nv;
-            pfhdr_save_field_data(fbase,&(val[0][0][0][0]),npts);
+            long foff;
+            foff=pfhdr_save_field_data(fbase,&(val[0][0][0][0]),npts);
+            attributes.put("field_data_foff",foff);
         }
         else
             throw GCLgridError(base_error
