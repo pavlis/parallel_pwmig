@@ -52,6 +52,14 @@ public:
       index
     );
   }
+  mspass::utility::Metadata get_attributes() override
+  {
+    PYBIND11_OVERLOAD_PURE(
+      mspass::utility::Metadata,
+      BasicGCLgrid,
+      get_attributes
+    );
+  }
 };
 
 
@@ -144,6 +152,8 @@ py::class_<GCLgrid,BasicGCLgrid>(m,"GCLgrid",py::buffer_protocol(),
     return result;
   })
   .def("geo_coordinates",&GCLgrid::geo_coordinates,"Fetch grid point defined as geo coordinates")
+  .def("get_attributes",&GCLgrid::get_attributes,
+     "Fetch all attributes into a Metadata container")
 ;
 py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
                      "Three-dimensional GCL grid object")
@@ -166,6 +176,11 @@ py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
   .def("r",&GCLgrid3d::r,"Get radial distance from earth center (km) of a grid point specified by three index ints")
   .def("depth",&GCLgrid3d::depth,"Get depth (km) from 0 reference ellipsoid radius of a grid point specified by three index ints")
   .def("compute_extents",&GCLgrid3d::compute_extents,"Call after manually building a grid")
+  .def("get_attributes",&GCLgrid3d::get_attributes,
+     "Fetch all attributes into a Metadata container")
+  .def_readwrite("n3",&GCLgrid3d::n3)
+  .def_readwrite("dx3_nom",&GCLgrid3d::dx3_nom)
+  .def_readwrite("k0",&GCLgrid3d::k0)
 ;
 py::class_<GCLscalarfield,GCLgrid>(m,"GCLscalarfield","Two-dimensional grid with scalar attributes at each node")
   .def(py::init<>())
@@ -177,6 +192,8 @@ py::class_<GCLscalarfield,GCLgrid>(m,"GCLscalarfield","Two-dimensional grid with
   .def("zero",&GCLscalarfield::zero,"Set all field attributes to 0")
   .def("save",&GCLscalarfield::save,"Save contents to a file")
   .def("interpolate",&GCLscalarfield::interpolate,"Interpolate grid to get value at point passed")
+  .def("get_attributes",&GCLscalarfield::get_attributes,
+     "Fetch all attributes into a Metadata container")
    /* This is normally the right syntax in pybind11 for operator+= but
    not working here for some mysterious reason. Put aside until needed - solvable
    problem just one of those annoying picky pybind11 details*/
@@ -194,6 +211,8 @@ py::class_<GCLvectorfield,GCLgrid>(m,"GCLvectorfield","Two-dimensional grid with
   .def("zero",&GCLvectorfield::zero,"Set all field attributes to 0")
   .def("save",&GCLvectorfield::save,"Save contents to a file")
   .def("interpolate",&GCLvectorfield::interpolate,"Interpolate grid to get vector values at point passed")
+  .def("get_attributes",&GCLvectorfield::get_attributes,
+     "Fetch all attributes into a Metadata container")
   //.def(py::self += py::self)
   .def(py::self *= double())
   .def_readwrite("nv",&GCLvectorfield::nv,"Number of components in each vector")
@@ -209,6 +228,8 @@ py::class_<GCLscalarfield3d,GCLgrid3d>(m,"GCLscalarfield3d","Three-dimensional g
   .def("zero",&GCLscalarfield3d::zero,"Set all field attributes to 0")
   .def("save",&GCLscalarfield3d::save,"Save contents to a file")
   .def("interpolate",&GCLscalarfield3d::interpolate,"Interpolate grid to get value at point passed")
+  .def("get_attributes",&GCLscalarfield3d::get_attributes,
+     "Fetch all attributes into a Metadata container")
   //.def(py::self += py::self)
   .def(py::self *= double())
 ;
@@ -223,6 +244,8 @@ py::class_<GCLvectorfield3d,GCLgrid3d>(m,"GCLvectorfield3d","Three-dimensional g
   .def("zero",&GCLvectorfield3d::zero,"Set all field attributes to 0")
   .def("save",&GCLvectorfield3d::save,"Save contents to a file")
   .def("interpolate",&GCLvectorfield3d::interpolate,"Interpolate grid to get vector values at point passed")
+  .def("get_attributes",&GCLvectorfield3d::get_attributes,
+     "Fetch all attributes into a Metadata container")
   //.def(py::self += py::self)
   .def(py::self *= double())
   .def_readwrite("nv",&GCLvectorfield3d::nv,"Number of components in each vector")
