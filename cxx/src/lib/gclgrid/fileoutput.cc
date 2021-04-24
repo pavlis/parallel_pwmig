@@ -82,14 +82,11 @@ void pfsave_attributes(const Metadata& attributes,const string base)
 {
     string pffilename=base+".pf";
     try {
+	ostringstream ss;
+	ss << const_cast<Metadata&>(attributes);
         ofstream outstrm;
         outstrm.open(pffilename.c_str(),ios::out);
-        /* this is needed because mspass api has  operator<< defined only
-        for a stringstream.  The weird const_cast seems necessary
-        to get this to compile because the declaration is not const */
-        ostringstream ss;
-        ss << const_cast<Metadata&>(attributes);
-        outstrm<<ss.str();;
+	outstrm << ss.str();
         outstrm.close();
     }catch(...){
         throw GCLgridError(string("pfsave_attributes failed on file")
@@ -389,5 +386,52 @@ Metadata GCLvectorfield3d::save(const string fname, const string dir,const strin
                     + format);
         return attributes;
     }catch(...){throw;};
+}
+/* Below are the set of implementation of get_attributes for the different object_
+type isn the GCL library. It is very weird to have them here, but it allow us to
+use the functions in this file that are intended for use only within file scope.
+i.e. they are intentionally not in the gclgrid.h include file. */
+Metadata GCLgrid::get_attributes()
+{
+    Metadata attributes;
+    attributes=load_common_GCL_attributes(this);
+    return attributes;
+}
+/* this is identical to GCLgrid - needed because casts used in
+load_common_GCL_attributes get the object type */
+Metadata GCLscalarfield::get_attributes()
+{
+    Metadata attributes;
+    attributes=load_common_GCL_attributes(this);
+    return attributes;
+}
+Metadata GCLvectorfield::get_attributes()
+{
+  Metadata attributes;
+  attributes=load_common_GCL_attributes(this);
+  attributes.put("nv",this->nv);
+  return attributes;
+}
+Metadata GCLgrid3d::get_attributes()
+{
+  Metadata attributes;
+  attributes=load_common_GCL_attributes(this);
+  load_3d_attributes(*this,attributes);
+  return attributes;
+}
+Metadata GCLscalarfield3d::get_attributes()
+{
+  Metadata attributes;
+  attributes=load_common_GCL_attributes(this);
+  load_3d_attributes(*this,attributes);
+  return attributes;
+}
+Metadata GCLvectorfield3d::get_attributes()
+{
+  Metadata attributes;
+  attributes=load_common_GCL_attributes(this);
+  load_3d_attributes(*this,attributes);
+  attributes.put("nv",nv);
+  return attributes;
 }
 } //end namespace

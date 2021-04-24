@@ -248,7 +248,7 @@ double ****create_4dgrid_contiguous(const int n1, const int n2, const int n3, co
 		for(j=0;j<n2;++j)
 		{
 			//allot(double **,ptr2ptr,n3);
-			ptr2ptr=(double **)calloc(n2,sizeof(double *));
+			ptr2ptr=(double **)calloc(n3,sizeof(double *));
 			if(ptr2ptr==NULL)
 			{
 			  stringstream ss;

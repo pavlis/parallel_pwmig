@@ -302,6 +302,15 @@ is used to ask what the current index position.
 \param ind vector of ints of length sufficient to hold the index  (2 for 2d and 3 for 3d grids)
 */
 	virtual void get_index(int *ind)=0;
+/*! \brief Return all attributes of a GCL object in a Metadata container.
+
+This virtual method was added for the mspass conversion.  It is a core
+need to save the attributes of any of the GCl objects with MongoDB.  In the
+implementation we always save the grid and field data to files, but the
+attributes are saved in MongoDB.  Because Metadata maps cleanly to MongoDB's
+name-value pair paradigm that works as it does in MsPASS for seismic data.
+*/
+  virtual Metadata get_attributes()=0;
 /*!
  Comparison of two grids for equality.  Equality in this context is NOT the obvious.
  Equality means the transformation properties of the two grids being compared are the same.
@@ -560,6 +569,9 @@ public:
 	 \param i2 Value of grid index 2 for point desired.
 	*/
 	double depth(const int i1, const int i2) const;
+
+	/*! Returns all scalar attributes of the object in Metadata container. */
+	virtual Metadata get_attributes();
 
 	/*! Sets extents attributes based on min and max values */
 	void compute_extents();
@@ -822,6 +834,8 @@ public:
 	 \param i3 Value of grid index 3 for point desired.
 	*/
 	double depth(const int i1,const int i2,const int i3) const;
+	/*! Returns all scalar attributes of the object in Metadata container. */
+	virtual Metadata get_attributes();
 	/*! Sets extents attributes based on min and max values */
 	void compute_extents();
         /*! \brief Enable high accuracy lookup.
@@ -995,6 +1009,8 @@ public:
         */
   Metadata save(const string fname, const string dir,
                 const string format=default_output_format);
+	/*! Returns all scalar attributes of the object in Metadata container. */
+	Metadata get_attributes();
 	/*! \brief Add one field to another.
 
 	This acts like the += operator for simple types, but does so
@@ -1228,6 +1244,8 @@ public:
 	\param x3p - Cartesian x3 coordinate of point to where the field is to be interpolated
 	*/
 	double *interpolate(const double x1p, const double x2p, const double x3p);
+	/*! Returns all scalar attributes of the object in Metadata container. */
+	Metadata get_attributes();
 	/*!
 	 stream output operator for a vector field.
 	 Format is:
@@ -1399,6 +1417,8 @@ public:
 	Usage and caveats are the same as described in GCLscalarfield.
 	*/
 	double interpolate(const double,const double,const double);
+	/*! Returns all scalar attributes of the object in Metadata container. */
+	Metadata get_attributes();
 	/*!
 	 stream output operator for a 3d scalar field.
 	 Format is:
@@ -1568,6 +1588,8 @@ public:
 	\param c constant by which the field is to be scaled.
 	*/
 	void operator*=(const double c);
+	/*! Returns all scalar attributes of the object in Metadata container. */
+	Metadata get_attributes();
 	/*! Interpolate a 3d scalar field.
 
 	Usage and caveats are the same as described in
