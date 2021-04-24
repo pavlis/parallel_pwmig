@@ -129,10 +129,11 @@ C
       INC=INC+1
       GG(INC)=NF(NELEM(IP,I))
  1    CONTINUE
-      DO 2 I=1,8
-      DO 2 J=1,3
+      DO 200 I=1,8
+      DO 210 J=1,3
       COORD(I,J)=XCOORD(NELEM(IP,I),J)
- 2    CONTINUE
+ 210  CONTINUE
+ 200  CONTINUE
  5    FORMAT(24I3)
       RETURN
       END
@@ -214,10 +215,11 @@ C
       JAC1(1,3)=JAC(1,2)*JAC(2,3)-JAC(2,2)*JAC(1,3)
       JAC1(2,3)=-JAC(1,1)*JAC(2,3)+JAC(2,1)*JAC(1,3)
       JAC1(3,3)=JAC(1,1)*JAC(2,2)-JAC(2,1)*JAC(1,2)
-      DO 1 K=1,3
-      DO 1 L=1,3
+      DO 101 K=1,3
+      DO 100 L=1,3
       JAC1(K,L)=JAC1(K,L)/DET
-    1 CONTINUE
+  100 CONTINUE
+  101 CONTINUE
       RETURN
       END      
 
@@ -263,13 +265,15 @@ C
       INTEGER L,M,N,I,J,K
       DOUBLE PRECISION X
 
-      DO 1 I=1,L
-      DO 1 J=1,N
+      DO 101 I=1,L
+      DO 100 J=1,N
       X=0.0
       DO 2 K=1,M
-    2 X=X+A(I,K)*B(K,J)
+        X=X+A(I,K)*B(K,J)
+    2 CONTINUE
       C(I,J)=X
-    1 CONTINUE
+  100 CONTINUE
+  101 CONTINUE
       RETURN
       END
 
@@ -282,9 +286,11 @@ C
       DOUBLE PRECISION A(IA,*),B(IB,*)
       INTEGER M,N,I,J
 
-      DO 1 I=1,M
-      DO 1 J=1,N
-    1 A(J,I)=B(I,J)
+      DO 101 I=1,M
+      DO 100 J=1,N
+      A(J,I)=B(I,J)
+  100 CONTINUE
+  101 CONTINUE
       RETURN
       END
 
@@ -301,7 +307,8 @@ C
       DO 1 I=1,K
       X=0.
       DO 2 J=1,L
-    2 X=X+M(I,J)*V(J)
+       X=X+M(I,J)*V(J)
+    2 CONTINUE
       Y(I)=X
     1 CONTINUE
       RETURN
