@@ -12,9 +12,7 @@ include_directories(
 pybind11_add_module(pyseispp seispp_py.cc)
 
 target_link_libraries(pyseispp PRIVATE seispp dsap gclgrid 
-  $ENV{MSPASS_HOME}/lib/libutility.a 
   $ENV{MSPASS_HOME}/lib/libmspass.a 
-  $ENV{MSPASS_HOME}/lib/libseismic.a 
   ${Boost_LIBRARIES})
 set_target_properties(pyseispp PROPERTIES OUTPUT_NAME "seispp")
 if(DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
