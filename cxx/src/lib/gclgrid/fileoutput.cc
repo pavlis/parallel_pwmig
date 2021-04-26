@@ -1,5 +1,6 @@
 #include <fstream>
 #include <typeinfo>
+#include <boost/core/demangle.hpp>
 #include "pwmig/gclgrid/swapbytes_pwmig.h"
 #include "pwmig/dsap/stock.h"
 #include "mspass/utility/Metadata.h"
@@ -8,6 +9,7 @@
 using namespace std;
 using namespace pwmig::gclgrid;
 using namespace mspass::utility;
+
 
 namespace pwmig::gclgrid
 {
@@ -37,16 +39,19 @@ Metadata load_common_GCL_attributes(const BasicGCLgrid *g)
        largely to make the pf file easier to comprehend*/
     if(little_endian)
     {
-        m.put("byte_order","little_endian");
-        m.put("datatype","u8");
+        m.put("byte_order",string("little_endian"));
+        m.put("datatype",string("u8"));
     }
     else
     {
-        m.put("byte_order","big_endian");
-        m.put("datatype","t8");
+        m.put("byte_order",string("big_endian"));
+        m.put("datatype",string("t8"));
     }
     string obname(typeid(*g).name());
-    m.put("object_type",obname);
+    /* This function in boost does name demangling. Otherwise the decorated
+    type name is unreadable and dependent on the compiler */
+    string pretty_name(boost::core::demangle(obname.c_str()));
+    m.put("object_type",pretty_name);
     return m;
 }
 /* In this library 3D grids have some extra attributes
@@ -83,7 +88,7 @@ void pfsave_attributes(const Metadata& attributes,const string base)
     string pffilename=base+".pf";
     try {
 	ostringstream ss;
-	ss << const_cast<Metadata&>(attributes);
+	ss << attributes;
         ofstream outstrm;
         outstrm.open(pffilename.c_str(),ios::out);
 	outstrm << ss.str();
@@ -344,12 +349,13 @@ Metadata GCLscalarfield3d::save(const string fname, const string dir,const strin
     const string base_error("GCLscalarfield3d::save:  ");
     Metadata attributes;
     try{
-        Metadata attributes=load_common_GCL_attributes(this);
-        GCLgrid3d *g=dynamic_cast<GCLgrid3d*>(this);
-        g->save(fname,dir,format);
+        attributes=load_common_GCL_attributes(this);
+        load_3d_attributes(*this,attributes);
+        string fbase=makepath(dir,fname);
         if(format==default_output_format)
         {
-            string fbase=makepath(dir,fname);
+            pfsave_attributes(attributes,fbase);
+            pfhdr_save_griddata(*this,fbase);
             size_t npts=n1*n2*n3;
             long foff;
             foff=pfhdr_save_field_data(fbase,&(val[0][0][0]),npts);

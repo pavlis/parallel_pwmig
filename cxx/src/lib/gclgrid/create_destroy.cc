@@ -1,6 +1,7 @@
 #include <typeinfo>
 #include <string.h>
 #include <math.h>
+#include <boost/core/demangle.hpp>
 #include "mspass/utility/AntelopePf.h"
 #include "mspass/utility/SphericalCoordinate.h"
 #include "pwmig/dsap/stock.h"
@@ -1073,7 +1074,7 @@ GCLscalarfield::GCLscalarfield(const string fname, const string format,
             {
             string otype=params.get_string("object_type");
             string otypethis=string(typeid(*this).name());
-            if(otype!=otypethis)
+            if(otype  != boost::core::demangle(otypethis.c_str()))
                 throw GCLgridError(base_error
                + "Object type mismatch.  "
                + "Called GCLscalarfield constructor on a file with object_type="
@@ -1123,7 +1124,7 @@ GCLscalarfield3d::GCLscalarfield3d(const string fname, const string format)
             Metadata params=pfload_GCLmetadata(fname);
             string otype=params.get_string("object_type");
             string otypethis=string(typeid(*this).name());
-            if(otype!=otypethis)
+            if(otype  != boost::core::demangle(otypethis.c_str()))
                 throw GCLgridError(base_error
                + "Object type mismatch.  "
                + "Called GCLscalarfield3d constructor on a file with object_type="
@@ -1174,7 +1175,7 @@ GCLvectorfield::GCLvectorfield(const string fname, const string format,
             {
             string otype=params.get_string("object_type");
             string otypethis=string(typeid(*this).name());
-            if(otype!=otypethis)
+            if(otype  != boost::core::demangle(otypethis.c_str()))
                 throw GCLgridError(base_error
                + "Object type mismatch.  "
                + "Called GCLvectorfield constructor on a file with object_type="
@@ -1225,7 +1226,7 @@ GCLvectorfield3d::GCLvectorfield3d(const string fname, const string format)
             Metadata params=pfload_GCLmetadata(fname);
             string otype=params.get_string("object_type");
             string otypethis=string(typeid(*this).name());
-            if(otype!=otypethis)
+            if(otype  != boost::core::demangle(otypethis.c_str()))
                 throw GCLgridError(base_error
                + "Object type mismatch.  "
                + "Called GCLvectorfield3d constructor on a file with object_type="
