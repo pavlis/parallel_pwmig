@@ -26,7 +26,7 @@ using mspass::utility::Metadata;
 using mspass::utility::AntelopePf;
 using mspass::seismic::TimeSeries;
 using mspass::seismic::TimeSeriesEnsemble;
-using mspass::seismic::TimeWindow;
+using mspass::algorithms::TimeWindow;
 //using namespace pwmig::seispp;
 using pwmig::seispp::Hypocenter;
 using pwmig::seispp::RadialGrid;

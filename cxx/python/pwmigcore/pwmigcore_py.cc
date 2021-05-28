@@ -7,6 +7,7 @@
 
 #include "pwmig/pwmigcore/DepthDependentAperture.h"
 #include "pwmig/pwmigcore/RectangularSlownessGrid.h"
+#include "pwmig/pwmigcore/pwstack.h"
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/AntelopePf.h"
 
@@ -20,6 +21,7 @@ using mspass::utility::Metadata;
 using mspass::utility::AntelopePf;
 using pwmig::pwmigcore::DepthDependentAperture;
 using pwmig::pwmigcore::RectangularSlownessGrid;
+using pwmig::pwmigcore::pwstack_ensemble;
 
 
 PYBIND11_MODULE(pwmigcore, m) {
@@ -82,6 +84,22 @@ py::class_<RectangularSlownessGrid>(m,"RectangularSlownessGrid",
     }
   ))
 ;
+m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a SeismogramEnsemble",
+   py::return_value_policy::copy,
+   py::arg("d"),
+   py::arg("ugrid"),
+   py::arg("mute"),
+   py::arg("stackmute"),
+   py::arg("stack_count_cutoff"),
+   py::arg("tstart"),
+   py::arg("tend"),
+   py::arg("aperture"),
+   py::arg("aperture_taper_length"),
+   py::arg("centroid_cutoff"),
+   py::arg("mdlcopy"),
+   py::arg("save_history"),
+   py::arg("algid")
+ );
 }
 }  // end namespace pwmigpy
 }  // end namespace pwmig
