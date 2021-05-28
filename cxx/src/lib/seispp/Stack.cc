@@ -11,6 +11,7 @@
 using namespace pwmig::seispp;
 using namespace mspass::seismic;
 using namespace mspass::utility;
+using mspass::algorithms::TimeWindow;
 using mspass::algorithms::WindowData;
 namespace pwmig::seispp
 {

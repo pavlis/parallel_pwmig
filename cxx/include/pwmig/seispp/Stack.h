@@ -2,7 +2,7 @@
 #define _PWMIG_STACK_H_
 
 #include <vector>
-#include "mspass/seismic/TimeWindow.h"
+#include "mspass/algorithms/TimeWindow.h"
 #include "mspass/seismic/TimeSeries.h"
 #include "mspass/seismic/Ensemble.h"
 /* Not really needed in this include file, but required for compiling
@@ -78,7 +78,7 @@ public:
 	*	members of the input ensemble.
 	*/
 	Stack(mspass::seismic::TimeSeriesEnsemble& d,
-		const mspass::seismic::TimeWindow twin);
+		const mspass::algorithms::TimeWindow twin);
 	/*! Constructor that implements robust stacking methods.
 	*  This constructor behaves similar to the simple stack constructor, but the result can
 	* be dramatically different with variable signal-to-noise data.  Currently accepts
@@ -106,8 +106,8 @@ public:
 	*    the RobustSNR method.
 	*/
 	Stack(mspass::seismic::TimeSeriesEnsemble& d,
-		const mspass::seismic::TimeWindow stack_twin,
-		  const mspass::seismic::TimeWindow robust_twin,
+		const mspass::algorithms::TimeWindow stack_twin,
+		  const mspass::algorithms::TimeWindow robust_twin,
 			  const StackType method,
 				  double power=1.0);
 	/*! Standard copy constructor. */

@@ -1,5 +1,5 @@
 #ifndef _RECTANGULAR_SLOWNESS_GRID_H_
-#define RECTANGULAR_SLOWNESS_GRID_H_
+#define _RECTANGULAR_SLOWNESS_GRID_H_
 #include <string>
 
 #include <boost/serialization/serialization.hpp>

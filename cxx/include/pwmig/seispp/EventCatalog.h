@@ -2,7 +2,7 @@
 #define _EVENT_CATALOG_H_
 #include <map>
 #include <memory>
-#include "mspass/seismic/TimeWindow.h"
+#include "mspass/algorithms/TimeWindow.h"
 #include "mspass/utility/Metadata.h"
 #include "pwmig/seispp/Hypocenter.h"
 namespace pwmig::seispp
@@ -10,7 +10,7 @@ namespace pwmig::seispp
 using namespace std;
 using pwmig::seispp::Hypocenter;
 using mspass::utility::Metadata;
-using mspass::seismic::TimeWindow;
+using mspass::algorithms::TimeWindow;
 /*! \brief Function object for weak ordering of Hypocenters in space-time order.
 
 Hypocenter objects encapsulate the concept of earthquake locations on the Earth.

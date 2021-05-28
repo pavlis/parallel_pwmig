@@ -1,4 +1,4 @@
-#include "mspass/seismic/TimeWindow.h"
+#include "mspass/algorithms/TimeWindow.h"
 #include "mspass/utility/MsPASSError.h"
 #include "pwmig/dsap/coords.h"
 #include "pwmig/seispp/Hypocenter.h"
@@ -6,7 +6,7 @@
 using namespace std;
 using namespace pwmig::seispp;
 using mspass::utility::MsPASSError;
-using mspass::seismic::TimeWindow;
+using mspass::algorithms::TimeWindow;
 namespace pwmig::seispp
 {
 
