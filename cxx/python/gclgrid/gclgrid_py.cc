@@ -143,17 +143,16 @@ py::class_<GCLgrid,BasicGCLgrid>(m,"GCLgrid",py::buffer_protocol(),
   .def("r",&GCLgrid::r,"Get radial distance from earth center (km) of a grid point specified by two index ints")
   .def("depth",&GCLgrid::depth,"Get depth (km) from 0 reference ellipsoid radius of a grid point specified by two index ints")
   .def("compute_extents",&GCLgrid::compute_extents,"Call after manually building a grid")
-  .def("coordinates",[](const GCLgrid& g,const int i, const int j)->Cartesian_point
-  {
-    Cartesian_point result;
-    result.x1=g.x1[i][j];
-    result.x2=g.x2[i][j];
-    result.x3=g.x3[i][j];
-    return result;
-  })
   .def("geo_coordinates",&GCLgrid::geo_coordinates,"Fetch grid point defined as geo coordinates")
+  .def("get_coordinates",&GCLgrid::get_coordinates,"Fetch grid point defined in Cartesian system")
   .def("get_attributes",&GCLgrid::get_attributes,
      "Fetch all attributes into a Metadata container")
+  .def("set_coordinates",py::overload_cast<const Cartesian_point&,
+     const int, const int>(&GCLgrid::set_coordinates),
+     "Set grid point coordinates using Cartesian system")
+  .def("set_coordinates",py::overload_cast<const Cartesian_point&,
+      const int, const int>(&GCLgrid::set_coordinates),
+      "Set grid point coordinates Geographic point (radians)")
 ;
 py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
                      "Three-dimensional GCL grid object")
@@ -171,6 +170,7 @@ py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
   .def("reset_index",&GCLgrid3d::reset_index,"Initializer for lookup searches - rarely needed")
   .def("get_index",&GCLgrid3d::get_index,"Return index position found with lookup")
   .def("geo_coordinates",&GCLgrid3d::geo_coordinates,"Return geo coordinate struct")
+  .def("get_coordinates",&GCLgrid3d::get_coordinates,"Fetch grid point defined in Cartesian system")
   .def("lat",&GCLgrid3d::lat,"Get latitude (radians) of a grid point specified by three index ints")
   .def("lon",&GCLgrid3d::lon,"Get longitude (radians) of a grid point specified by three index ints")
   .def("r",&GCLgrid3d::r,"Get radial distance from earth center (km) of a grid point specified by three index ints")
@@ -178,6 +178,12 @@ py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
   .def("compute_extents",&GCLgrid3d::compute_extents,"Call after manually building a grid")
   .def("get_attributes",&GCLgrid3d::get_attributes,
      "Fetch all attributes into a Metadata container")
+  .def("set_coordinates",py::overload_cast<const Cartesian_point&,
+        const int, const int, const int>(&GCLgrid3d::set_coordinates),
+        "Set grid point coordinates using Cartesian system")
+  .def("set_coordinates",py::overload_cast<const Cartesian_point&,
+         const int, const int,const int>(&GCLgrid3d::set_coordinates),
+         "Set grid point coordinates Geographic point (radians)")
   .def_readwrite("n3",&GCLgrid3d::n3)
   .def_readwrite("dx3_nom",&GCLgrid3d::dx3_nom)
   .def_readwrite("k0",&GCLgrid3d::k0)
@@ -194,6 +200,8 @@ py::class_<GCLscalarfield,GCLgrid>(m,"GCLscalarfield","Two-dimensional grid with
   .def("interpolate",&GCLscalarfield::interpolate,"Interpolate grid to get value at point passed")
   .def("get_attributes",&GCLscalarfield::get_attributes,
      "Fetch all attributes into a Metadata container")
+  .def("set_value",&GCLscalarfield::set_value,"Set the value at a specified grid point")
+  .def("get_value",&GCLscalarfield::get_value,"Get the value at a specified grid point")
    /* This is normally the right syntax in pybind11 for operator+= but
    not working here for some mysterious reason. Put aside until needed - solvable
    problem just one of those annoying picky pybind11 details*/
@@ -213,6 +221,8 @@ py::class_<GCLvectorfield,GCLgrid>(m,"GCLvectorfield","Two-dimensional grid with
   .def("interpolate",&GCLvectorfield::interpolate,"Interpolate grid to get vector values at point passed")
   .def("get_attributes",&GCLvectorfield::get_attributes,
      "Fetch all attributes into a Metadata container")
+  .def("get_value",&GCLvectorfield::get_value,"Get the vector of values at a specified grid point")
+  .def("set_value",&GCLvectorfield::set_value,"Set the value at a specified grid point")
   //.def(py::self += py::self)
   .def(py::self *= double())
   .def_readwrite("nv",&GCLvectorfield::nv,"Number of components in each vector")
@@ -230,7 +240,8 @@ py::class_<GCLscalarfield3d,GCLgrid3d>(m,"GCLscalarfield3d","Three-dimensional g
   .def("interpolate",&GCLscalarfield3d::interpolate,"Interpolate grid to get value at point passed")
   .def("get_attributes",&GCLscalarfield3d::get_attributes,
      "Fetch all attributes into a Metadata container")
-  //.def(py::self += py::self)
+  .def("get_value",&GCLscalarfield3d::get_value,"Get the value at a specified grid point")
+  .def("set_value",&GCLscalarfield3d::set_value,"Set the value at a specified grid point")
   .def(py::self *= double())
 ;
 
@@ -246,6 +257,8 @@ py::class_<GCLvectorfield3d,GCLgrid3d>(m,"GCLvectorfield3d","Three-dimensional g
   .def("interpolate",&GCLvectorfield3d::interpolate,"Interpolate grid to get vector values at point passed")
   .def("get_attributes",&GCLvectorfield3d::get_attributes,
      "Fetch all attributes into a Metadata container")
+  .def("get_value",&GCLvectorfield3d::get_value,"Get the vector of values at a specified grid point")
+  .def("set_value",&GCLvectorfield3d::set_value,"Set the value at a specified grid point")
   //.def(py::self += py::self)
   .def(py::self *= double())
   .def_readwrite("nv",&GCLvectorfield3d::nv,"Number of components in each vector")

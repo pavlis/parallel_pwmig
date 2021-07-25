@@ -575,6 +575,33 @@ public:
 
 	/*! Sets extents attributes based on min and max values */
 	void compute_extents();
+	/*! Set coordinates at a grid point.
+
+	Sets the coordinates of a point at index i,j.  The only checks are
+	that i and j received are in bounds.  It will throw a GCLgridError if the
+	points given are invalid.  This is largely a convenience function for python
+	as in C++ the arrays are public.
+
+	\param p Geogrpahic_point definition of the point to be set.
+	\param i first grid index value to set (i.e i of  [i][j])
+	\param j second grid index value to set
+	*/
+	void set_coordinates(const Cartesian_point& p, const int i, const int j);
+	/*! Set coordinates at a grid point.
+
+	Sets the coordinates of a point at index i,j.  The only checks are
+	that i and j received are in bounds.  It will throw a GCLgridError if the
+	points given are invalid.  This is largely a convenience function for python
+	as in C++ the arrays are public.  This is an overloaded version for
+	input a Geographic coordinates versus Cartesian
+
+	\param p Geogrpahic_point definition of the point to be set.
+	\param i first grid index value to set (i.e i of  [i][j])
+	\param j second grid index value to set
+	*/
+	void set_coordinates(const Geographic_point& p, const int i, const int j);
+	/*! Getter for grid point */
+	Cartesian_point get_coordinates(const int i, const int j) const;
 	friend class GCLscalarfield;
 	friend class GCLvectorfield;
 private:
@@ -836,6 +863,7 @@ public:
 	double depth(const int i1,const int i2,const int i3) const;
 	/*! Returns all scalar attributes of the object in Metadata container. */
 	virtual Metadata get_attributes();
+
 	/*! Sets extents attributes based on min and max values */
 	void compute_extents();
         /*! \brief Enable high accuracy lookup.
@@ -870,6 +898,37 @@ public:
  object by the default constructor.
 */
 	~GCLgrid3d();
+	/*! Set coordinates at a grid point.
+
+	Sets the coordinates of a point at index i,j.  The only checks are
+	that i and j received are in bounds.  It will throw a GCLgridError if the
+	points given are invalid.  This is largely a convenience function for python
+	as in C++ the arrays are public.
+
+	\param p Geogrpahic_point definition of the point to be set.
+	\param i first grid index value to set (i.e i of  [i][j][k])
+	\param j second grid index value to set
+  \param k third grid index value to set
+	*/
+	void set_coordinates(const Cartesian_point& p,
+		const int i, const int j,const int k);
+	/*! Set coordinates at a grid point.
+
+	Sets the coordinates of a point at index i,j.  The only checks are
+	that i and j received are in bounds.  It will throw a GCLgridError if the
+	points given are invalid.  This is largely a convenience function for python
+	as in C++ the arrays are public.  This is an overloaded version for
+	input a Geographic coordinates versus Cartesian
+
+	\param p Geogrpahic_point definition of the point to be set.
+	\param i first grid index value to set (i.e i of  [i][j][k])
+	\param j second grid index value to set
+  \param k third grid index value to set
+	*/
+	void set_coordinates(const Geographic_point& p,
+		const int i, const int j,const int k);
+	/*! Getter for grid point */
+	Cartesian_point get_coordinates(const int i, const int j, const int k) const;
 private:
 	int ix1, ix2, ix3;
         bool fast_lookup;
@@ -1011,6 +1070,10 @@ public:
                 const string format=default_output_format);
 	/*! Returns all scalar attributes of the object in Metadata container. */
 	Metadata get_attributes();
+	/*! Get the field value at specified grid cell */
+	double get_value(const int i, const int j) const;
+	/*! Sets the value of the field variable at grid cell i,j */
+	void set_value(const double newvalue, const int i, const int j);
 	/*! \brief Add one field to another.
 
 	This acts like the += operator for simple types, but does so
@@ -1197,8 +1260,14 @@ public:
 						 object sans grid data.
           \exception GCLgridError is throw if save fails.
         */
+
   Metadata save(const string fname, const string dir,
                 const string format=default_output_format);
+	/*! Get the field value at specified grid cell */
+	std::vector<double> get_value(const int i, const int j) const;
+	/*! Set the field value at grid point i,j.  Warning:  pointer is
+	not tested for validty - assumed to be length at least this->nv.*/
+	void set_value(const double *newvals, const int i, const int j);
 	/*! Add one field to another.
 
 	This acts like the += operator for simple types, but does so
@@ -1360,6 +1429,10 @@ public:
 	~GCLscalarfield3d();
 	/** Zeros field variable array */
 	void zero();
+	/*! Get the field value at specified grid cell */
+	double get_value(const int i, const int j, const int k) const;
+	/*! Sets the value of the field variable at grid cell i,j */
+	void set_value(const double newvalue, const int i, const int j, const int k);
 	/** Standard assignment operator. */
 	GCLscalarfield3d& operator=(const GCLscalarfield3d& parent);
 
@@ -1537,6 +1610,11 @@ public:
 	~GCLvectorfield3d();
 	/** Zeros the field variable */
 	void zero();
+	/*! Get the field value at specified grid cell */
+	std::vector<double> get_value(const int i, const int j, const int k) const;
+	/*! Set the field value at grid point i,j,k.  Warning:  pointer is
+	not tested for validty - assumed to be length at least this->nv.*/
+	void set_value(const double *newvals, const int i, const int j, const int k);
 	/** Standard assignment operator. */
 	GCLvectorfield3d& operator=(const GCLvectorfield3d&);
         /*! \brief Save to a file.
@@ -2009,6 +2087,8 @@ the function returns true.   If they match it returns false.  Note the
 default if datatype is not defined is little endian because Intel won the
 byte order wars a while back. */
 bool byte_swap_is_needed(const Metadata& md);
+
+
 template <typename GCLtype> void read_GCL2d_coord_arrays(GCLtype& d, const Metadata& md)
 {
 	try{
