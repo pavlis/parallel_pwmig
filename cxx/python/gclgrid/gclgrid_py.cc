@@ -60,6 +60,67 @@ public:
       get_attributes
     );
   }
+  pwmig::gclgrid::Geographic_point ctog(const double x1, 
+    const double x2, const double x3) const
+  {
+    PYBIND11_OVERLOAD(
+      pwmig::gclgrid::Geographic_point,
+      BasicGCLgrid,
+      ctog,
+      x1,
+      x2,
+      x3
+    );
+  }
+  pwmig::gclgrid::Geographic_point ctog(const pwmig::gclgrid::Cartesian_point point) const
+  {
+    PYBIND11_OVERLOAD(
+      pwmig::gclgrid::Geographic_point,
+      BasicGCLgrid,
+      ctog,
+      point
+    );
+  }
+  pwmig::gclgrid::Cartesian_point gtoc(const double lat, 
+    const double lon, const double radius) const
+  {
+    PYBIND11_OVERLOAD(
+      pwmig::gclgrid::Cartesian_point,
+      BasicGCLgrid,
+      gtoc,
+      lat,
+      lon,
+      radius
+    );
+  }
+  pwmig::gclgrid::Cartesian_point gtoc(const pwmig::gclgrid::Geographic_point point) const
+  {
+    PYBIND11_OVERLOAD(
+      pwmig::gclgrid::Cartesian_point,
+      BasicGCLgrid,
+      gtoc,
+      point
+    );
+  }
+  double depth(const pwmig::gclgrid::Cartesian_point point) const
+  {
+    PYBIND11_OVERLOAD(
+      double,
+      BasicGCLgrid,
+      depth,
+      point
+    );
+  }
+  double depth(const pwmig::gclgrid::Geographic_point point) const
+  {
+    PYBIND11_OVERLOAD(
+      double,
+      BasicGCLgrid,
+      depth,
+      point
+    );
+  }
+  
 };
 
 
@@ -85,7 +146,7 @@ py::class_<BasicGCLgrid,PyBasicGCLgrid>(m,"BasicGCLgrid","Base class for family 
        "Retrieve the transformation matrix defined for this coordinate system")
   .def("fetch_translation_vector",&BasicGCLgrid::fetch_translation_vector,
        "Retrieve the translation vector of this coordinate system")
-       /*  Having trouble getting these to compile - put aside for now
+       /*
   .def("ctog",py::overload_cast<const double, const double, const double>
         (&BasicGCLgrid::ctog),"Convert grid Cartesian coordinates to geographic")
   .def("ctog",py::overload_cast<const pwmig::gclgrid::Cartesian_point>
