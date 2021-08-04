@@ -60,14 +60,23 @@ void GCLscalarfield::set_value(const double newvalue, const int i, const int j)
 	}
 	this->val[i][j]=newvalue;
 }
-void GCLvectorfield::set_value(const double *newvals, const int i, const int j)
+void GCLvectorfield::set_value(const vector<double> newvals, const int i, const int j)
 {
-	if( (i<0) || (i>=this->n1) || (j<0) || (j>this->n2))
-	{
+  if( (i<0) || (i>=this->n1) || (j<0) || (j>this->n2))
+  {
     string message=range_error_message("GCLvectorfield","set_value",
        i,j,this->n1,this->n2);
-		throw GCLgridError(message);
-	}
+    throw GCLgridError(message);
+  }
+  if(this->nv != newvals.size())
+  {
+    stringstream ss;
+    ss << "GCLvectorfield::set_value:  vector value size mismatch"<<endl
+       << "Input data vector length="<<newvals.size()<<endl
+       << "Expected vector of internal size="<<this->nv;
+    throw GCLgridError(ss.str());
+  }
+
   for(auto iv=0;iv<this->nv;++iv) this->val[i][j][iv]=newvals[iv];
 }
 void GCLgrid3d::set_coordinates(const Cartesian_point& p,
@@ -108,15 +117,23 @@ void GCLscalarfield3d::set_value(const double newvalue,
 	}
 	this->val[i][j][k]=newvalue;
 }
-void GCLvectorfield3d::set_value(const double *newvals,
+void GCLvectorfield3d::set_value(const vector<double> newvals,
   const int i, const int j, const int k)
 {
-	if( (i<0) || (i>=this->n1) || (j<0) || (j>this->n2) || (k<0) || (k>=this->n3))
-	{
+  if( (i<0) || (i>=this->n1) || (j<0) || (j>this->n2) || (k<0) || (k>=this->n3))
+  {
     string message=range_error_message("GCLvectorfield3d","set_value",i,j,k,
         this->n1,this->n2,this->n3);
     throw GCLgridError(message);
-	}
+  }
+  if(this->nv != newvals.size())
+  {
+    stringstream ss;
+    ss << "GCLvectorfield3d::set_value:  vector value size mismatch"<<endl
+       << "Input data vector length="<<newvals.size()<<endl
+       << "Expected vector of internal size="<<this->nv;
+    throw GCLgridError(ss.str());
+  }
 	for(auto iv=0;iv<this->nv;++iv) this->val[i][j][k][iv]=newvals[iv];
 }
 /* getters for coordinates and field values follow.*/

@@ -8,6 +8,7 @@
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/AntelopePf.h"
 #include "pwmig/gclgrid/gclgrid.h"
+#include "pwmig/gclgrid/RegionalCoordinates.h"
 
 /* these are needed to make std::vector containers function propertly.
 This was borrowed from mspass pybind11 cc files */
@@ -60,7 +61,7 @@ public:
       get_attributes
     );
   }
-  pwmig::gclgrid::Geographic_point ctog(const double x1, 
+  pwmig::gclgrid::Geographic_point ctog(const double x1,
     const double x2, const double x3) const
   {
     PYBIND11_OVERLOAD(
@@ -81,7 +82,7 @@ public:
       point
     );
   }
-  pwmig::gclgrid::Cartesian_point gtoc(const double lat, 
+  pwmig::gclgrid::Cartesian_point gtoc(const double lat,
     const double lon, const double radius) const
   {
     PYBIND11_OVERLOAD(
@@ -120,11 +121,14 @@ public:
       point
     );
   }
-  
+
 };
 
 
 PYBIND11_MODULE(gclgrid, m) {
+/* This is needed to allow vector inputs and outputs */
+py::bind_vector<std::vector<double>>(m, "DoubleVector");
+
 py::class_<pwmig::gclgrid::Geographic_point>(m,"Geographic_point","Point on Earth defined in regional cartesian system")
   .def(py::init<>())
   .def(py::init<const Geographic_point&>())
@@ -142,24 +146,24 @@ py::class_<pwmig::gclgrid::Cartesian_point>(m,"Cartesian_point","Point on Earth 
     ;
 py::class_<BasicGCLgrid,PyBasicGCLgrid>(m,"BasicGCLgrid","Base class for family of GCL data objects")
   .def(py::init<>())
+  .def("set_transformation_matrix",&BasicGCLgrid::set_transformation_matrix,
+      "Sets the tranformation matrix from current values of r0, lat0, lon0, and azimuth_y")
   .def("fetch_transformation_matrix",&BasicGCLgrid::fetch_transformation_matrix,
        "Retrieve the transformation matrix defined for this coordinate system")
   .def("fetch_translation_vector",&BasicGCLgrid::fetch_translation_vector,
        "Retrieve the translation vector of this coordinate system")
-       /*
   .def("ctog",py::overload_cast<const double, const double, const double>
-        (&BasicGCLgrid::ctog),"Convert grid Cartesian coordinates to geographic")
+        (&BasicGCLgrid::ctog,py::const_),"Convert grid Cartesian coordinates to geographic")
   .def("ctog",py::overload_cast<const pwmig::gclgrid::Cartesian_point>
-              (&BasicGCLgrid::ctog),"Convert grid Cartesian coordinates to geographic")
+        (&BasicGCLgrid::ctog,py::const_),"Convert grid Cartesian coordinates to geographic")
   .def("gtoc",py::overload_cast<const double, const double, const double>
-      (&BasicGCLgrid::gtoc),"Convert geographic point to grid cartesian system")
+      (&BasicGCLgrid::gtoc,py::const_),"Convert geographic point to grid cartesian system")
   .def("gtoc",py::overload_cast<const pwmig::gclgrid::Geographic_point>
-      (&BasicGCLgrid::gtoc),"Convert geographic point to grid cartesian system")
-  .def("depth",py::overload_cast<const pwmig::gclgrid::Cartesian_point>(&BasicGCLgrid::depth),
+      (&BasicGCLgrid::gtoc,py::const_),"Convert geographic point to grid cartesian system")
+  .def("depth",py::overload_cast<const pwmig::gclgrid::Cartesian_point>(&BasicGCLgrid::depth,py::const_),
       "Return depth from sea level reference ellipsoid of point specified in grid cartesian system")
-  .def("depth",py::overload_cast<const pwmig::gclgrid::Geographic_point>(&BasicGCLgrid::depth),
+  .def("depth",py::overload_cast<const pwmig::gclgrid::Geographic_point>(&BasicGCLgrid::depth,py::const_),
       "Return depth from sea level reference ellipsoid of point specified in spherical (geographic) coordinates (not ellipsoid corrected)")
-      */
   /* these are pure virtual methods but they still need to be defined here
   to get pybind11 to compile correctly */
   .def("compute_extents",&BasicGCLgrid::compute_extents)
@@ -324,6 +328,25 @@ py::class_<GCLvectorfield3d,GCLgrid3d>(m,"GCLvectorfield3d","Three-dimensional g
   .def(py::self *= double())
   .def_readwrite("nv",&GCLvectorfield3d::nv,"Number of components in each vector")
 ;
+py::class_<RegionalCoordinates>(m,"RegionalCoordinates",
+      "Encapsulates coordinate system used in gclgrid objects")
+  .def(py::init<>())
+  .def(py::init<const double, const double, const double, const double>())
+  .def("cartesian",py::overload_cast<const double, const double, const double>
+     (&RegionalCoordinates::cartesian,py::const_),"Return cartesian translation of lat, lon, radius")
+  .def("cartesian",py::overload_cast<const Geographic_point>
+     (&RegionalCoordinates::cartesian,py::const_),
+     "Return cartesian translation of point in geographic struct")
+  .def("geographic",py::overload_cast<const double, const double, const double>
+    (&RegionalCoordinates::geographic,py::const_),
+    "Return geographic points equivalent to three components of a cartesian vector")
+  .def("geographic",py::overload_cast<const Cartesian_point>
+    (&RegionalCoordinates::geographic,py::const_),
+    "Return geographic points equivalent to three components of a cartesian vector")
+  .def("aznorth_angle",&RegionalCoordinates::aznorth_angle,"Return internal azimuth angle of x2 axis relative to north")
+  .def("origin",&RegionalCoordinates::origin,"Return geographic location of origin of coordinate system")
+;
+
 /* gclgrid functions.  Not all are wrapped here - will add them as I need them */
 m.def("r0_ellipse",&r0_ellipse,
   "Return the radius of the reference ellipsoid at latitude specified in radians",

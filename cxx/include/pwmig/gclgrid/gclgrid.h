@@ -700,7 +700,7 @@ public:
 
 */
 	GCLgrid3d(const int n1size, const int n2size, const int n3size, const string n,
-		const double la0, const double lo0, const double az, const double radius0,
+		const double la0, const double lo0, const double radius0, const double az,
 		const double dx1n, const double dx2n, const double dx3n,
 		const int iorigin, const int jorigin);
 
@@ -1265,9 +1265,16 @@ public:
                 const string format=default_output_format);
 	/*! Get the field value at specified grid cell */
 	std::vector<double> get_value(const int i, const int j) const;
-	/*! Set the field value at grid point i,j.  Warning:  pointer is
-	not tested for validty - assumed to be length at least this->nv.*/
-	void set_value(const double *newvals, const int i, const int j);
+	/*! Set the field value at grid point i,j.  
+
+        The input vector, newvals, size is tested against this->nv.
+        This simple method will throw an exception if the sizes do 
+        not match.  Note for this function to work in python the 
+        pybind11 code needs to define how an std::vector<double> 
+        is bound to python.  Following mspass I map this to a 
+        symbol there called DoubleVector.  
+        */
+	void set_value(const std::vector<double>newvals, const int i, const int j);
 	/*! Add one field to another.
 
 	This acts like the += operator for simple types, but does so
@@ -1612,9 +1619,17 @@ public:
 	void zero();
 	/*! Get the field value at specified grid cell */
 	std::vector<double> get_value(const int i, const int j, const int k) const;
-	/*! Set the field value at grid point i,j,k.  Warning:  pointer is
-	not tested for validty - assumed to be length at least this->nv.*/
-	void set_value(const double *newvals, const int i, const int j, const int k);
+	/*! Set the field value at grid point i,j,k.  
+
+        The input vector, newvals, size is tested against this->nv.
+        This simple method will throw an exception if the sizes do 
+        not match.  Note for this function to work in python the 
+        pybind11 code needs to define how an std::vector<double> 
+        is bound to python.  Following mspass I map this to a 
+        symbol there called DoubleVector.  
+        */
+	void set_value(const std::vector<double>newvals, 
+           const int i, const int j, const int k);
 	/** Standard assignment operator. */
 	GCLvectorfield3d& operator=(const GCLvectorfield3d&);
         /*! \brief Save to a file.
