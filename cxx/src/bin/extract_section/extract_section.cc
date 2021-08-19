@@ -1,16 +1,14 @@
-#include <fstream>
-#include "stock.h"
-#include "dbpp.h"
-#include "Metadata.h"
-#include "seispp.h"
-#include "gclgrid.h"
-#include "FixedFormatTrace.h"
+Verbose#include <fstream>
+#include "pwmig/dsap/stock.h"
+#include "mspass/utility/Metadata.h"
+#include "pwmig/gclgrid.h"
 using namespace std;
-using namespace SEISPP;
+using namespace mspass::utility;
+using namespace pwmig::gclgrid;
 
 void usage()
 {
-	cerr << "extract_section db gridname fieldname "
+	cerr << "extract_section base_file_name "
 		<< "[-pf pffile -o outfile -vectordata -v]"<<endl
 	      << "(Default outfile is stdout)"<<endl;
 
@@ -39,76 +37,21 @@ double *extract_vertical(GCLscalarfield3d *g,Geographic_point p,double z0, doubl
 	}
 	return(result);
 }
-void writesu(dmatrix& section, double zmin, double dz, list<Geographic_point>& path,
-		ofstream& out)
-{
-    try {
-	int i,j;
-	int nz=section.rows();
-	int nd=section.columns();
-	list<Geographic_point>::iterator p0,p;
-	p0=path.begin();
-	double lat0,lon0;
-	double lat,lon,azimuth,delta,distkm;
-	lat0=p0->lat;
-	lon0=p0->lon;
-	FixedFormatTrace d(string("SEGYfloat"),nz);
-	const double DEG2KM(111.320);
-	vector<double> values;
-	values.reserve(nz);
-	for(j=0,p=path.begin();j<nd;++j,++p)
-	{
-		for(i=0;i<nz;++i) values.push_back(section(i,j));
-		d.put(0,values);
-		values.clear();
-		/* These frozen names are a maintenance nightmare because
-		these relate to an independent pf file that defines them
-		(HeaderMap.pf) */
-		d.put<int>("lineSeq",j+1);
-		d.put<int>("reelSeq",1);
-		d.put<int>("event_number",1);
-		d.put<int>("cdpEns",1);
-		d.put<int>("traceInEnsemble",j+1);
-		d.put<int>("traceId",1);
-		d.put<int>("coordUnits",10000);  //degree multiplier for lat lon
-		lat=deg(p->lat);
-		lon=deg(p->lon);
-		dist(lat0,lon0,p->lat,p->lon,&delta,&azimuth);
-		distkm=deg(delta)*DEG2KM;
-		lat*=10000;
-		lon*=10000;
-		d.put<double>("recLongOrX",lon);
-		d.put<double>("recLatOrY",lat);
-		/* In SEGY/SU dt is microseconds.  This puts
-		km scale depths to soomething closer to standard
-		seismic.  */
-		const double dz_multiplier(1000.0);
-		d.put<double>("deltaSample",dz_multiplier*dz);
-		d.put<int>("sampleLength",nz);
-		d.put<double>("sourceToRecDist",distkm);
-		/* This marks a trace live in SEGY */
-		d.put<int>("dataUse",1);
-		d.write(out);
-	} 
-	out.close();
-    }catch(...){throw;};
-}
-bool SEISPP::SEISPP_verbose(false);
+
 int main(int argc, char **argv)
 {
 	int i,j;
 	ios::sync_with_stdio();
-	if(argc<4) usage();
-	string dbname(argv[1]);
-	string gridname(argv[2]);
-	string fieldname(argv[3]);
+	if(argc<2) usage();
+	string basename(argv[1]);
 	string pfname("extract_section");
 	bool vectordata(false);
 	ofstream outstrm;
 	bool out_to_other(false);
 	string outfile;
+	bool Verbose(false);
 
-	for(i=4;i<argc;++i)
+	for(i=2;i<argc;++i)
 	{
 		string argstr=string(argv[i]);
 		if(argstr=="-pf")
@@ -125,21 +68,16 @@ int main(int argc, char **argv)
 			outfile=string(argv[i]);
 		}
 		else if(argstr=="-v")
-			SEISPP_verbose=true;
+			Verbose=true;
 		else
 		{
 			cerr << "Unknown argument = "<<argstr<<endl;
 			usage();
 		}
 	}
-	Pf *pf;
-	if(pfread(const_cast<char *>(pfname.c_str()),&pf)) 
-	{
-		cerr << "pfread failed"<<endl;
-		usage();
-	}
+	AntelopePf pf(pfname);
 	/* format switch.  For now just ascii formats, but segy planned */
-	enum OutputFormat {Dmatrix, GMT, SEISMICUNIX};
+	enum OutputFormat {Dmatrix, GMT};
         char *pfkey;
         pfkey=strdup("output_format");
 	char *formatname=pfget_string(pf,pfkey);
@@ -154,11 +92,9 @@ int main(int argc, char **argv)
 	}
 	else if(stmp=="GMT" || stmp=="gmt")
 		odform=GMT;
-	else if(stmp=="SEISMICUNIX")
-		odform=SEISMICUNIX;
 	else
 		odform=Dmatrix;
-	if(SEISPP_verbose)
+	if(Verbose)
 	{
 		cerr << "Using output format ";
 		switch(odform)
@@ -168,23 +104,10 @@ int main(int argc, char **argv)
 			break;
 		case Dmatrix:
 			cerr << "dmatrix (matlab load ascii compatible)"<<endl;
-			break;
-		case SEISMICUNIX:
-			cerr << "SEISMICUNIX"<<endl;
 		};
 	}
-	if(odform==SEISMICUNIX && !out_to_other)
-	{
-		cerr << "Illegal parameter combination.  "
-			<< "You must use the -o argument when writing SEISMICUNIX data"
-			<<endl;
-		exit(-1);
-	}
 	try {
-		if(odform==SEISMICUNIX)
-			outstrm.open(outfile.c_str(),ios::out | ios::binary);
-		else
-			outstrm.open(outfile.c_str(),ios::out);
+		outstrm.open(outfile.c_str(),ios::out);
 	} catch (ios::failure& var)
 	{
 		cerr << "Open failure on outfile="<<outfile
@@ -193,12 +116,9 @@ int main(int argc, char **argv)
 			<< var.what() <<endl;
 		usage();
 	}
-		
-	Tbl *pointlist;
-        pfkey=strdup("section_points");
-	pointlist=pfget_tbl(pf,pfkey);
-        free(pfkey);
-	if(pointlist==NULL)
+	list<string> pointlist;
+	pointlist=pf.get_tbl("section_points");
+	if(pointlist.size()<=0)
 	{
 		cerr << "pf error on Tbl section_points"
 			<<endl
@@ -206,35 +126,28 @@ int main(int argc, char **argv)
 		exit(-1);
 	}
 	list<Geographic_point> section_points;
-	for(i=0;i<maxtbl(pointlist);++i)
+	for(auto lptr=pointlist.begin();lptr!=pointlist.end();++lptr)
 	{
 		char *line;
 		double lat,lon;
-		line=(char *)gettbl(pointlist,i);
-		sscanf(line,"%lf%lf",&lat,&lon);
+		stringstream ss(*lptr);
+		ss>>lat;
+		ss>>lon;
 		Geographic_point p;
 		p.lat=rad(lat);
 		p.lon=rad(lon);
 		p.r=r0_ellipse(p.lat);
 		section_points.push_back(p);
 	}
-	if(SEISPP_verbose) cerr << "Read section path defined by "
+	if(Verbose) cerr << "Read section path defined by "
 		<< section_points.size()
 		<< " control points"<<endl;
 	try {
-		DatascopeHandle dbh(dbname,true);
-		dbh.lookup(string("gclgdisk"));
-		DatascopeHandle dbhg(dbh);
-		dbhg.lookup(string("gclfield"));
-		Dbptr db=dbh.db;
-		Dbptr dbgrd=dbhg.db;
-		
-		Metadata control(pf);
-		double dx=control.get_double("path_sample_interval");
-		double dz=control.get_double("depth_sample_interval");
-		double zmax=control.get_double("maximum_depth");
-		double zmin=control.get_double("minimum_depth");
-		bool output_latlon=control.get_bool("geographic_output");
+		double dx=pf.get_double("path_sample_interval");
+		double dz=pf.get_double("depth_sample_interval");
+		double zmax=pf.get_double("maximum_depth");
+		double zmin=pf.get_double("minimum_depth");
+		bool output_latlon=pf.get_bool("geographic_output");
 		int nz=static_cast<int>((zmax-zmin)/dz) + 1;
 		if(nz<=0)
 		{
@@ -243,10 +156,10 @@ int main(int argc, char **argv)
 				<< "Check parameter file"<<endl;
 			exit(-1);
 		}
-		bool use_points_directly=control.get_bool("use_points_directly");
+		bool use_points_directly=pf.get_bool("use_points_directly");
 		if(use_points_directly && SEISPP_verbose)
 			cerr << "Using input points directly to define output data"<<endl;
-		/* Now build the full path of control points as equally spaced 
+		/* Now build the full path of control points as equally spaced
 		as possible.  Using the latlon function from antelope. */
 		double del,ddel,az,lat1,lon1,lat2,lon2;
 		double delkm,r0,dr;
@@ -294,21 +207,20 @@ int main(int argc, char **argv)
 				path.push_back(p);
 			}
 		    }
-		} 
-		
+		}
+
 		GCLscalarfield3d *g;
 		if(vectordata)
 		{
-			int component=control.get_int("component_number");
-                        int nvcomp=control.get_int("number_vector_components");
-			GCLvectorfield3d *gvec=new GCLvectorfield3d(dbh,
-                                gridname,fieldname,nvcomp);
+			int component=pf.get_int("component_number");
+                        int nvcomp=pf.get_int("number_vector_components");
+			GCLvectorfield3d *gvec=new GCLvectorfield3d(basename);
 			g=extract_component(*gvec,component);
 			delete gvec;
 		}
 		else
 		{
-			g=new GCLscalarfield3d(dbh,gridname,fieldname);
+			g=new GCLscalarfield3d(basename);
 		}
 		/* This will hold the output.  */
 		dmatrix section(nz,path.size());
@@ -317,9 +229,9 @@ int main(int argc, char **argv)
 		for(sptr=path.begin(),j=0;sptr!=path.end();++sptr,++j)
 		{
 			seis=extract_vertical(g,*sptr,zmin,dz,nz);
-			for(i=0;i<nz;++i) 
+			for(i=0;i<nz;++i)
 			{
-				section(i,j)=seis[i]; 
+				section(i,j)=seis[i];
 			}
 			delete [] seis;
 		}
@@ -360,10 +272,6 @@ int main(int argc, char **argv)
 				else
 					cout << ">"<<endl;
 			}
-			break;
-
-		case SEISMICUNIX:
-			writesu(section,zmin,dz,path,outstrm);
 			break;
 		case Dmatrix:
 		default:
