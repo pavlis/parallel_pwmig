@@ -5,6 +5,17 @@ from mspasspy.ccore.utility import (AntelopePf,
 from obspy.taup import TauPyModel
 from obspy.geodetics import gps2dist_azimuth,kilometers2degrees
 import pwmig.db.database as pwmigdb
+class GRTray_projector:
+    """
+    Used to hold parameters and data for accumulation inner loop of pwmig
+    done with dask fold or spark accumulate.
+    """
+    __init__(self,pf,svm0,Vp1d,TPptr,
+       rcomp_wt,stack_only):
+        self.use_depth_variable_transformation=pf.get_bool("use_depth_variable_transformation")
+        self.ApplyElevationStatics=pf.get_bool("apply_elevation_statics")
+        self.static_velocity=pf.get_double("elevation_static_correction_velocity")
+        self.use_grt_weights=pf.get_bool("use_grt_weights")
 
 def BuildSlownessGrid(grid,source_lat, source_lon, source_depth,model='iasp91',phase='P'):
     model=TauPyModel(model=model)
@@ -47,7 +58,8 @@ def query_by_id(gridid, db, source_id, collection='wf_Seismogram'):
     collection=db[collection]
     return collection.find(query)
 
-def migrate_component(cursor,parent,VPsvm,Vs1d,zmax,tmax,dt):
+def migrate_component(cursor,parent,VPsvm,Vs1d,zmax,tmax,dt,
+        number_partitions=None):
     """
     This is an intermediate level function used in the mspass version of
     pwmig.  It will migrate one plane wave component of data created by
@@ -62,6 +74,10 @@ def migrate_component(cursor,parent,VPsvm,Vs1d,zmax,tmax,dt):
     The code first sets up the raygrid geometry based on input slowness
     data passed through the VPsvm object (here a GCLvectorfield but originally
     this was a smaller thing read from the old pwstack to pwmig file structure).
+
+    :param number_partitions:  Explicitly set the number of partitions.
+      Default sets the number of partitions as the size of the grid in the 2
+      dimension (field.n2)
     """
 
     # old pwmig had a relic calculation of a variable ustack and deltaslow here
@@ -75,25 +91,36 @@ def migrate_component(cursor,parent,VPsvm,Vs1d,zmax,tmax,dt):
     # This sigature of this function has changed from old pwmig - depricated
     # consant u mode
     raygrid=Build_GCLraygrid(parent,PVsvm,Vs1d,zmax,VPVSmax*tmax,dt*VPVSmax)
-    pwdgrid=GCLvectorfield3d(raygrid)
-    del raygrid   # skeleton is no longer needed
     seisbag=read_distributed_data(cursor,collection='wf_Seismogram')
-    # this has the structure of map because it seems fold or spark reduce
-    # require the type of the two args in the reduce call to be the same.
-    # The communative and associative constraint of the operaor are the
-    # fundamenal reason.  Because of that we have to run this as a map that
-    # creates a set of internally inconsistent Seismograms returned by the
-    # map function.  The issue is the sampling is no longer uniform but
-    # only guarnteed congruent with the pwdgrid
-
-    I think arg one is ommmited and is the Seismogram to process
-    migrated_component=seisbag.map(migrate_one_seismogram,
-      raygrid,svm0,Vp1d,TPptr,ApplyElevationStatics,static_velocity
-      use_depth_variable_transformation,rcomp_wt,use_grt_weights,stack_only)
-      # add to arg:  svm0
-    seisbag.compute()
-    return migrated_component
-
+    # Only dask fold supports binop that can accumulate a different
+    # type than the inputs of the bag.  spark uses the accumulate
+    # method for the same purpose.  It seems fold doesn' accept any
+    # arguments so he function called here needs to be a class method that
+    # allows the input parameters to be defined before beginning the reduce
+    migrator=GRTray_projector(svm0,Vp1d,TPptr,ApplyElevationStatics,static_velocity
+    use_depth_variable_transformation,rcomp_wt,use_grt_weights,stack_only)
+    seisbag.map(migrate_one_seismogram,raygrid,migrator.TPgrid,
+      migrator.ApplyElevationStatics,migrator.use_grt_weights,
+        migrator.stack_only)
+    # The documentation for bag accumulate implies the following will work.
+    # This function might be better done as a lambda, but we'll try this initially
+    pwdgrid=PWMIGfielddata(raygrid)
+    # Don't assume the constructor initializes the data arrays to 0.  It does
+    # now but his is a small cost for stabiliy it buys
+    del raygrid
+    # Set the default partitioning as n2.   We use partitioning to reduce
+    # memory usage
+    if number_partitions == None:
+        nparitions = pwdgrid.n2
+    else:
+        nparitions = number_partitions
+    seisbag.repartition(npartitions=npartitions)
+    delayed_data = seisbag.to_delayed()
+    for dgroup in delayed_data:
+        dlist=dgroup.compute()
+        for d in dlist:
+            pwdgrid.accumulate(d)
+    return pwdgrid
 
 def migrate_event(source_id=None,db,pf='pwmig.pf',collection='GCLfielddata'):
     gclcollection=db[collection]
@@ -190,3 +217,4 @@ def migrate_event(source_id=None,db,pf='pwmig.pf',collection='GCLfielddata'):
     # This function processes one plane wave component and returns a
     # GCLvectorfield3d object containing the migrated data in ray geometry.
     migrated_data=evbag.map(migrate_component,ARGS)
+    # Think this needs to be followed by a bag.accumulate call or bag.fold
