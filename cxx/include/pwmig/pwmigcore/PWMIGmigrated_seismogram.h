@@ -8,6 +8,8 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/vector.hpp>
 
+namespace pwmig::pwmigcore {
+
 /*! Spectial class used in map operation with the function migrate_one_seismogram.
 
 This class is the return of the migrate_one_seismogram function in the MsPASS
@@ -39,7 +41,7 @@ public:
   This is the main constructor used in pwmig.  It sets ix1=i and ix2=j and
   allocates space for dmatrix of length n.  reserve is called on vectors for
   to preallooc to length n. */
-  PWMIGmigrated_seismogram(i,j,n);
+  PWMIGmigrated_seismogram(const int i,const int j,const int n);
   /*! Standard copy constructor. */
   PWMIGmigrated_seismogram(const PWMIGmigrated_seismogram& parent);
   /*! Standard assignmnt operator.*/
@@ -50,9 +52,10 @@ public:
   if they aren't copied from th parent.  This method is called in migrate_one_seismogram
   to push any existing messages in a parent to this ErrorLogger copy in order
   to preserve them. That happens even if the input data are live. */
-  int copy_elog(const Seismogram& d)
+  int copy_elog(const mspass::seismic::Seismogram& d)
   {
     this->elog=d.elog;
+    return d.elog.size();
   };
 
 private:
@@ -69,3 +72,5 @@ private:
     ar & elog;
   };
 };
+
+} // End namespace encapsulation

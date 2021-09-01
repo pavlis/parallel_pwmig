@@ -1,15 +1,21 @@
 #include "pwmig/gclgrid/gclgrid.h"
 #include "pwmig/gclgrid/PWMIGfielddata.h"
+namespace pwmig::gclgrid {
+using namespace pwmig::gclgrid;
+using namespace mspass::utility;
 
-PWMIGfielddata() : GCLvectorfield3d(),elog()
+PWMIGfielddata::PWMIGfielddata() : GCLvectorfield3d(),elog()
 {};
-PWMIGfielddata(const pwmig::gclgrid::GCLgrid3d& g)
+
+PWMIGfielddata::PWMIGfielddata(const pwmig::gclgrid::GCLgrid3d& g)
   : GCLvectorfield3d(g,5),elog()
 {};
-PWMIGfielddata(const PWMIGfielddata& parent)
-  : GCLvectorfield3d(dynamic_cast<GCLvectorfield3d&>(parent),elog(parent.elog)
+
+PWMIGfielddata::PWMIGfielddata(const PWMIGfielddata& parent)
+  : GCLvectorfield3d(dynamic_cast<const GCLvectorfield3d&>(parent)),elog(parent.elog)
 {};
-PWMIGfielddata& operator=(const PWMIGfielddata& parent)
+
+PWMIGfielddata& PWMIGfielddata::operator=(const PWMIGfielddata& parent)
 {
   if(this != &parent)
   {
@@ -18,9 +24,10 @@ PWMIGfielddata& operator=(const PWMIGfielddata& parent)
   }
   return *this;
 };
-int PWMIGfielddata::accumulate(const pwmig::pwmigcore::PWMIGmigrated_seismogram& d)
+
+void PWMIGfielddata::accumulate(const pwmig::pwmigcore::PWMIGmigrated_seismogram& d)
 {
-  size_t n3(0);   // initializing to zero to assure 0 is returned for dead data
+  size_t i,j,n3(0);   // initializing to zero to assure 0 is returned for dead data
   if(d.live)
   {
     i=d.ix1;
@@ -32,14 +39,14 @@ int PWMIGfielddata::accumulate(const pwmig::pwmigcore::PWMIGmigrated_seismogram&
       ss << "PWMIGfielddata::accumulate:  inconsistent array sizes"<<endl
          << "dweight vector length="<<d.dweight.size()
          << " domega vector length="<<d.domega.size()<<endl
-         << "migrated data matrix size="<<d.migrated_data.rows<<"X"<<d.migrated_data.columns()<<endl
+         << "migrated data matrix size="<<d.migrated_data.rows()<<"X"<<d.migrated_data.columns()<<endl
          << "Internal grid n3 dimension="<<n3<<endl;
       throw MsPASSError(ss.str(),ErrorSeverity::Fatal);
     }
     size_t k,kk;
     for(k=0,kk=this->n3-1;k<this->n3;++k,--kk)
     {
-      for(l=0;l<3;++l)
+      for(size_t l=0;l<3;++l)
       {
         this->val[i][j][k][l]=d.migrated_data(l,kk)
           *d.dweight[kk]*d.domega[kk];
@@ -56,8 +63,9 @@ int PWMIGfielddata::accumulate(const pwmig::pwmigcore::PWMIGmigrated_seismogram&
       stringstream ss;
       ss << "Migrated data with ix1="<<i<<" and ix2="<<j<<" contained the following error message:"<<endl
           << lptr->message<<endl;
-      this->elog.log_error(lptr->alg,string(ss.str()),lptr->lvl);
+      this->elog.log_error(lptr->algorithm,string(ss.str()),lptr->badness);
     }
   }
-  return *this;
 }
+
+} // End namespace

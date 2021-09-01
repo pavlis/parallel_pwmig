@@ -2,6 +2,8 @@
 #include "pwmig/gclgrid/gclgrid.h"
 #include "pwmig/pwmigcore/PWMIGmigrated_seismogram.h"
 
+namespace pwmig::gclgrid
+{
 /*! \brief Special extension of GCLvectorfield for PwMIG output.
 
 This is an extension of GCLvectorfield used only in the mspass version of
@@ -12,7 +14,7 @@ datum.  (see documentation of accumulate for what is done).  Second, it adds an
 ErrorLogger component (symbol elog) that is the sum total of all error messages
 to all inputs received through the accumulate function.
 */
-class PWMIGfielddata : public GCLvectorfield3d
+class PWMIGfielddata : public pwmig::gclgrid::GCLvectorfield3d
 {
 public:
   mspass::utility::ErrorLogger elog;
@@ -40,6 +42,12 @@ public:
 1
   The position the data are inserted (first two indices of the grid) are
   pulled from d.ix1. and d.ix2
+
+  \exception - can throw a MsPASSError exception if d is marked live but has
+    a size inconsistent with this object's internal n3 dimension.  
+
   */
-  PWMIGfielddata& accumulate(const pwmig::pwmigcore::PWMIGmigrated_seismogram& d);
+  void accumulate(const pwmig::pwmigcore::PWMIGmigrated_seismogram& d);
 };
+
+} // End namespace

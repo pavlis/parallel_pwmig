@@ -1,6 +1,7 @@
 #include "pwmig/pwmigcore/PWMIGmigrated_seismogram.h"
-
-PWMIGmigrated_seismogram::PWMIGmigrated_seismogram(i,j,n) : migrated_data(3,n),elog()
+namespace pwmig::pwmigcore {
+PWMIGmigrated_seismogram::PWMIGmigrated_seismogram(const int i,
+  const int j,const int n) : migrated_data(3,n),elog()
 {
   ix1=i;
   ix2=j;
@@ -30,3 +31,4 @@ PWMIGmigrated_seismogram& PWMIGmigrated_seismogram::operator=(const PWMIGmigrate
   }
   return *this;
 }
+} // End namespace encapsulation
