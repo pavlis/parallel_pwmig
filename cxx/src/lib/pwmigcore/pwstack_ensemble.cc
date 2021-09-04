@@ -279,9 +279,8 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram> indata,
     const string base_error("pwstack_ensemble:  ");
     const string algname("pwstack");
     // lat0 and lon0 are location of target pseudostation grid point
-    // elev0 is elevation of datum to use for geometric statics
     //
-    double lat0,lon0,elev0;
+    double lat0,lon0;
     // Incident wavefield slowness vector components
     double ux0,uy0;
     string gridname;
@@ -299,7 +298,6 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram> indata,
       /*TO DO:   these will proably need some changes */
         lat0=indata.get_double("lat0");
         lon0=indata.get_double("lon0");
-        elev0=indata.get_double("elev0");
         ux0=indata.get_double("ux0");
         uy0=indata.get_double("uy0");
         ix1=indata.get_int("ix1");

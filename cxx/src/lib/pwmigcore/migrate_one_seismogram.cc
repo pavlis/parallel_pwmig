@@ -1,15 +1,37 @@
+#include "mspass/seismic/Seismogram.h"
+#include "mspass/utility/dmatrix.h"
+#include "pwmig/gclgrid/gclgrid.h"
+#include "pwmig/seispp/VelocityModel_1d.h"
+#include "pwmig/pwmigcore/PWMIGmigrated_seismogram.h"
+#include "pwmig/pwmigcore/pwmig.h"
+#include "pwmig/seispp/interpolator1d.h"
+#include "pwmig/pwmigcore/Ray_Transformation_Operator.h"
+namespace pwmig::pwmigcore {
+using namespace mspass::utility;
+using namespace mspass::seismic;
+using namespace pwmig::pwmigcore;
+using namespace pwmig::gclgrid;
+using namespace pwmig::seispp;
+using INTERPOLATOR1D::linear_vector_regular_to_irregular;
 
-
-PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
-      const GCLgrid3d& raygrid
-        const GCLscalarfield3d& TPgrid,
-         const bool ApplyElevationStatics,
-          const bool use_grt_weights
-            const bool stack_only)
+/* The GCL objects can't be const because the the lookup method alters
+the object. */
+PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
+    GCLgrid& parent,
+      GCLgrid3d& raygrid,
+        GCLscalarfield3d& TPgrid,
+           GCLscalarfield3d& Us3d,
+             VelocityModel_1d& Vp1d,
+               VelocityModel_1d& Vs1d,
+                 SlownessVector& u0,
+                   Metadata& control)
 {
+  int k;  // primary depth index in loops.  Defined outside loops for error logging
+  int kk;   // used repeatedly as an index in z running the reverse of index k
+  string algname("migrate_one_seismogram");  // used in elog messages as algorithm name
   /* This gets a bit messy to mesh with special class we return that isn't
   quite a Seismogram. */
-  if(pwddata.dead())
+  if(pwdata.dead())
   {
     PWMIGmigrated_seismogram deadguy;
     deadguy.elog=pwdata.elog;
@@ -17,23 +39,53 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
     {
       deadguy.ix1=pwdata.get_int("ix1");
     }
-    if(pwdata.is_defied("ix2"))
+    if(pwdata.is_defined("ix2"))
     {
       deadguy.ix2=pwdata.get_int("ix2");
     }
+    deadguy.elog=pwdata.elog;
     /* Make sure he is dead*/
     deadguy.live=false;
     return deadguy;
   }
+  /* The contents of this function in the original pwmig C++ program were
+  the innermost of 3 loops used to compute the GRT migration.   The following
+  set of parameters are here extracted from the Metadata container passed
+  through the arg with the symbol control.   The contents are not tested for
+  validity here for efficiency.  Callers should guarantee that the control
+  container has data linked to the keys used here.  That means the input
+  should be validated with a python verify function that is planned for
+  inclusion in this package.
+
+  I expect to also many of the parameters here also fetching in the top level
+  control function for the python script function that drives pwmig and replaces
+  the c++ main.   That should further guarantee the following set of gets
+  to not throw exceptions */
+  bool use_3d_vmodel=control.get_bool("use_3d_velocity_model");
+  bool use_grt_weights=control.get_bool("use_grt_weights");
+  bool stack_only=control.get_bool("stack_only");
+  int border_pad = control.get_int("border_padding");
+	double zpad = control.get_double("depth_padding_multiplier");
+  double taper_length=control.get_double("taper_length_turning_rays");
+  bool rcomp_wt=control.get_bool("recompute_weight_functions");
+	int nwtsmooth=control.get_int("weighting_function_smoother_length");
+	bool smooth_wt;
+	if(nwtsmooth<=0)
+		smooth_wt=false;
+	else
+		smooth_wt=true;
+  double dux=control.get_double("slowness_grid_deltau");
+  double duy=dux;   // For this implementation slowness increments are the same in x and y
+  double dz=control.get_double("ray_trace_depth_increment");
+  /* End get calls on control container */
+
   bool weight_functions_set=false;
-  // convenient shorthand variables.  ns is data length
-  // while n3 is the ray path onto which data are mapped
-  int ns=pwdata.ns;
   int n3=raygrid.n3;
-  double zmaxray,tmaxray;
+  double zmaxray;
   vector<double> Stime(n3), SPtime(n3);
-  double t0;
-  dt=pwdata.dt;
+  double t0,dt;
+  t0=pwdata.t0();
+  dt=pwdata.dt();
   /* first decide in which grid cell to place this seismogram
   WARNING:  don't use i, and j as loop indices as is common in the rest of
   this function */
@@ -41,22 +93,8 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
   i = pwdata.get_int("ix1");
   j = pwdata.get_int("ix2");
   gridid=pwdata.get_int("gridid");
-  if(ApplyElevationStatics)
-  {
-    double pselev;
-    if(pwdata.is_defined())
-      pselev=pwdata.get_double("elev");
-    }
-    else
-    {
-      /* This condition should, perhaps, generate a warning message in elog
-      if I decide to add elog to the GCLfield objects. */
-      pselev=0.0;
-    }
-    ApplyGeometricStatic(dynamic_cast<BasicTimeSeries *>(&(pwdata)),
-      static_velocity,pselev);
-  }
-  t0=pwdata.t0;
+  /* Original pwmig had a static option here.  As a module in mspass it
+  would be far better to apply statics as a mspass operator */
   if( (i<0) || (i>raygrid.n1) || (j<0) || (j>raygrid.n2) )
   {
     /* We have this condition throw an exception because it only happens if
@@ -69,6 +107,9 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
       << "Check grid definitions in database and pf"<<endl;
     throw MsPASSError(ss.str(),ErrorSeverity::Fatal);
   }
+  /* We create the output now so we can post error messages to the
+  elog of this object that is what we return*/
+  PWMIGmigrated_seismogram result(i,j,n3);
   // We need a reference ray for the incident wavefield.
   // This ray is chopped up and transformed to GCLgrid coordinates
   // in the integration loop below.  We compute it here to
@@ -76,18 +117,18 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
   zmaxray = raygrid.depth(i,j,0);
   zmaxray *= zpad;                      // Small upward adjustment to avoid rubber banding
   // problems in 3d media
-  tmaxray=10000.0;                      // arbitrary large number.  depend on zmax
 
   // Now compute a series of vectorish quantities that
   // are parallel with the ray path associated with the
   // current seismogram (i,j).  First we compute the S wave
   // travel time down this ray path (i.e. ordered from surface down)
-  Stime = compute_Stime(*Us3d,i,j,raygrid,use_3d_vmodel);
+  Stime = compute_Stime(Us3d,i,j,raygrid,use_3d_vmodel);
   // Now we compute the gradient in the S ray travel time
   // for each point on the ray.  Could have been done with
   // less memory use in the loop below, but the simplification
-  // it provides seems useful to me
-  gradTs = compute_gradS(raygrid,i,j,Vs1d);
+  // it provides seems useful to me.  Note this is a 3xn3 matrix
+  // like gradTp that is filled inside the loop
+  dmatrix gradTs=compute_gradS(raygrid,i,j,Vs1d);
   dmatrix gradTp(3,n3);
   dmatrix nup(3,n3);
   vector<double> zP(n3);
@@ -114,8 +155,9 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
   SPtime.clear();
   tcompute_problem=false;
   needs_padding=false;
-  SlownessVector u0=svm0(i,j);
-  PWMIGmigrated_seismogram result(i,j,n3);
+  /* This is how the slowness vector was set in original pwmig.  Here we pass
+  u0 as an arg */
+  //SlownessVector u0=svm0(i,j);
   for(k=0,kk=raygrid.n3-1;k<raygrid.n3;++k,--kk)
   {
     vector<double>nu;
@@ -126,11 +168,11 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
 
     nu = compute_unit_normal_P(TPgrid,raygrid.x1[i][j][kk],
       raygrid.x2[i][j][kk], raygrid.x3[i][j][kk]);
-    for(l=0;l<3;++l) nup(l,kk)=nu[l];
+    for(auto l=0;l<3;++l) nup(l,kk)=nu[l];
     // zP and gradTp are computed in reverse order
     zP[k]=raygrid.depth(i,j,kk);
     vp=Vp1d.getv(zP[k]);
-    for(l=0;l<3;++l) gradTp(l,k)=nu[l]/vp;
+    for(auto l=0;l<3;++l) gradTp(l,k)=nu[l]/vp;
     /* This section used to be a procedure.  Inlined for
     speed during a cleanup June 2012 */
     int error_lookup;
@@ -163,9 +205,10 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
     try
     {
       rxTP_gp0=get_gp_base_TPx(TPgrid,x_gp);
-    }catch(SeisppError& serr)
+    }catch(MsPASSError& serr)
     {
-      serr.log_error();
+      result.elog.log_error(serr);
+      result.live=false;
       tcompute_problem=true;
     }
     if(tcompute_problem || needs_padding) break;
@@ -192,7 +235,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
       << "Data from failed ray index downward will be zeroed"<<endl
       << "This may leave ugly holes in the output image."
       <<endl;
-    result.elog.log_error(ss.str(),ErrorSeverity::Complaint);
+    result.elog.log_error(algname,ss.str(),ErrorSeverity::Complaint);
   }
   if (needs_padding)
   {
@@ -206,7 +249,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
         << "P time interpolation failed at earth's surface.  "<<endl
         << "This should not happen and may cause holes in the output."<<endl
         << "This trace will be projected as zeros"<<endl;
-      result.elog.log_error(ss.str(),ErrorSeverity::Complaint);
+      result.elog.log_error(algname,ss.str(),ErrorSeverity::Complaint);
     }
     else
     {
@@ -235,7 +278,10 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
   // ray point in space.
   //
   dmatrix *pathptr=extract_gridline(raygrid,i,j,raygrid.n3-1,3,true);
-  Ray_Transformation_Operator trans_operator(parent,*pathptr,ustack.azimuth(),nup);
+  /* Old version used ustack here.  This is more correct as that is an
+  approximation.  that was an error in the old version that could create
+  a small difference for a test data set comparison */
+  Ray_Transformation_Operator trans_operator(parent,*pathptr,u0.azimuth(),nup);
   result.migrated_data=trans_operator.apply(result.migrated_data);
   // done with these now
   delete pathptr;
@@ -257,7 +303,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
     else
     {
       /* This is the normal block for computing solid angles */
-      result.domega=compute_domega_for_path(ustack,dux,duy,
+      result.domega=compute_domega_for_path(u0,dux,duy,
         Vs1d, zmaxray,dz,
         raygrid, i, j, gradTp,zP);
     }
@@ -274,4 +320,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwddata,
     }
     weight_functions_set=true;
   }
+  return result;
 }
+
+} // End namespace

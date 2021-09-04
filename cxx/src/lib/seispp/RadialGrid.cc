@@ -7,6 +7,8 @@
 #include "pwmig/seispp/RadialGrid.h"
 #include "mspass/utility/AntelopePf.h"
 #include "mspass/utility/MsPASSError.h"
+/* this is needed for rad and deg functions */
+#include "mspass/utility/SphericalCoordinate.h"
 namespace pwmig::seispp{
 using namespace std;
 using namespace pwmig::seispp;
@@ -14,6 +16,8 @@ using namespace pwmig::gclgrid;
 using mspass::utility::Metadata;
 using mspass::utility::AntelopePf;
 using mspass::utility::MsPASSError;
+using mspass::utility::rad;
+using mspass::utility::deg;
 RadialGrid::RadialGrid()
 {
 	lat0=0.0;

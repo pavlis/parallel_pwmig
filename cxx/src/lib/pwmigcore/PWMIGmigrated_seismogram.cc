@@ -10,7 +10,10 @@ PWMIGmigrated_seismogram::PWMIGmigrated_seismogram(const int i,
   live=false;
 }
 PWMIGmigrated_seismogram::PWMIGmigrated_seismogram(const PWMIGmigrated_seismogram& parent)
-  : migrated_data(parent.migrated_data),elog(parent.elog),domega(parent.domega),dweight(parent.dweight)
+  : migrated_data(parent.migrated_data),
+      domega(parent.domega),
+        dweight(parent.dweight),
+          elog(parent.elog)
 {
   ix1=parent.ix1;
   ix2=parent.ix2;

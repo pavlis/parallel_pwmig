@@ -203,6 +203,10 @@ public:
  Implemented to initialize all base attributes explicitly.
 */
 	BasicGCLgrid();
+	/*! Need explicit virtual destructor for this base class.
+	An oddity of inheritance discussed in many C++ textbooks.
+	*/
+  virtual ~BasicGCLgrid(){};
 /*! Copy constructor.*/
 	BasicGCLgrid(const BasicGCLgrid& old);
 /*!
@@ -1265,14 +1269,14 @@ public:
                 const string format=default_output_format);
 	/*! Get the field value at specified grid cell */
 	std::vector<double> get_value(const int i, const int j) const;
-	/*! Set the field value at grid point i,j.  
+	/*! Set the field value at grid point i,j.
 
         The input vector, newvals, size is tested against this->nv.
-        This simple method will throw an exception if the sizes do 
-        not match.  Note for this function to work in python the 
-        pybind11 code needs to define how an std::vector<double> 
-        is bound to python.  Following mspass I map this to a 
-        symbol there called DoubleVector.  
+        This simple method will throw an exception if the sizes do
+        not match.  Note for this function to work in python the
+        pybind11 code needs to define how an std::vector<double>
+        is bound to python.  Following mspass I map this to a
+        symbol there called DoubleVector.
         */
 	void set_value(const std::vector<double>newvals, const int i, const int j);
 	/*! Add one field to another.
@@ -1619,16 +1623,16 @@ public:
 	void zero();
 	/*! Get the field value at specified grid cell */
 	std::vector<double> get_value(const int i, const int j, const int k) const;
-	/*! Set the field value at grid point i,j,k.  
+	/*! Set the field value at grid point i,j,k.
 
         The input vector, newvals, size is tested against this->nv.
-        This simple method will throw an exception if the sizes do 
-        not match.  Note for this function to work in python the 
-        pybind11 code needs to define how an std::vector<double> 
-        is bound to python.  Following mspass I map this to a 
-        symbol there called DoubleVector.  
+        This simple method will throw an exception if the sizes do
+        not match.  Note for this function to work in python the
+        pybind11 code needs to define how an std::vector<double>
+        is bound to python.  Following mspass I map this to a
+        symbol there called DoubleVector.
         */
-	void set_value(const std::vector<double>newvals, 
+	void set_value(const std::vector<double>newvals,
            const int i, const int j, const int k);
 	/** Standard assignment operator. */
 	GCLvectorfield3d& operator=(const GCLvectorfield3d&);
