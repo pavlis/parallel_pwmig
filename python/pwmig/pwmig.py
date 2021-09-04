@@ -1,21 +1,91 @@
 import os
 from mspasspy.ccore.utility import (AntelopePf,
+                    Metadata,
                     MsPASSError,
                     ErrorSeverity)
 from obspy.taup import TauPyModel
 from obspy.geodetics import gps2dist_azimuth,kilometers2degrees
 import pwmig.db.database as pwmigdb
-class GRTray_projector:
+
+
+def _print_default_used_message(key,defval):
+    print("Parameter warning:  AntelopePf file does not have key=",key,
+          " defined.\nUsing default value=",defval," which is of type ",type(defval))
+def _build_control_metadata(control):
     """
-    Used to hold parameters and data for accumulation inner loop of pwmig
-    done with dask fold or spark accumulate.
+    Parses AntelopPf container (required arg0) for parameters required by 
+    pwmig's inner function (migrate_one_seismogram).  Returns the subset of 
+    the input that are required by that function in a Metadata container 
+    (note AntelopePf is a child of Metadata).  This function is bombproof 
+    as all parameters are defaulted.  Because we expect it to be used 
+    outside parallel constructs any time the default is used a warning 
+    print message is posted. 
+
     """
-    __init__(self,pf,svm0,Vp1d,TPptr,
-       rcomp_wt,stack_only):
-        self.use_depth_variable_transformation=pf.get_bool("use_depth_variable_transformation")
-        self.ApplyElevationStatics=pf.get_bool("apply_elevation_statics")
-        self.static_velocity=pf.get_double("elevation_static_correction_velocity")
-        self.use_grt_weights=pf.get_bool("use_grt_weights")
+    result=Metadata()
+    if control.is_defined("use_3d_velocity_model"):
+        use_3d_vmodel=control.get_bool("use_3d_velocity_model")
+    else:
+        use_3d_vmodel=True
+        _print_default_used_message("use_3d_velocity_model",use_3d_vmodel)
+    if control.is_defined("use_grt_weights"):
+        use_grt_weights=control.get_bool("use_grt_weights")
+    else:
+        use_grt_weights=True
+        _print_default_used_message("use_grt_weights",use_grt_weights)
+    if control.is_defined("stack_only"):
+        stack_only=control.get_bool("stack_only")
+    else:
+        stack_only=True
+        _print_default_used_message("stack_only",stack_only)
+    if control.is_defined("border_padding"):
+        border_pad = control.get_int("border_padding")
+    else:
+        border_pad=20
+        _print_default_used_message("border_padding",border_pad)
+    if control.is_defined("depth_padding_multiplier"):
+        zpad = control.get_double("depth_padding_multiplier")
+    else:
+        zpad=1.2
+        _print_default_used_message("depth_padding_multiplier",zpad)
+    if control.is_defined("taper_length_turning_rays"):
+        taper_length=control.get_double("taper_length_turning_rays")
+    else:
+        taper_length=2.0
+        _print_default_used_message("taper_length_turning_rays",taper_length)
+    if control.is_defined("recompute_weight_function"): 
+        rcomp_wt=control.get_bool("recompute_weight_functions")
+    else:
+        rcomp_wt=True
+        _print_default_used_message("recompute_weight_functions",rcomp_wt)
+    if control.is_defined("weighting_function_smoother_length"):
+        nwtsmooth=control.get_int("weighting_function_smoother_length")
+    else:
+        nwtsmooth=10
+        _print_default_used_message("weighting_function_smoother_length",nwtsmooth)
+    if control.is_defined("slowness_grid_deltau"):
+        dux=control.get_double("slowness_grid_deltau")
+    else:
+        dux=0.01
+        _print_default_used_message("slowness_grid_deltau",dux)
+    if control.is_defined("ray_trace_depth_increment"):
+        dz=control.get_double("ray_trace_depth_increment")
+    else:
+        dz=1.0
+        _print_default_used_message("ray_trace_depth_increment",dz)
+    
+    result.put("use_3d_velocity_model",use_3d_vmodel)
+    result.put("use_grt_weights",use_grt_weights)
+    result.put("stack_only",stack_only)
+    result.put("border_padding",border_pad)
+    result.put("depth_padding_multiplier",zpad)
+    result.put("taper_length_turning_rays",taper_length)
+    result.put("recompute_weight_function",rcomp_wt)
+    result.put("weighting_function_smoother_length",nwtsmooth)
+    result.put("slowness_grid_deltau",dux)
+    result.put("ray_trace_depth_increment",dz)
+    
+    return result;
 
 def BuildSlownessGrid(grid,source_lat, source_lon, source_depth,model='iasp91',phase='P'):
     model=TauPyModel(model=model)
