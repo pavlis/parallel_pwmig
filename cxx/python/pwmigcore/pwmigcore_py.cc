@@ -5,9 +5,11 @@
 #include <pybind11/operators.h>
 #include <pybind11/embed.h>
 
+#include "pwmig/pwmigcore/pwmig.h"
 #include "pwmig/pwmigcore/DepthDependentAperture.h"
 #include "pwmig/pwmigcore/RectangularSlownessGrid.h"
 #include "pwmig/pwmigcore/pwstack.h"
+#include "pwmig/pwmigcore/SlownessVectorMatrix.h"
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/AntelopePf.h"
 
@@ -22,6 +24,9 @@ using mspass::utility::AntelopePf;
 using pwmig::pwmigcore::DepthDependentAperture;
 using pwmig::pwmigcore::RectangularSlownessGrid;
 using pwmig::pwmigcore::pwstack_ensemble;
+using pwmig::pwmigcore::SlownessVectorMatrix;
+using pwmig::pwmigcore::Build_GCLraygrid;
+using pwmig::pwmigcore::ComputeIncidentWaveRaygrid;
 
 
 PYBIND11_MODULE(pwmigcore, m) {
@@ -100,6 +105,46 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
    py::arg("save_history"),
    py::arg("algid")
  );
+ py::class_<SlownessVectorMatrix>(m,"SlownessVectorMatrix",
+      "Defines a grid parallel to the pseudostation GCLgrid to store slowness vectors at each grid position")
+   .def(py::init<const int, const int>(),
+       "Create workspace and fill grid with all 0 slowness vectors (allocation and initialization to invalid values)")
+   .def(py::init<const SlownessVectorMatrix&>())
+   .def("rows",&SlownessVectorMatrix::rows,"Return number of rows (index 1) in the defined grid")
+   .def("columns",&SlownessVectorMatrix::columns,"Return number of columns (index 2) in the defined grid")
+   .def("set_slowness",&SlownessVectorMatrix::set_slowness,
+     "Set slowness vector (arg 0) at grid position i,j (args 1 and 2 )")
+   .def("get_slowness",[](SlownessVectorMatrix& self,int i, int j)
+     {
+       return self(i,j);
+     })
+  ;
+  m.def("Build_GCLraygrid",&Build_GCLraygrid,"Creates a structured grid with lines of constant i,j defined by ray trace geometry",
+   py::return_value_policy::copy,
+   py::arg("fixed_u"),
+   py::arg("parent"),
+   py::arg("u"),
+   py::arg("svm"),
+   py::arg("vmod"),
+   py::arg("zmax"),
+   py::arg("tmax"),
+   py::arg("dt")
+ );
+ m.def("ComputeIncidentWaveRaygrid",&ComputeIncidentWaveRaygrid,
+  "Computes a raygrid for the incident wavefield driven by a grid of slowness values, 1d ray tracing, and 3D model implemented by approximate ray tracing",
+  py::return_value_policy::copy,
+  py::arg("pstagrid"),
+  py::arg("border_pad"),
+  py::arg("UP3d"),
+  py::arg("vp1d"),
+  py::arg("svm"),
+  py::arg("zmax"),
+  py::arg("tmax"),
+  py::arg("dt"),
+  py::arg("zdecfac"),
+  py::arg("use_3d")
+ );
+
 }
 }  // end namespace pwmigpy
 }  // end namespace pwmig
