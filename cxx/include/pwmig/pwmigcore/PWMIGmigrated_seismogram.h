@@ -1,3 +1,5 @@
+#ifndef _PWMIGMIGRATED_SEISMOGRAM_H_
+#define _PWMIGMIGRATED_SEISMOGRAM_H_
 #include <vector>
 #include "mspass/utility/dmatrix.h"
 #include "mspass/utility/ErrorLogger.h"
@@ -57,7 +59,6 @@ public:
     this->elog=d.elog;
     return d.elog.size();
   };
-
 private:
   friend boost::serialization::access;
   template<class Archive>
@@ -74,3 +75,4 @@ private:
 };
 
 } // End namespace encapsulation
+#endif
