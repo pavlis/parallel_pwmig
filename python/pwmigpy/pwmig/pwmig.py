@@ -1,11 +1,23 @@
 import os
+import math
+import dask
 from mspasspy.ccore.utility import (AntelopePf,
                     Metadata,
                     MsPASSError,
                     ErrorSeverity)
+from mspasspy.ccore.seismic import (SlownessVector)
+from mspasspy.db.database import read_distributed_data
 from obspy.taup import TauPyModel
 from obspy.geodetics import gps2dist_azimuth,kilometers2degrees
-import pwmig.db.database as pwmigdb
+import pwmigpy.db.database as pwmigdb
+from pwmigpy.ccore.gclgrid import (GCLvectorfield3d,
+                    PWMIGfielddata,
+                    GCLgrid,
+                    GCLgrid3d)
+from pwmigpy.ccore.pwmigcore import (SlownessVectorMatrix,
+                    Build_GCLraygrid,
+                    ComputeIncidentWaveRaygrid,
+                    migrate_one_seismogram)
 
 
 def _print_default_used_message(key,defval):
@@ -87,10 +99,10 @@ def _build_control_metadata(control):
     
     return result;
 
-def BuildSlownessGrid(grid,source_lat, source_lon, source_depth,model='iasp91',phase='P'):
+def BuildSlownessGrid(g,source_lat, source_lon, source_depth,model='iasp91',phase='P'):
     model=TauPyModel(model=model)
     Rearth=6378.164
-    field=GCLvectorfield(grid)
+    svm=SlownessVectorMatrix(g.n1,g.n2)
     for i in range(g.n1):
         for j in range(g.n2):
             stalat=g.lat(i,j)
@@ -99,18 +111,17 @@ def BuildSlownessGrid(grid,source_lat, source_lon, source_depth,model='iasp91',p
             # obspy's function we just called returns distance in m in element 0 of a tuple
             # their travel time calculator it is degrees so we need this conversion
             dist=kilometers2degrees(georesult[0]/1000.0)
-            arrivals=model.get_travel_times(source_depth_in_km=depth,distance_in_degree=dist,phase_list=phase)
+            arrivals=model.get_travel_times(source_depth_in_km=source_depth,
+                            distance_in_degree=dist,phase_list=phase)
             ray_param=arrivals[0].ray_param
             umag=ray_param/Rearth    # need slowness in s/km but ray_param is s/radian
             baz=georesult[2]   # The obspy function seems to return back azimuth
             az=baz+180.0
             # az can be > 360 here but all known trig function algs handl this automatically
-            ux=umag*sin(az)
-            uy=umag*cos(az)
-            # This may take some hacking - not sure this will work with current
-            # pybind11 wrappers
-            vector_value=[ux,uy]
-            field.set_value(vector_value,i,j)
+            ux=umag*math.sin(math.radians(az))
+            uy=umag*math.cos(math.radians(az))
+            u=SlownessVector(ux,uy)
+            svm.set_slowness(u,i,j)
 
 def query_by_id(gridid, db, source_id, collection='wf_Seismogram'):
     """
@@ -127,8 +138,24 @@ def query_by_id(gridid, db, source_id, collection='wf_Seismogram'):
     query={'source_id': source_id, "gridid" : gridid}
     collection=db[collection]
     return collection.find(query)
+def _set_incident_slowness_metadata(d,svm):
+    """
+    Internal function used in map to set metadata fields in 
+    mspass Seismogram, d, from incident wave slowness data stored in 
+    the SlownessVectorMatrix object svm.  
 
-def migrate_component(cursor,parent,VPsvm,Vs1d,zmax,tmax,dt,
+    """
+    i=d.get_int['ix1']
+    j=d.get_int['ix2']
+    # not sure this is in the bindings but idea is to fetch a SlownessVector for i,j
+    slowness=svm(i,j)
+    # Warning:  these keys must be consistent with C++ function migrate_one_seismogram 
+    # corresponding get
+    d['ux0']=slowness.ux
+    d['uy0']=slowness.uy
+    return d
+    
+def _migrate_component(cursor,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control,
         number_partitions=None):
     """
     This is an intermediate level function used in the mspass version of
@@ -149,6 +176,16 @@ def migrate_component(cursor,parent,VPsvm,Vs1d,zmax,tmax,dt,
       Default sets the number of partitions as the size of the grid in the 2
       dimension (field.n2)
     """
+    # Set the default partitioning as n2.   We use partitioning to reduce
+    # memory usage
+    if number_partitions == None:
+        npartitions = parent.n2
+    else:
+        npartitions = number_partitions
+
+    zmax=control.get_double("maximum_depth")
+    tmax=control.get_double("maximum_time_lag")
+    dt=control.get_double("data_sample_interval")
 
     # old pwmig had a relic calculation of a variable ustack and deltaslow here
     # Replacing it here with slowness vectors for each grid point in the
@@ -160,30 +197,26 @@ def migrate_component(cursor,parent,VPsvm,Vs1d,zmax,tmax,dt,
     VPVSmax=2.0   # Intentionally large as this is just used to avoid infinite loops where used
     # This sigature of this function has changed from old pwmig - depricated
     # consant u mode
-    raygrid=Build_GCLraygrid(parent,PVsvm,Vs1d,zmax,VPVSmax*tmax,dt*VPVSmax)
-    seisbag=read_distributed_data(cursor,collection='wf_Seismogram')
+    raygrid=Build_GCLraygrid(parent,VPsvm,Vs1d,zmax,VPVSmax*tmax,dt*VPVSmax)
+    seisbag=read_distributed_data(cursor,collection='wf_Seismogram',npartitions=npartitions)
     # Only dask fold supports binop that can accumulate a different
     # type than the inputs of the bag.  spark uses the accumulate
     # method for the same purpose.  It seems fold doesn' accept any
     # arguments so he function called here needs to be a class method that
     # allows the input parameters to be defined before beginning the reduce
-    migrator=GRTray_projector(svm0,Vp1d,TPptr,ApplyElevationStatics,static_velocity
-    use_depth_variable_transformation,rcomp_wt,use_grt_weights,stack_only)
-    seisbag.map(migrate_one_seismogram,raygrid,migrator.TPgrid,
-      migrator.ApplyElevationStatics,migrator.use_grt_weights,
-        migrator.stack_only)
+    
+    #TODO:  pass in Us3Dm, control, Vp1d;  need map functoin to set slowness vectors for each dataum from svm then modify migrate_one_seismogram to fetch u0 from metadata
+    seisbag.map(_set_incident_slowness_metadata,VPsvm)
+    seisbag.map(migrate_one_seismogram,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
+    
     # The documentation for bag accumulate implies the following will work.
     # This function might be better done as a lambda, but we'll try this initially
     pwdgrid=PWMIGfielddata(raygrid)
     # Don't assume the constructor initializes the data arrays to 0.  It does
     # now but his is a small cost for stabiliy it buys
+    pwdgrid.zero()
     del raygrid
-    # Set the default partitioning as n2.   We use partitioning to reduce
-    # memory usage
-    if number_partitions == None:
-        nparitions = pwdgrid.n2
-    else:
-        nparitions = number_partitions
+
     seisbag.repartition(npartitions=npartitions)
     delayed_data = seisbag.to_delayed()
     for dgroup in delayed_data:
@@ -192,12 +225,53 @@ def migrate_component(cursor,parent,VPsvm,Vs1d,zmax,tmax,dt,
             pwdgrid.accumulate(d)
     return pwdgrid
 
-def migrate_event(source_id=None,db,pf='pwmig.pf',collection='GCLfielddata'):
+def pwmig_verify(db,pffile="pwmig.pf",GCLcollection='GCLfielddata',check_waveform_data=False):
+    """
+    Run this function to verify input to pwmig is complete as can be 
+    established before actually running the algorithm on a complete data set.
+    The function writes a standard report to stdout that should be examined 
+    carefully before commiting to a long running job. 
+    
+
+    """
+    # First we test the parameter file for completeness.  
+    # we use a generic pf testing function in mspass.  
+    algorithm="pwmig"
+    pf=AntelopePf(pffile)
+    # TODO  this does not exists and is subject to design changes from github discussion
+    pfverify(algorithm,pf)
+    # this also doesn't exists.  Idea is to verify all model files are 
+    # present and valid
+    pwmig_verify_files(pf)
+    # now verify the database collection and print a report
+    # TODO;  need to implement this fully - this is rough
+    # 1  verify all gclfeield and vmodel data
+    # print a report for waveform inputs per event
+
+def migrate_event(db,source_id,pf,collection='GCLfielddata'):
+    """
+    Top level map function for pwmig.   pwmig is a "prestack" method 
+    meaning we migrate data from individual source regions (always best 
+    done as the output of stacked data produced by running telecluster 
+    followed by RFeventStacker.)  This function creates a 3d image 
+    volume from migration of one ensemble of data assumed linked to 
+    a single source region.  
+    
+    :param db:  database handle used to manage data (mspass Database handle).
+    :param source_id:  ObjectId of the source associated with each of waveform 
+      to use for imaging. This assumes each wf_Seismogram entry has this 
+      field set with the key "source_id". 
+    :param pf:  AntelopePf object containing the control parameters for 
+      the program (run the pwmig_pfverify function to assure the parameters 
+      in this file are complete before starting a complete processing run.)
+    :param collection:  collection name where 3d modes are defined 
+      (default is GCLfielddata which is the default for the dbsave 
+       methods of the set of gclgrid objects.)
+    
+    """
     gclcollection=db[collection]
     # Freeze use of source collection for source_id consistent with MsPASS
     # default schema.
-    if source_id=None:
-        raise MsPASSError("migrate_event:  usage error.  Must specify source_id",ErrorSeverity.Fatal)
     doc=db.source.find_one({'_id' : source_id})
     if doc == None:
         # This is fatal because expected use is parallel processing of multiple event
@@ -208,45 +282,69 @@ def migrate_event(source_id=None,db,pf='pwmig.pf',collection='GCLfielddata'):
     source_lon=doc['lon']
     source_depth=doc['depth']
     source_time=doc['time']
-    control=AntelopePf(pf)
+
+    # This is a new parameter in pf that was not found in the old 
+    # pwmig. For that reason we fetch it immediately.  Let the program 
+    # abort immediately then if it isn't defined
+    npartitions=pf.get_int("number_partitions")
+    
+    # This function is the one that extracts parameters required in 
+    # what were once inner loops of this program.  As noted there are 
+    # so many parameters it makes the code more readable to pass just 
+    # this control metadata container around.  The dark side is if any 
+    # new parameters are added changes are required in this function,
+    control = _build_control_metadata(pf)
+
+    # This function extracts parameters passed around through a Metadata 
+    # container (what it returns).   These are a subset of those extracted 
+    # in this function.  This should, perhaps, be passed into this function 
+    # but the cost of extracting it from pf in this function is assumed tiny
     base_message="class pwmig constructor:  "
-    border_pad = control.get_int("border_padding")
-    zpad = control.get_double("depth_padding_multiplier")
+    border_pad = pf.get_int("border_padding")
+    # This isn't used in this function, but retain this for now for this test
+    # This test will probably be depricated when we the pfmig_verify functions is
+    # completed as it is planned to have a constraints on the data a parameter allows
+    zpad = pf.get_double("depth_padding_multiplier")
     if zpad>1.5 or zpad<=1.0:
         message='Illegal value for depth_padding_multiplier={zpad}\nMust be between 1 and 1.5'.format(zpad=          zpad)
         raise MsPASSError(base_message+message,ErrorSeverity.Invalid)
-    fielddir=control.get_string("output_field_directory");
-    if os.path.exists(fielddir):
-        if not os.path.isdir():
-            message='fielddir parameter defined in parameter file as {}\n'.format(          fielddir)
-            message+='File exists but is not a directory as required'
-            raise MsPASSError(base_message+message,ErrorSeverity.Invalid)
-    else:
-         os.mkdir(fielddir)
-    dfilebase=control.get_string("output_filename_base");
+    # these were used in file based io - revision uses mongodb but some of this 
+    # may need to be put into the control Metadata container
+    #fielddir=pf.get_string("output_field_directory");
+    #if os.path.exists(fielddir):
+    #    if not os.path.isdir():
+    #        message='fielddir parameter defined in parameter file as {}\n'.format(          fielddir)
+    #        message+='File exists but is not a directory as required'
+    #        raise MsPASSError(base_message+message,ErrorSeverity.Invalid)
+    #else:
+    #     os.mkdir(fielddir)
+    #dfilebase=pf.get_string("output_filename_base");
     # Following C++ pwmig the output fieldnames, which become file names
     # defined with a dir/dfile combo i a MongoDB collection, are dfilebase+'_'+source_id
-    use_depth_variable_transformation=control.get_bool("use_depth_variable_transformation")
-    zmax=control.get_double("maximum_depth")
-    tmax=control.get_double("maximum_time_lag")
-    dux=control.get_double("slowness_grid_deltau")
-    dt=control.get_double("data_sample_interval")
-    zdecfac=control.get_int("Incident_TTgrid_zdecfac")
-    duy=dux
-    dumax=control.get_double("delta_slowness_cutoff")
-    dz=control.get_double("ray_trace_depth_increment")
-    rcomp_wt=control.get_bool("recompute_weight_functions")
-    nwtsmooth=control.get_int("weighting_function_smoother_length")
-    if nwtsmooth<=0:
-        smooth_wt=False
-    else:
-        smooth_wt=True
-    taper_length=control.get_double("taper_length_turning_rays")
+    # This is now always true - TODO:  verify that and when sure delete this next line
+    #use_depth_variable_transformation=pf.get_bool("use_depth_variable_transformation")
+    zmax=pf.get_double("maximum_depth")
+    tmax=pf.get_double("maximum_time_lag")
+    #dux=pf.get_double("slowness_grid_deltau")
+    dt=pf.get_double("data_sample_interval")
+    zdecfac=pf.get_int("Incident_TTgrid_zdecfac")
+    #duy=dux
+    #dumax=pf.get_double("delta_slowness_cutoff")
+    #dz=pf.get_double("ray_trace_depth_increment")
+    #rcomp_wt=pf.get_bool("recompute_weight_functions")
+    #nwtsmooth=pf.get_int("weighting_function_smoother_length")
+    #if nwtsmooth<=0:
+    #    smooth_wt=False
+    #else:
+    #    smooth_wt=True
+    #taper_length=pf.get_double("taper_length_turning_rays")
     # Parameters for handling elevation statics.
-    ApplyElevationStatics=control.get_bool("apply_elevation_statics")
-    static_velocity=control.get_double("elevation_static_correction_velocity")
-    use_grt_weights=control.get_bool("use_grt_weights")
-    use_3d_vmodel=control.get_bool("use_3d_velocity_model")
+    # These are depricated because we now assume statics are applied with 
+    # an separate mspass function earlier in the workflow
+    #ApplyElevationStatics=pf.get_bool("apply_elevation_statics")
+    #static_velocity=pf.get_double("elevation_static_correction_velocity")
+    #use_grt_weights=pf.get_bool("use_grt_weights")
+    #use_3d_vmodel=pf.get_bool("use_3d_velocity_model")
     # The C++ version of pwmig loaded velocity model data and constructed
     # slowness grids from that.  Here we always use a 3D slowness model
     # loaded from the database using the new gclgrid library that
@@ -254,18 +352,19 @@ def migrate_event(source_id=None,db,pf='pwmig.pf',collection='GCLfielddata'):
     # building on from a 1d model is considered a preprocessing step
     # to assure the following loads will succeed.
     # WARNING - these names are new and not in any old pf files driving C++ version
-    up3dname=control.get_string('Pslowness_model_name')
-    us3dname=control.get_string('Sslowness_model_name')
-    Up3d=load_3d_slowness_model(up3dname)
-    Us3d=sefl.load_3d_slowness_model(us3dname)
+    up3dname=pf.get_string('Pslowness_model_name')
+    us3dname=pf.get_string('Sslowness_model_name')
+    Up3d=load_3d_slowness_model(db,up3dname)
+    Us3d=load_3d_slowness_model(db,us3dname)
     # Similar for 1d models.   The velocity name key is the pf here is the
     # same though since we don't convert to slowness in a 1d model
-    Pmodel1d_name=control.get_string("P_velocity_model1d_name");
-    Smodel1d_name=control.get_string("S_velocity_model1d_name");
-    Vp1d=load_1d_velocity_model(Pmodel1d_name)
-    Vs1d=load_1d_velocity_model(Smodel1d_name)
+    # note the old program used files.  Here we store these in mongodb
+    Pmodel1d_name=pf.get_string("P_velocity_model1d_name");
+    Smodel1d_name=pf.get_string("S_velocity_model1d_name");
+    Vp1d=load_1d_velocity_model(db,Pmodel1d_name)
+    Vs1d=load_1d_velocity_model(db,Smodel1d_name)
     # Now bring in the grid geometry.  First the 2d surface of pseudostation points
-    parent_grid_name=control.get_string("Parent_GCLgrid_Name");
+    parent_grid_name=pf.get_string("Parent_GCLgrid_Name");
     # CAUTION:  name may not be the right key
     query={'name' : parent_grid_name}
     doc=gclcollection.find_one(query)
@@ -276,7 +375,8 @@ def migrate_event(source_id=None,db,pf='pwmig.pf',collection='GCLfielddata'):
     # modified - TODO - WATCH
     svm0=BuildSlownessGrid(parent,source_lat, source_lon, source_depth)
     TPfield=ComputeIncidentWaveRaygrid(parent,border_pad,
-       Up3d,Vp1d,svm0,zmax*zpad,tmax,dt,zdecfac,use_3d_model)
+       Up3d,Vp1d,svm0,zmax*zpad,tmax,dt,zdecfac,True)
+    del Up3d
     # The loop over plane wave components is driven by a list of cursors
     # created in this MongoDB incantation
     query={'source_id' : source_id}
@@ -286,5 +386,11 @@ def migrate_event(source_id=None,db,pf='pwmig.pf',collection='GCLfielddata'):
     planewaves=evbag.map(query_by_id,db,source_id)
     # This function processes one plane wave component and returns a
     # GCLvectorfield3d object containing the migrated data in ray geometry.
-    migrated_data=evbag.map(migrate_component,ARGS)
-    # Think this needs to be followed by a bag.accumulate call or bag.fold
+    migrated_data=planewaves.map(_migrate_component,parent,TPfield,svm0,Vp1d,Vs1d,control,
+                                number_partitions=npartitions)
+    # TODO:  Needs option here to save each component and/or stack 
+    # immediately.   save can be done in parallel.  stacking is problematic
+    # until we solve the large memory issue. 
+    
+    
+
