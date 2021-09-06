@@ -23,7 +23,9 @@ public:
       object is to divorce pwmigcore routines from global travel
       time calculators.   This was a maintenance issue choice
       created by the lack of a clean solution for C++ to the dsap
-      version of the taup library and not common alternative.
+      version of the taup library and not common alternative.  It was
+      carried forward with modification to the mspass version of pwmig
+      with additions to allow python to fill in the data.
 
       \param nrow - number of rows grid (matrix) of SlownessVectors
       \param ncol - number of columns grid (matrix) of SlownessVectors
@@ -50,6 +52,19 @@ public:
          row and column range.
       */
     mspass::seismic::SlownessVector operator()(const int i, const int j) const;
+    /*! \brief Putter to set the slowness vector at specified grid index.
+
+    This was added for the mspass version to allow the use of taup calculators
+    in python (specifically obpsy's implementation) to set the slowness vectors
+    by grid index.  It throws a MsPASSError exception if the index is out of
+    range.
+
+    \param u slowness vector to set for i and j index   (i.e. this is the value
+      stored at [i[j]])
+    \param i first array index of grid
+    \param j second array index of grid
+    */
+    void set_slowness(const mspass::seismic::SlownessVector& u,const int i, const int j);
     SlownessVectorMatrix& operator=(const SlownessVectorMatrix& parent);
     friend std::ostream& operator<<(std::ostream& ostr, SlownessVectorMatrix& svm);
 private:

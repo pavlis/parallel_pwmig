@@ -43,6 +43,29 @@ SlownessVector SlownessVectorMatrix::operator()(const int i, const int j) const
     slowness vector is lightweight.  */
     return (this->uarray[i+nrow*j]);
 }
+void SlownessVectorMatrix::set_slowness(const SlownessVector& u,
+  const int i, const int j)
+{
+  if(i<0 || i>=(this->nrow) || j<0 || j>=(this->ncol))
+  {
+    stringstream ss;
+    ss << "SlownessVectorMatrix::set_slowness:  illegal grid index"<<endl
+       << "Received index 1="<<i<<" and index 2="<<j<<endl
+       << "Must be nonegative valued less than or equal to "<<this->nrow
+       << " and "<<this->ncol<<"respectively"<<endl;
+    throw MsPASSError(ss.str(),ErrorSeverity::Fatal);
+  }
+  if(this->uarray.size()< (this->nrow)*(this->ncol))
+  {
+    stringstream ss;
+    ss << "SlownessVectorMatrix::set_slowness: internal storage array not properly initialized"
+       << endl
+       << "You must call the space allocating constructor (nrow, ncol parameter) before using this method"
+       <<endl;
+    throw MsPASSError(ss.str(),ErrorSeverity::Fatal);
+  }
+  this->uarray[i+nrow*j] = u;
+}
 SlownessVectorMatrix& SlownessVectorMatrix::operator=
                         (const SlownessVectorMatrix& parent)
 {
