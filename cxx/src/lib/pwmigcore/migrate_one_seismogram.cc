@@ -23,8 +23,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
            GCLscalarfield3d& Us3d,
              VelocityModel_1d& Vp1d,
                VelocityModel_1d& Vs1d,
-                 SlownessVector& u0,
-                   Metadata& control)
+                 Metadata& control)
 {
   int k;  // primary depth index in loops.  Defined outside loops for error logging
   int kk;   // used repeatedly as an index in z running the reverse of index k
@@ -48,6 +47,13 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
     deadguy.live=false;
     return deadguy;
   }
+  /* These two metadata gets are closely linked to a map function used
+  in the python functoin that calls this one.   The names here must match
+  that functions usage or we will surely abort.*/
+  double ux,uy;
+  ux=pwdata.get_double("ux0");
+  uy=pwdata.get_double("uy0");
+  SlownessVector u0(ux,uy);
   /* The contents of this function in the original pwmig C++ program were
   the innermost of 3 loops used to compute the GRT migration.   The following
   set of parameters are here extracted from the Metadata container passed

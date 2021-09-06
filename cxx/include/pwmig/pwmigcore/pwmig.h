@@ -8,6 +8,7 @@ pwmig.   Most will not be wrapped for python */
 #include "mspass/seismic/SlownessVector.h"
 #include "pwmig/gclgrid/gclgrid.h"
 #include "pwmig/pwmigcore/SlownessVectorMatrix.h"
+#include "pwmig/pwmigcore/PWMIGmigrated_seismogram.h"
 #include "pwmig/seispp/VelocityModel_1d.h"
 namespace pwmig::pwmigcore
 {
@@ -84,5 +85,13 @@ mspass::seismic::SlownessVector EnsembleDeltaSlow(mspass::seismic::LoggingEnsemb
 /* These might need python bindings */
 void VelocityFieldToSlowness(pwmig::gclgrid::GCLscalarfield3d& g);
 pwmig::seispp::VelocityModel_1d DeriveVM1Dfrom3D(pwmig::gclgrid::GCLscalarfield3d& u);
+pwmig::pwmigcore::PWMIGmigrated_seismogram migrate_one_seismogram(mspass::seismic::Seismogram& pwdata,
+    pwmig::gclgrid::GCLgrid& parent,
+      pwmig::gclgrid::GCLgrid3d& raygrid,
+        pwmig::gclgrid::GCLscalarfield3d& TPgrid,
+           pwmig::gclgrid::GCLscalarfield3d& Us3d,
+             pwmig::seispp::VelocityModel_1d& Vp1d,
+               pwmig::seispp::VelocityModel_1d& Vs1d,
+                 mspass::utility::Metadata& control);
 } // end namespace
 #endif
