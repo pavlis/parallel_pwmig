@@ -9,5 +9,6 @@ include_directories(
 
 add_library(gclgrid STATIC ${sources_gclgrid})
 target_link_libraries(gclgrid PRIVATE dsap ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+#target_link_libraries(gclgrid PRIVATE dsap ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${MSPASS_LIBRARIES})
 
 install (TARGETS gclgrid DESTINATION lib)

@@ -113,6 +113,7 @@ if (DEFINED ENV{MSPASS_HOME})
 else ()
    set(MSPASSHOME "/usr/local/mspass")
 endif ()
+set(MSPASS_LIBRARIES ${MSPASSHOME}/lib/mspass.a)
 message(STATUS "Assuming top level directory for MsPASS is ${MSPASSHOME}")
 
 add_subdirectory (src)
