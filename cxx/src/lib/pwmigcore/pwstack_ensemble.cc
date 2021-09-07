@@ -262,7 +262,7 @@ not at zero lag.
 spring 2021:  major changes to adapt the code to MsPASS.  Too many
 changes to list
 */
-LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram> indata,
+LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata,
   const RectangularSlownessGrid& ugrid,
    TopMute& mute,
     TopMute& stackmute,
