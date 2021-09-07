@@ -81,7 +81,7 @@ setup(
     author_email='pavlis@iu.edu',
     description='Plane Wave Migration Package for Teleseismic P wave data',
     long_description='',
-    ext_modules=[CMakeExtension('pwmig.ccore')],
+    ext_modules=[CMakeExtension('pwmigpy.ccore')],
     cmdclass=dict(build_ext=CMakeBuild),
     #entry_points=ENTRY_POINTS,
     zip_safe=False,
