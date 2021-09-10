@@ -8,7 +8,7 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/include)
 
 add_library(pwmigcore STATIC ${sources_pwmigcore})
-target_link_libraries(pwmigcore PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} )
+target_link_libraries(pwmigcore PRIVATE dsap seispp gclgrid ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} )
 #target_link_libraries(pwmigcore PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${MSPASS_LIBRARIES})
 
 install (TARGETS pwmigcore DESTINATION lib)

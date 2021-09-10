@@ -43,7 +43,7 @@ std::vector<double> compute_unit_normal_P(pwmig::gclgrid::GCLgrid3d& raygrid,
 pwmig::pwmigcore::SlownessVectorMatrix pad_svm(const pwmig::pwmigcore::SlownessVectorMatrix& svm,
 	const int pad);
 bool grid_mismatched(const pwmig::gclgrid::GCLgrid& parent,
-	pwmig::gclgrid::GCLgrid& padded, const int pad);
+	const pwmig::gclgrid::GCLgrid& padded, const int pad);
 /* this one needs some hacking to deal with the auto_ptr */
 pwmig::gclgrid::GCLscalarfield3d* ComputeIncidentWaveRaygrid(pwmig::gclgrid::GCLgrid& pstagrid,
   int border_pad,
