@@ -9,6 +9,7 @@
 #include "pwmig/seispp/RadialGrid.h"
 #include "pwmig/seispp/EventCatalog.h"
 #include "pwmig/seispp/Stack.h"
+#include "pwmig/seispp/VelocityModel_1d.h"
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/AntelopePf.h"
 
@@ -33,6 +34,7 @@ using pwmig::seispp::RadialGrid;
 using pwmig::seispp::EventCatalog;
 using pwmig::seispp::SectorTest;
 using pwmig::seispp::Stack;
+using pwmig::seispp::VelocityModel_1d;
 
 
 PYBIND11_MODULE(seispp, m) {
@@ -103,7 +105,13 @@ py::class_<Stack>(m,"RobustStack","Ensemble stacker with simple and multiple rob
   .def_readwrite("stack",&Stack::stack,"Stack produced on construction form input ensemble")
   .def_readwrite("sumwt",&Stack::sumwt,"sum of weights (usuall < fold with robust stacking)")
   .def_readwrite("fold",&Stack::fold,"Number of live TimeSeries in computed stack")
-  ;
+;
+py::class_<VelocityModel_1d>(m,"VelocityModel_1d","Data object to hold a layered earth model")
+  .def(py::init<>())
+  .def(py::init<const std::string,const std::string,const std::string>())
+  .def(py::init<const VelocityModel_1d&>())
+  .def("getv",&VelocityModel_1d::getv,"Get the velocity at specified depth")
+;
 }
 }  // end namespace pwmigpy
 }  // end namespace pwmig
