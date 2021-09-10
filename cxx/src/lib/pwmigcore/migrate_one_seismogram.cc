@@ -18,7 +18,7 @@ using INTERPOLATOR1D::linear_vector_regular_to_irregular;
 the object. */
 PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
     GCLgrid& parent,
-      GCLgrid3d& raygrid,
+      GCLscalarfield3d& raygrid,
         GCLscalarfield3d& TPgrid,
            GCLscalarfield3d& Us3d,
              VelocityModel_1d& Vp1d,

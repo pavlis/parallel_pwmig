@@ -27,6 +27,7 @@ using pwmig::pwmigcore::pwstack_ensemble;
 using pwmig::pwmigcore::SlownessVectorMatrix;
 using pwmig::pwmigcore::Build_GCLraygrid;
 using pwmig::pwmigcore::ComputeIncidentWaveRaygrid;
+using pwmig::pwmigcore::migrate_one_seismogram;
 
 
 PYBIND11_MODULE(pwmigcore, m) {
@@ -144,7 +145,26 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
   py::arg("zdecfac"),
   py::arg("use_3d")
  );
+ m.def("migrate_one_seismogram",&migrate_one_seismogram,"pwmig innermost loop function - projects 3C seismogram data along a ray path",
+ py::return_value_policy::copy,
+ py::arg("pwdata"),
+ py::arg("parent"),
+ py::arg("raygrid"),
+ py::arg("TPgrid"),
+ py::arg("Us3d"),
+ py::arg("vp1d"),
+ py::arg("vs1d"),
+ py::arg("control")
+);
 
+ pwmig::pwmigcore::PWMIGmigrated_seismogram migrate_one_seismogram(mspass::seismic::Seismogram& pwdata,
+     pwmig::gclgrid::GCLgrid& parent,
+       pwmig::gclgrid::GCLgrid3d& raygrid,
+         pwmig::gclgrid::GCLscalarfield3d& TPgrid,
+            pwmig::gclgrid::GCLscalarfield3d& Us3d,
+              pwmig::seispp::VelocityModel_1d& Vp1d,
+                pwmig::seispp::VelocityModel_1d& Vs1d,
+                  mspass::utility::Metadata& control);
 }
 }  // end namespace pwmigpy
 }  // end namespace pwmig

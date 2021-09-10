@@ -56,7 +56,7 @@ pwmig::gclgrid::GCLscalarfield3d* ComputeIncidentWaveRaygrid(pwmig::gclgrid::GCL
          int zdecfac,
           bool use_3d);
 std::vector<double> compute_Stime(pwmig::gclgrid::GCLscalarfield3d& U3d,
-	  int i, int j, pwmig::gclgrid::GCLgrid3d& raygrid,bool use_3d);
+	  int i, int j, pwmig::gclgrid::GCLscalarfield3d& raygrid,bool use_3d);
 std::vector<double> compute_domega_for_path(mspass::seismic::SlownessVector& u0,
 	double dux,
 	 double duy,
@@ -87,7 +87,7 @@ void VelocityFieldToSlowness(pwmig::gclgrid::GCLscalarfield3d& g);
 pwmig::seispp::VelocityModel_1d DeriveVM1Dfrom3D(pwmig::gclgrid::GCLscalarfield3d& u);
 pwmig::pwmigcore::PWMIGmigrated_seismogram migrate_one_seismogram(mspass::seismic::Seismogram& pwdata,
     pwmig::gclgrid::GCLgrid& parent,
-      pwmig::gclgrid::GCLgrid3d& raygrid,
+      pwmig::gclgrid::GCLscalarfield3d& raygrid,
         pwmig::gclgrid::GCLscalarfield3d& TPgrid,
            pwmig::gclgrid::GCLscalarfield3d& Us3d,
              pwmig::seispp::VelocityModel_1d& Vp1d,
