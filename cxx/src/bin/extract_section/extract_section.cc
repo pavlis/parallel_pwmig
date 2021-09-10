@@ -1,7 +1,10 @@
-Verbose#include <fstream>
+#include <fstream>
 #include "pwmig/dsap/stock.h"
+#include "pwmig/dsap/coords.h"
 #include "mspass/utility/Metadata.h"
-#include "pwmig/gclgrid.h"
+#include "mspass/utility/AntelopePf.h"
+#include "mspass/utility/SphericalCoordinate.h"
+#include "pwmig/gclgrid/gclgrid.h"
 using namespace std;
 using namespace mspass::utility;
 using namespace pwmig::gclgrid;
@@ -19,7 +22,6 @@ double *extract_vertical(GCLscalarfield3d *g,Geographic_point p,double z0, doubl
 	double *result=new double[nz];
 	Cartesian_point pc;
 	/* p is not a reference so we alter it in the loop below */
-	double z;
 	double r0=p.r;
 	int i;
 	for(i=0;i<nz;++i)
@@ -78,19 +80,16 @@ int main(int argc, char **argv)
 	AntelopePf pf(pfname);
 	/* format switch.  For now just ascii formats, but segy planned */
 	enum OutputFormat {Dmatrix, GMT};
+        /*
         char *pfkey;
         pfkey=strdup("output_format");
 	char *formatname=pfget_string(pf,pfkey);
         free(pfkey);
 	string stmp(formatname);
+        */
+        string stmp(pf.get_string("output_format"));
 	OutputFormat odform;
-	if(formatname==NULL)
-	{
-		cerr << "Required parameter output_format is not in "
-			<< "parameter file"<<endl;
-		usage();
-	}
-	else if(stmp=="GMT" || stmp=="gmt")
+	if(stmp=="GMT" || stmp=="gmt")
 		odform=GMT;
 	else
 		odform=Dmatrix;
@@ -128,7 +127,6 @@ int main(int argc, char **argv)
 	list<Geographic_point> section_points;
 	for(auto lptr=pointlist.begin();lptr!=pointlist.end();++lptr)
 	{
-		char *line;
 		double lat,lon;
 		stringstream ss(*lptr);
 		ss>>lat;
@@ -157,14 +155,14 @@ int main(int argc, char **argv)
 			exit(-1);
 		}
 		bool use_points_directly=pf.get_bool("use_points_directly");
-		if(use_points_directly && SEISPP_verbose)
+		if(use_points_directly && Verbose)
 			cerr << "Using input points directly to define output data"<<endl;
 		/* Now build the full path of control points as equally spaced
 		as possible.  Using the latlon function from antelope. */
+		Geographic_point p;
 		double del,ddel,az,lat1,lon1,lat2,lon2;
 		double delkm,r0,dr;
 		int n;
-		Geographic_point p={0.0,0.0,0.0};
 		list<Geographic_point> path;
 		list<Geographic_point>::iterator sptr;
 		if(use_points_directly)
@@ -194,7 +192,7 @@ int main(int argc, char **argv)
 			dist(lat1,lon1,lat2,lon2,&del,&az);
 			delkm=del*r0;
 			n=static_cast<int>(delkm/dx) + 1;
-			n=SEISPP::nint(delkm/dx) + 1;
+			n=(int)round(delkm/dx) + 1;
 			ddel=dx/r0;
 			dr=dr*dx/delkm;
 			for(i=0;i<n;++i)
@@ -213,7 +211,6 @@ int main(int argc, char **argv)
 		if(vectordata)
 		{
 			int component=pf.get_int("component_number");
-                        int nvcomp=pf.get_int("number_vector_components");
 			GCLvectorfield3d *gvec=new GCLvectorfield3d(basename);
 			g=extract_component(*gvec,component);
 			delete gvec;
@@ -282,13 +279,13 @@ int main(int argc, char **argv)
 		}
 		delete g;
 	}
+	catch (MsPASSError& serr)
+	{
+		serr.log_error();
+	}
         catch (exception& gerr)
         {
             cerr << "Error was throw.  This is the message:"<<endl
                 << gerr.what()<<endl;
         }
-	catch (SeisppError& serr)
-	{
-		serr.log_error();
-	}
 }
