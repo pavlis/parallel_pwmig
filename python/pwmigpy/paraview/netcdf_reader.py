@@ -1,10 +1,10 @@
 from scipy.io import netcdf
 import numpy as np
 import sys
-# We need this until I figure out how to build a setup.py file for the 
+# We need this until I figure out how to build a setup.py file for the
 # package
-sys.path.append('/home/pavlis/src/parallel_pwmig/python')
-from ccore.gclgrid import (GCLgrid3d,
+#sys.path.append('/home/pavlis/src/parallel_pwmig/python')
+from pwmigpy.ccore.gclgrid import (GCLgrid3d,
                      GCLscalarfield3d,
                      GCLvectorfield3d,
                      r0_ellipse,
@@ -130,13 +130,13 @@ def show_netcdf_variable_names(model_file):
     for n in names:
         print(n)
     #data.close()
-def read_netcdf_model(model_file, lat_variable='latitude', 
-                      lon_variable='longitude', depth_variable='depth', 
+def read_netcdf_model(model_file, lat_variable='latitude',
+                      lon_variable='longitude', depth_variable='depth',
                       extent=False):
-    """read in an EMC Earth model in the netCDF format.  
-    
-    This function is a modification of code originally in the file 
-    IrisEMC_Paraview_lib.py (part package EMC-paraview).   Original did 
+    """read in an EMC Earth model in the netCDF format.
+
+    This function is a modification of code originally in the file
+    IrisEMC_Paraview_lib.py (part package EMC-paraview).   Original did
     a conversion to the emc's coordinates.  Here we return lat,lon,depth
     with the idea to convert the result to a GCLgrid in separate function.
 
@@ -147,7 +147,7 @@ def read_netcdf_model(model_file, lat_variable='latitude',
       depth_min: minimum depth
       depth_max: maximum depth
       inc: grid sampling interval
-      extend:  when true (default is false) just return the extends of 
+      extend:  when true (default is false) just return the extends of
         a 3d volume - defined as the integer ranges of lat, lon, and depth
 
       Return values:
@@ -196,7 +196,7 @@ def read_netcdf_model(model_file, lat_variable='latitude',
     dimensions.append(nx)
     dimensions.append(ny)
     dimensions.append(nz)
-    # I think this should always work - gets number of attributes 
+    # I think this should always work - gets number of attributes
     nv=len(variables)
     dimensions.append(nv)
     index = [-1, -1, -1]
@@ -205,17 +205,17 @@ def read_netcdf_model(model_file, lat_variable='latitude',
     if hasattr(data.variables[var], 'missing_value'):
         missing_value = float(data.variables[var].missing_value)
 
-    # The IRIS EMC code had what seems to me to be an unnecessary 
+    # The IRIS EMC code had what seems to me to be an unnecessary
     # complexity. All the data files we have for the alaska paper have
     # what paraview, at least, would call a rectilinear grid.  That means
     # we only need to store a vector of coordinates.   EMC stuff stored
-    # 3D arrays that were a factor in slowing the code enormously.  
+    # 3D arrays that were a factor in slowing the code enormously.
     # see the EMC code if you need to restore the 3d arrays.
-    # They also called these X,Y,Z.  I found the same data was 
+    # They also called these X,Y,Z.  I found the same data was
     # already store din latitude, longitude, and depth vectors
 
     for l, var_val in enumerate(variables):
-        
+
         v = np.zeros((nx, ny, nz))
         data_in = data.variables[var_val][:].copy()
 
@@ -223,7 +223,7 @@ def read_netcdf_model(model_file, lat_variable='latitude',
         for i, lon_val in enumerate(longitude):
             for j, lat_val in enumerate(latitude):
                 for k, depth_val in enumerate(depth):
-                        
+
 
                         index[depth_index] = k
                         index[lat_index] = j
@@ -243,7 +243,7 @@ def read_netcdf_model(model_file, lat_variable='latitude',
                             v[i, j, k] = this_value
 
         V[var_val] = v
-        
+
     data.close()
     return longitude, latitude, depth, V, attribute_names, dimensions
 
@@ -257,71 +257,71 @@ def netcdf_arrays_to_GCLfield(lon,lat,depth,V,vkey=None,
                             j0=0,
                                 gridname='UNDEFINED',
                                     save_as_vector=False):
-    
+
     """
-    This function is a compansion to the read_netcdf_model.  For conversion 
-    to a gcl field it would normally be called immediately after 
-    read_netcdf_model using the set of numpy arrays it returns.  
-    The result can be guaranteed only if the scan order for the 
+    This function is a compansion to the read_netcdf_model.  For conversion
+    to a gcl field it would normally be called immediately after
+    read_netcdf_model using the set of numpy arrays it returns.
+    The result can be guaranteed only if the scan order for the
     arrays is [longitude low to high][latitude low to high ] [z low to high]
-    Note z as depth is reversed for the GCL structure so we fill the cells 
-    backward from the EMC netcdf convention.  A warning is issued if 
+    Note z as depth is reversed for the GCL structure so we fill the cells
+    backward from the EMC netcdf convention.  A warning is issued if
     there are hints those conditions are not satisified.
-    
-    This function is nearly guaranteed to be super slow because of all 
-    the array indexing and nexted loops.   
-    
-    :param lon,lat,depth: are coordinate arrays returned by read_netcdf_model. 
-      they are assume to be (in order) longitude, latitude, and depth 
-      coordinate 3D arrays.  For a uniform grid in lat,lon, depth these 
-      could be computed from 6 numbers, but to assure some flexibility they are not 
-      computed but carried as baggage. 
-    :param V:  value dict returned by read_netcdf_model.  This is a bit of 
-      a weird data structure inherited from adapting the original EMC code. 
-      V is return as a dict with np arrays linked to one or more keys.  
-      This parameter is ignored if save_as_vector is True. In the False 
+
+    This function is nearly guaranteed to be super slow because of all
+    the array indexing and nexted loops.
+
+    :param lon,lat,depth: are coordinate arrays returned by read_netcdf_model.
+      they are assume to be (in order) longitude, latitude, and depth
+      coordinate 3D arrays.  For a uniform grid in lat,lon, depth these
+      could be computed from 6 numbers, but to assure some flexibility they are not
+      computed but carried as baggage.
+    :param V:  value dict returned by read_netcdf_model.  This is a bit of
+      a weird data structure inherited from adapting the original EMC code.
+      V is return as a dict with np arrays linked to one or more keys.
+      This parameter is ignored if save_as_vector is True. In the False
       case it uses this name to find the component desired if it is defined.
-      The default sets it None.  In the default situation the function 
+      The default sets it None.  In the default situation the function
       retrieves the first attribute listed if there are multiple attributes.
       For true scalar data that is the only attribute so it should work fine.
     :param lat0, lon0, r0: are the coordinates of the origin of the RegionalCoordinates
-      Cartesian system used to define the local coordinate system. As 
-      describe in the origin Fan et al paper the origin gets translated from 
-      the center of earth to this point on the earth. The values passed 
-      should be in units of degrees for lat0 and lon0 and km for 
-      radius.  (Note GCL internally converts lat0 and lon0 to radians so 
+      Cartesian system used to define the local coordinate system. As
+      describe in the origin Fan et al paper the origin gets translated from
+      the center of earth to this point on the earth. The values passed
+      should be in units of degrees for lat0 and lon0 and km for
+      radius.  (Note GCL internally converts lat0 and lon0 to radians so
       be careful you poke at the attributes of what is created)
-      The default is the geographical center of the US at the surface 
+      The default is the geographical center of the US at the surface
       defined at the latitude by r0_ellipse.
-    :param azimuth_y: is the rotation angle (in degrees) to apply to the 
-      coordinate system as an azimuth angle from north.  i.e. for 0 the 
-      n2 axis points north, but if azimuth_y were 10 degrees the 
-      n2 axis would point 10 degrees east of north at the origin.  
-    :param i0:  offset of the origin from coordinate center in 
+    :param azimuth_y: is the rotation angle (in degrees) to apply to the
+      coordinate system as an azimuth angle from north.  i.e. for 0 the
+      n2 axis points north, but if azimuth_y were 10 degrees the
+      n2 axis would point 10 degrees east of north at the origin.
+    :param i0:  offset of the origin from coordinate center in
       grid cell units - a GCLgrid thing that is baggage here (default is 0)
     :param j0:  like i0 for the n2 axis (default 0)
     :param gridname:  Name to assign the grid geometry. (Default is undefined)
-    :param save_as_vector:  When true data with multiple attributes for 
-      each grid cell (e.g. a P and S tomography model ).   there is no 
-      clean way to return the names because of a mismatch in concept of 
-      the GCLvectorfield and what netcdfs are commonly used for.  
-      If names are needed they must be retained from V and passed to 
-      the vtk converter where they can be displayed in paraview. 
+    :param save_as_vector:  When true data with multiple attributes for
+      each grid cell (e.g. a P and S tomography model ).   there is no
+      clean way to return the names because of a mismatch in concept of
+      the GCLvectorfield and what netcdfs are commonly used for.
+      If names are needed they must be retained from V and passed to
+      the vtk converter where they can be displayed in paraview.
       Awkward but I can see now simple solution to resolve that problem
       without some major retooling.
-    
-    :return:  a GCLscalarfield3D f save_as_vector is false and a 
+
+    :return:  a GCLscalarfield3D f save_as_vector is false and a
       GCLvectorfield3d if True.
-    
+
     """
-    # this function is expected to be run interactively so these print 
+    # this function is expected to be run interactively so these print
     # warnings using this name tag are appropriate
     prog='netcdf_arrays_to_GCLfield:  '
     nx=len(lon)
     ny=len(lat)
     nz=len(depth)
-    # these cell size estimates are approximate and only close if the 
-    # grid is uniform in lat,lon, and depth -I think all the EMC 
+    # these cell size estimates are approximate and only close if the
+    # grid is uniform in lat,lon, and depth -I think all the EMC
     # models are but unclear if all netcdfs would be
     latmin=np.amin(lat)
     latmax=np.amax(lat)
@@ -346,11 +346,11 @@ def netcdf_arrays_to_GCLfield(lon,lat,depth,V,vkey=None,
     g.dx1_nom=dx
     g.dx2_nom=dy
     g.dx3_nom=dz
-    # this next calculation is accurate only if the grid is regular 
+    # this next calculation is accurate only if the grid is regular
     # in lat,lon, and depth
     i0=int((lat0-latmin)/delta_lat)
     j0=int((lon0-lonmin)/delta_lon)
-    
+
     if i0<0:
         print(prog+'computed i0=',i0,' reset to 0')
         i0=0
@@ -368,7 +368,7 @@ def netcdf_arrays_to_GCLfield(lon,lat,depth,V,vkey=None,
     #        np.deg2rad(lat0),np.deg2rad(lon0),r0,np.deg2rad(azimuth_y),
     #           dx,dy,dz,i0,j0)
     if save_as_vector:
-        # V is expected to be a dict with name keys. If we make 
+        # V is expected to be a dict with name keys. If we make
         # this a vector field we can set the dimensions from len like this
         nv=len(V)
         keys=list(V.keys())
@@ -390,8 +390,8 @@ def netcdf_arrays_to_GCLfield(lon,lat,depth,V,vkey=None,
                         keyl=keys[l]
                         val.append(V[keyl][i][j][k])
                     f.set_value(val,i,j,kk)
-                        
-                        
+
+
     else:
         if vkey:
             v=V[vkey]
@@ -413,4 +413,3 @@ def netcdf_arrays_to_GCLfield(lon,lat,depth,V,vkey=None,
                     #print(i,j,k,kk,X[i][j][k],Y[i][j][k],Z[i][j][k],cp.x1,cp.x2,cp.x3)
                     f.set_value(v[i][j][k],i,j,kk)
     return f
-

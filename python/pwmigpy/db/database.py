@@ -11,7 +11,7 @@ from bson.objectid import ObjectId
 from mspasspy.ccore.utility import (MsPASSError, Metadata)
 from mspasspy.util.converter import Metadata2dict
 # This is a temporary for testing
-from ccore.gclgrid import (GCLgrid, GCLgrid3d, GCLscalarfield, GCLscalarfield3d,
+from pwmigpy.ccore.gclgrid import (GCLgrid, GCLgrid3d, GCLscalarfield, GCLscalarfield3d,
                      GCLvectorfield, GCLvectorfield3d)
 
 
@@ -119,6 +119,8 @@ def GCLdbsave(db, obj, collection="GCLfielddata",
         outdir = os.path.abspath(dir)
     if dfile == None:
         outfile = objname+"_"+str(id)
+    else:
+        outfile = dfile
 
     # The save methods can throw an exception for a number of
     # reasons.  for now we just let them do so and let the caller
@@ -134,8 +136,9 @@ def GCLdbsave(db, obj, collection="GCLfielddata",
     addon = dict()
     addon['dir'] = outdir
     addon['dfile'] = outfile
-    for k in auxdata:
-        addon[k]=auxdata[k]
+    if auxdata != None:
+        for k in auxdata:
+            addon[k]=auxdata[k]
     upout = dbh.update_one({'_id': id}, {'$set': addon})
     if upout.matched_count != 1:
         raise MsPASSError("GCLdbsave:  upsert of dir and dfile failed - this is not normal",
