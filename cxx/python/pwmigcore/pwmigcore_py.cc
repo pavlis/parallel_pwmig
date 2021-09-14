@@ -156,15 +156,13 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
  py::arg("vs1d"),
  py::arg("control")
 );
+/* These aren't needed for pwmig python code, but are of broader use so 
+I have this binding code for these functions */
+ m.def("remove_mean_x3",&pwmig::pwmigcore::remove_mean_x3,"Removes mean for slices in the x3 direction (normally assumed to be a depth variable) from scalar field data",
+   py::return_value_policy::copy,
+   py::arg("f") 
+  );  
 
- pwmig::pwmigcore::PWMIGmigrated_seismogram migrate_one_seismogram(mspass::seismic::Seismogram& pwdata,
-     pwmig::gclgrid::GCLgrid& parent,
-       pwmig::gclgrid::GCLgrid3d& raygrid,
-         pwmig::gclgrid::GCLscalarfield3d& TPgrid,
-            pwmig::gclgrid::GCLscalarfield3d& Us3d,
-              pwmig::seispp::VelocityModel_1d& Vp1d,
-                pwmig::seispp::VelocityModel_1d& Vs1d,
-                  mspass::utility::Metadata& control);
 }
 }  // end namespace pwmigpy
 }  // end namespace pwmig

@@ -365,6 +365,13 @@ m.def("remap_grid",py::overload_cast<GCLgrid3d&, const BasicGCLgrid&>(&remap_gri
   py::arg("g"),
   py::arg("parent") )
 ;
+m.def("extract_component",[](const GCLvectorfield3d& f,const int icomp) {
+  return (std::unique_ptr<GCLscalarfield3d>
+     (pwmig::gclgrid::extract_component(f,icomp)));
+}
+)
+;
+
 }
 }  // end namespace pwmigpy
 }  // end namespace pwmig
