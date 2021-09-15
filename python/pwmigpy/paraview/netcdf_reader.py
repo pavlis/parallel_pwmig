@@ -338,6 +338,7 @@ def netcdf_arrays_to_GCLfield(lon,lat,depth,V,vkey=None,
     dy=radius*np.deg2rad(delta_lat)
     dx=radius*np.deg2rad(delta_lon)*np.cos(abs(np.deg2rad(center_lat)))
     g=GCLgrid3d(nx,ny,nz)
+    g.name=gridname
     g.r0=r0
     g.lat0=np.deg2rad(lat0)
     g.lon0=np.deg2rad(lon0)
