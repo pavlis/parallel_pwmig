@@ -1309,6 +1309,7 @@ GCLvectorfield::GCLvectorfield(const Metadata& md) : GCLgrid(md)
 {
   try{
     const string base_error("GCLvectorfield Metadata contructor:  ");
+    this->nv = md.get_int("nv");   // frozen name
     if(this->n1 <= 0 || this->n2 <=0 || this->nv <=0)
     {
       stringstream ss;
@@ -1328,6 +1329,7 @@ GCLvectorfield3d::GCLvectorfield3d(const Metadata& md) : GCLgrid3d(md)
 {
   try{
     const string base_error("GCLvectorfield3d Metadata contructor:  ");
+    this->nv = md.get_int("nv");   // frozen name
     if(this->n1 <= 0 || this->n2 <= 0 || this->n3 <= 0 || this->nv <= 0)
     {
       stringstream ss;

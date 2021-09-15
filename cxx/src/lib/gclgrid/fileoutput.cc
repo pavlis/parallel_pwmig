@@ -102,9 +102,33 @@ void pfsave_attributes(const Metadata& attributes,const string base)
     fp=fopen(pffilename.c_str(),"r");
     if(fp == NULL)
     {
+      /* The implementation of Metadata::operator<< unfortunately puts a
+      type field in output so we have key, type, value.  To corectly parse
+      the data files this produces with mspass::utility::AntelopePf's file
+      constructor we have to remove the type field. Since the data are already
+      strings this is relatively easy BUT it won't work if the value field has
+      embedded blanks. */
+      try {
       outstrm.open(pffilename.c_str(),ios::out);
-	    outstrm << ss.str();
+      stringstream buf(ss.str());
+      /* Rather than use a data driven loop we know the size of the
+      number of keys from the size of attributes. */
+      size_t nattributes;
+      nattributes=attributes.size();
+      for(auto k=0;k<nattributes;++k)
+      {
+        /* We need to use getline to handle emtpy strings as value */
+        char linebuf[512];
+        buf.getline(linebuf,512);
+        stringstream lbuf(linebuf);
+        string key,typ,val;
+        lbuf >> key;
+        lbuf >> typ;
+        lbuf >> val;
+        outstrm << key << " "<<val<<endl;
+      }
       outstrm.close();
+    }catch(...){throw;}
     }
     else
     {
