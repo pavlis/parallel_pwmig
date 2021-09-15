@@ -27,6 +27,45 @@ using namespace pwmig::gclgrid;
  elements are added through member functions that convert to a
  geographical reference frame.  The concepts of the library are described in
  a paper by Fan and Pavlis (2006)
+
+ The version here is several generations removedf rom the original Fan and Pavlis
+ paper version.  It probably should have been burned and rewritten as it is
+ now heavily patched.  Two large changes have happened since the original:
+ 1.  Addition of file save and file-based constructors.  Created to
+     support first full open source version in the mid 2010s.
+ 2.  Revisions to assimilate the library into mspass including python bindings.
+     That was done in 2021 and led to an even larger set of changes.
+
+ For there are some common oddities needed to mesh with mspass and the
+ database save method implemented in python.
+ 1.  The file saves are used as the only method to save the object for now.
+     I used the pfhdr format functions.  Something important added was
+		 an error trap that forbids the ".pf" part of the file created from
+		 being reused.  The original file format supported multiple data in
+		 the same file, but anachronisms make that not really functional in the
+		 mspass framework.  Beware that each save must have a unique name.
+		 This is guaranteed in the python wrapper code by using a mongodb objectid
+		 in the file name, but if you use this version in C be care of that
+		 oddity.
+	2. There are some frozen metadata attributes the mongodb saves have to
+	   coordinate with this C++ code.  For the documentation here are
+		 the keys that need are set in the pf that are not part of the object
+		 attributes:
+
+		 dir
+     grid_data_file_extension
+     grid_data_file
+     grid_data_foff
+     field_data_file
+     field_data_file_extension
+     field_data_foff
+
+	3.  Curently the pfhdr format has two frozen "file extensions".  The
+	    attributes are stored as a pf file with the extension ".pf".  The
+			internal array data are stored in contigous blocks read with fread
+			for the large double array into a buffer.  This helps make the
+			readers very fast.  These file have the frozen extension ".dat"
+
  \author Gary L. Pavlis
 */
 //==================================================================
@@ -206,7 +245,9 @@ public:
 	/*! Need explicit virtual destructor for this base class.
 	An oddity of inheritance discussed in many C++ textbooks.
 	*/
-  virtual ~BasicGCLgrid(){};
+  virtual ~BasicGCLgrid(){}
+
+	;
 /*! Copy constructor.*/
 	BasicGCLgrid(const BasicGCLgrid& old);
 /*!

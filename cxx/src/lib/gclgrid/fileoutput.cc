@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <fstream>
 #include <typeinfo>
 #include <boost/core/demangle.hpp>
@@ -87,12 +88,25 @@ void pfsave_attributes(const Metadata& attributes,const string base)
 {
     string pffilename=base+".pf";
     try {
-	ostringstream ss;
-	ss << attributes;
+	      ostringstream ss;
+	      ss << attributes;
         ofstream outstrm;
-        outstrm.open(pffilename.c_str(),ios::out);
-	outstrm << ss.str();
-        outstrm.close();
+        /* We cannot allow duplicate file names or we can overwrite
+        the pf section of another file.  The pdhdr format allows multiple
+        fields sharing a common grid geometry to be saved it the file, but
+        that has to be handled separately from this function.  Here we
+        throw an exception if the user tries. */
+        if(access(pffilename.c_str(),F_OK) == 0)
+        {
+          outstrm.open(pffilename.c_str(),ios::out);
+	        outstrm << ss.str();
+          outstrm.close();
+        }
+        else
+        {
+          throw GCLgridError("pfsave_attributes:  file="+pffilename
+                + " exists.   The .pf file of attributes must have a unique name");
+        }
     }catch(...){
         throw GCLgridError(string("pfsave_attributes failed on file")
                 + pffilename);
@@ -104,7 +118,7 @@ void pfsave_attributes(const Metadata& attributes,const string base)
    took this path as I think it will simply be clearer.  Beware, however,
    that an error in one of these procedures nearly guarantees a parallel
    error in the other. */
-void pfhdr_save_griddata(const GCLgrid& g,const string base)
+size_t pfhdr_save_griddata(const GCLgrid& g,const string base)
 {
     try {
         const string base_error("pfhdr format GCLgrid (2d)  writing routine:  ");
@@ -115,12 +129,17 @@ void pfhdr_save_griddata(const GCLgrid& g,const string base)
         if(fp==NULL)
             throw GCLgridError(base_error + "fopen filed on file="
                     + fullname);
-        if(ftell(fp)!=0)
+        size_t foff;
+        foff=ftell(fp);
+        if(foff!=0)
         {
+          if(fseek(fp,foff,SEEK_SET))
+          {
             fclose(fp);
             throw GCLgridError(base_error + "file "
                     + fullname
-                    + " exists\nChange file name or move this file away");
+                    + " fseek failed trying to append grid array data seection");
+          }
         }
         size_t npoints;
         npoints=g.n1*g.n2;
@@ -149,10 +168,11 @@ void pfhdr_save_griddata(const GCLgrid& g,const string base)
                     + fullname +"\nOutput file is incomplete");
         }
         fclose(fp);
+        return foff;
     } catch(...){throw;};
 }
 /* 3D equivalent to above */
-void pfhdr_save_griddata(const GCLgrid3d& g,const string base)
+size_t pfhdr_save_griddata(const GCLgrid3d& g,const string base)
 {
     try {
         const string base_error("pfhdr format GCLgrid3d writing routine:  ");
@@ -163,12 +183,17 @@ void pfhdr_save_griddata(const GCLgrid3d& g,const string base)
         if(fp==NULL)
             throw GCLgridError(base_error + "fopen filed on file="
                     + fullname);
-        if(ftell(fp)!=0)
+        size_t foff;
+        foff=ftell(fp);
+        if(foff!=0)
         {
+          if(fseek(fp,foff,SEEK_SET))
+          {
             fclose(fp);
             throw GCLgridError(base_error + "file "
                     + fullname
-                    + " exists\nChange file name or move this file away");
+                    + " fseek failed trying to append grid array data seection");
+          }
         }
         size_t npoints;
         npoints=g.n1*g.n2*g.n3;
@@ -197,6 +222,7 @@ void pfhdr_save_griddata(const GCLgrid3d& g,const string base)
                     + fullname+"\nOutput file is incomplete");
         }
         fclose(fp);
+        return foff;
     } catch(...){throw;};
 }
 /* This is a generic writer for the field data of any GCLgrid based
@@ -255,7 +281,9 @@ Metadata GCLgrid::save(const string fname, string dir,const string format)
         if(format==default_output_format)
         {
             pfsave_attributes(attributes,fbase);
-            pfhdr_save_griddata(*this,fbase);
+            size_t foff;
+            foff=pfhdr_save_griddata(*this,fbase);
+            attributes.put_long("grid_data_foff",foff);
         }
         else
             throw GCLgridError(base_error
@@ -276,7 +304,9 @@ Metadata GCLgrid3d::save(const string fname, const string dir,const string forma
         if(format==default_output_format)
         {
             pfsave_attributes(attributes,fbase);
-            pfhdr_save_griddata(*this,fbase);
+            size_t foff;
+            foff=pfhdr_save_griddata(*this,fbase);
+            attributes.put_long("grid_data_foff",foff);
         }
         else
             throw GCLgridError(base_error
@@ -325,7 +355,9 @@ Metadata GCLvectorfield::save(const string fname, string dir,const string format
         if(format==default_output_format)
         {
             pfsave_attributes(attributes,fbase);
-            pfhdr_save_griddata(*this,fbase);
+            size_t foff;
+            foff=pfhdr_save_griddata(*this,fbase);
+            attributes.put_long("grid_data_foff",foff);
         /* To allow using common code to save the grid we have to
            segregate writing the field data.  Currently only support
            one format so this issue does not come up as a restriction.
@@ -333,7 +365,6 @@ Metadata GCLvectorfield::save(const string fname, string dir,const string format
            reorganized. */
             string fbase=makepath(dir,fname);
             size_t npts=n1*n2*nv;
-            long foff;
             foff=pfhdr_save_field_data(fbase,&(val[0][0][0]),npts);
             attributes.put("field_data_foff",foff);
         }
@@ -355,9 +386,10 @@ Metadata GCLscalarfield3d::save(const string fname, const string dir,const strin
         if(format==default_output_format)
         {
             pfsave_attributes(attributes,fbase);
-            pfhdr_save_griddata(*this,fbase);
+            size_t foff;
+            foff=pfhdr_save_griddata(*this,fbase);
+            attributes.put_long("grid_data_foff",foff);
             size_t npts=n1*n2*n3;
-            long foff;
             foff=pfhdr_save_field_data(fbase,&(val[0][0][0]),npts);
             attributes.put("field_data_foff",foff);
         }
@@ -380,9 +412,10 @@ Metadata GCLvectorfield3d::save(const string fname, const string dir,const strin
         if(format==default_output_format)
         {
             pfsave_attributes(attributes,fbase);
-            pfhdr_save_griddata(*this,fbase);
+            size_t foff;
+            foff=pfhdr_save_griddata(*this,fbase);
+            attributes.put_long("grid_data_foff",foff);
             size_t npts=n1*n2*n3*nv;
-            long foff;
             foff=pfhdr_save_field_data(fbase,&(val[0][0][0][0]),npts);
             attributes.put("field_data_foff",foff);
         }
