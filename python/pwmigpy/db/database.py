@@ -16,17 +16,17 @@ from pwmigpy.ccore.gclgrid import (GCLgrid, GCLgrid3d, GCLscalarfield, GCLscalar
 
 
 def GCLdbsave_attributes(db, md, collection="GCLfielddata"):
-    """ 
+    """
     This function can be used to save attributes of a GCL object
-    stored in a Metadata container (md arg).  The save is 
-    what we called promiscuous in MsPASS because none of the 
-    attributes are given a type check.  That works here because 
-    this should only be used in conjunction with the C++ code 
-    that insulates this python function from type collisions. 
+    stored in a Metadata container (md arg).  The save is
+    what we called promiscuous in MsPASS because none of the
+    attributes are given a type check.  That works here because
+    this should only be used in conjunction with the C++ code
+    that insulates this python function from type collisions.
 
     :db: MongoDB database handle
     :md: Metatdata container to be inserted
-    :collection:  name of MongoDB collection into which md should 
+    :collection:  name of MongoDB collection into which md should
       be added.  (default GCLfieldata)
 
     :return: id of inserted doc
@@ -47,70 +47,70 @@ def GCLdbsave_attributes(db, md, collection="GCLfielddata"):
 def GCLdbsave(db, obj, collection="GCLfielddata",
               dir=None, dfile=None, auxdata=None):
     """
-    This procedure saves a GCLgrid object as a file with a parallel save 
+    This procedure saves a GCLgrid object as a file with a parallel save
     of the data attributes to MongoDB collection.
 
-    The family of data objects in the GCLgrid library all have a save 
+    The family of data objects in the GCLgrid library all have a save
     method that saves the data to a pair of files.  The (usually large)
-    arrays used to defined the grid and field data are saved to one 
-    file (name+".dat") with binary fwrite in C++ and the attributes that 
-    define the grid and field properties are stored in an text file with the 
+    arrays used to defined the grid and field data are saved to one
+    file (name+".dat") with binary fwrite in C++ and the attributes that
+    define the grid and field properties are stored in an text file with the
     ending ".pf".  This function adds a few additional parameters to those
-    stored in pf (notably the file names and foff data) and writes those 
-    to a MongoDB document.   Optionally auxdata can be used to add 
+    stored in pf (notably the file names and foff data) and writes those
+    to a MongoDB document.   Optionally auxdata can be used to add
     additional attributes to the mongodb document. That is often needed,
-    for example, to tag a particular data set or pieces of a data set 
+    for example, to tag a particular data set or pieces of a data set
     that need to be sorted out later.
 
-    :param db:  required MongoDB database handle. MUST be the 
-      mspasspy Database child of MongoDB's database handle as we call 
+    :param db:  required MongoDB database handle. MUST be the
+      mspasspy Database child of MongoDB's database handle as we call
       a mspass method in this function.
     :param obj:  GCLgrid related object to be saved (required)
-    :param collection:  MongoDB collection name to save the parametric 
+    :param collection:  MongoDB collection name to save the parametric
       data to (default is GCLfieldata).
-    :param dir:  file system directory name to write files containing 
-      the data image to save.  Good practice is to use a fully qualified 
-      path as the string is copied verbatim to mongodb as the dir 
-      attribute.  The default is None.  When None the current working 
-      directory will be used and dir will be set to the full qualified 
-      path for the current directory.   
-    :param dfile:  name to use for the file name component of the output 
-      files.  Note two files will be created with name dfile+".dat" and 
+    :param dir:  file system directory name to write files containing
+      the data image to save.  Good practice is to use a fully qualified
+      path as the string is copied verbatim to mongodb as the dir
+      attribute.  The default is None.  When None the current working
+      directory will be used and dir will be set to the full qualified
+      path for the current directory.
+    :param dfile:  name to use for the file name component of the output
+      files.  Note two files will be created with name dfile+".dat" and
       difle+".pf" containing binary data and parametric data respectively.
-      The default is None, and is highly recommended.  When set as None 
-      the file name is created as the grid "name" attribute combined with 
-      a unique objectid string using Mongodb's ObjectId generator. 
+      The default is None, and is highly recommended.  When set as None
+      the file name is created as the grid "name" attribute combined with
+      a unique objectid string using Mongodb's ObjectId generator.
+      WARNING, however, is that the objectid created will NOT
+      match the "_id" of the document created by this call.
+      We are just using the ObjectId as a convenience fway to create a uuid.
       Specifically if, for example, the "name" tag in obj was "usarray"
       the dfile name created with default would be something like this:
-          usarray_60781ece54ce3ee01bab9449.dat 
+          usarray_60781ece54ce3ee01bab9449.dat
           and
           usarray_60781ece54ce3ee01bab9449.pf
+      Be warned that if you use custom dfile name inputs you must be
+      careful to keep the names unique.  The writer will abort
+      with RuntimeError exception if the pf file created as dfile+".pf"
+      already exists.
 
-    :param auxdata:  optional metadata (or dict - any dict like container 
-      should work) of additional attributes to be saved in the output 
-      mongodb document.  
+    :param auxdata:  optional metadata (or dict - any dict like container
+      should work) of additional attributes to be saved in the output
+      mongodb document.
 
-    :return:  Metadata container copy of saved attributes
+    :return:  Metadata container copy of saved attributes with the id of
+    the saved record added with key "_id"
     """
     # This use of an exception mechanism is a brutal way to validate that
     # obj is a GCL related object.  If name doesn't resolve it will
-    # throw and exception
+    # throw an exception
     try:
         objname = obj.name
     except:
         raise MsPASSError("GCLdbsave:  Invalid data - required arg 2 must by a child of BasicGCLgrid",
                           "Invalid")
-
-    # we first save the attributes (after converting to metadata with get_attributes)
-    # to MongoDB so we can fetch the id to produce a file name
-    # we can guarantee is unique
     dbh = db[collection]
-    attributes = obj.get_attributes()
-    if auxdata != None:
-        for k in auxdata.keys():
-            attributes[k] = auxdata[k]
 
-    id = GCLdbsave_attributes(db, attributes)
+
     # Default to current directory if dir is not defined
     if dir == None:
         cwd = os.getcwd()
@@ -118,6 +118,7 @@ def GCLdbsave(db, obj, collection="GCLfielddata",
     else:
         outdir = os.path.abspath(dir)
     if dfile == None:
+        id = ObjectId()
         outfile = objname+"_"+str(id)
     else:
         outfile = dfile
@@ -128,27 +129,50 @@ def GCLdbsave(db, obj, collection="GCLfielddata",
     # If successful md will be a metadata container whose contents
     # we will write to mongodb.
     md = obj.save(outfile, outdir, "pfhdr")
+    # Now we have to add these attributes that are not part of the
+    # object's internal attributes returned in md OR the
+    # foff parameters that can only be known during the save
+    # that is grid_data_foff and field_data_foff
+    md['dir']=outdir
+    md['grid_data_file']=outfile
+    md['field_data_file']=outfile
+    # these are a bit of a kludge.  They are frozen in the C++ library
+    # but we need them here to mesh with the C++  api without changing it
+    md['field_data_file_extension']='dat'
+    md['grid_data_file_extension']='dat'
+    # WE add this as a useful more generic name  - it is ignored by reader
+    md['dfile']=outfile
 
-    # the save method puts a copy of grid data and field data
-    # in a single file.  For now we just tag this with dir and dfile
-    # reader (below) expands these because metdata constructor used
-    # there allows field and grid data to be in different files
-    addon = dict()
-    addon['dir'] = outdir
-    addon['dfile'] = outfile
     if auxdata != None:
         for k in auxdata:
-            addon[k]=auxdata[k]
-    upout = dbh.update_one({'_id': id}, {'$set': addon})
-    if upout.matched_count != 1:
-        raise MsPASSError("GCLdbsave:  upsert of dir and dfile failed - this is not normal",
-                          "Fatal")
-    md['dir'] = outdir
-    md['dfile'] = outfile
+            # We cannot allow auxdata to set any of the parameters set
+            # previously or mysterious results could fullow, most of them bad
+            if k in md:
+                message = 'GCLdbsave:  key=',k,' is defined in auxdata dict\nNot allowed because that is a keyword in the required parameters'
+                raise MsPASSError(message,'Fatal')
+            md[k]=auxdata[k]
+    id = GCLdbsave_attributes(db, md)
+    md['_id']=id
     return md
 
 
 def GCLdbread(db, id_or_doc, collection="GCLfielddata"):
+    """
+    These need to be defined in the database:
+    dir
+    grid_data_file_extension
+    grid_data_file
+    grid_data_foff
+    field_data_file
+    field_data_file_extension
+    field_data_foff
+
+
+    save method set only the following (other than object attributes):
+    grid_data_foff
+    field_data_foff
+
+    """
     dbcol = db[collection]
     if isinstance(id_or_doc, ObjectId):
         doc = dbcol.find_one({"_id": id_or_doc})
@@ -158,30 +182,12 @@ def GCLdbread(db, id_or_doc, collection="GCLfielddata"):
         raise MsPASSError("GCLdbread:  Arg 2 has invalid type - must be objectid or doc",
                           "Invalid")
     md = Metadata(doc)
-    # we only saved dir and dfile above but the constructors allow
-    # grid and field data to be in separate files.  With the current
-    # file structure the following will work.  If that changes this
-    # section, of course, must change
-    dir = doc['dir']
-    dfile = doc['dfile']
-    md['grid_data_file'] = dfile
-    # special for current format - not generic at all
-    if not md.is_defined('grid_data_file_extension'):
-        md['grid_data_file_extension'] = 'dat'
-        # assume also not defined if other was not
-        md['field_data_file_extension'] = 'dat'
-    # for now default format assumes grid data are at offset 0.  If the
-    # attribute grid_data_foff is set it will be used automatically so we
-    # just don't test for existence
-    md['field_data_dir'] = dir
-    md['field_data_dfile'] = dfile
-    # Assume field_data_foff was already set - hidden in field
-    # save methods but irrelevant for grids only.
 
     # This attribute is is created by calling typeid in the C++ code.
-    # The names are demangled to make them readable.  Demangling 
-    # restores the full namespace typing of the symbols so we 
-    # get the following somewhat weird incantation.
+    # The names are demangled to make them readable.  Demangling
+    # restores the full namespace typing of the symbols so we
+    # get the following somewhat weird incantation.  This would
+    # be really ugly and nonportable if we didn't demangle the names
     objtype = md['object_type']
     if objtype == 'pwmig::gclgrid::GCLgrid':
         return GCLgrid(md)
