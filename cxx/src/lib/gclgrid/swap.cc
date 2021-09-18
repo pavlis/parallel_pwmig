@@ -1,6 +1,8 @@
 #include <typeinfo>
 #include <sys/types.h>
 #include <iostream>
+#include "mspass/utility/Metadata.h"
+#include "pwmig/gclgrid/gclgrid_subs.h"
 #include "pwmig/gclgrid/swapbytes_pwmig.h"
 
 
@@ -8,6 +10,30 @@ namespace pwmig::gclgrid
 {
 using namespace std;
 using namespace pwmig::gclgrid;
+
+bool byte_swap_is_needed(const mspass::utility::Metadata& md)
+{
+  try{
+    const string base_error("byte_swap_is_needed:  ");
+    string datatype("u8");
+    if(md.is_defined("datatype"))
+    {
+      datatype=md.get_string("datatype");
+    }
+	  if( !((datatype=="u8") || (datatype=="t8") ) )
+		  throw GCLgridError(base_error
+						+ "Do not know how to handle datatype="
+						+ datatype
+						+"\nMust be u8 or t8");
+	  bool little_endian=IntelByteOrder();
+	  if( (datatype=="t8") && little_endian)
+      return true;
+	  else if( (datatype=="u8") && !little_endian)
+      return true;
+	  else
+      return false;
+  }catch(...){throw;};
+}
 /* This is the old antelope routine to swap bit endian 32 bit vectors  of
    length n*/
 void vectorswap4(int *in,int *out,int n)

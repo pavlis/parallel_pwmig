@@ -61,7 +61,7 @@ Metadata load_common_GCL_attributes(const BasicGCLgrid *g)
    the Metadata object. This procedure depends upon
    the implementation here that 3d objects are all
    children of a GCLgrid3d.*/
-void load_3d_attributes(GCLgrid3d& g, Metadata& m)
+void load_3d_attributes(const GCLgrid3d& g, Metadata& m)
 {
     m.put("dx3_nom",g.dx3_nom);
     m.put("n3",g.n3);
@@ -455,7 +455,7 @@ Metadata GCLvectorfield3d::save(const string fname, const string dir,const strin
 type isn the GCL library. It is very weird to have them here, but it allow us to
 use the functions in this file that are intended for use only within file scope.
 i.e. they are intentionally not in the gclgrid.h include file. */
-Metadata GCLgrid::get_attributes()
+Metadata GCLgrid::get_attributes() const
 {
     Metadata attributes;
     attributes=load_common_GCL_attributes(this);
@@ -463,34 +463,34 @@ Metadata GCLgrid::get_attributes()
 }
 /* this is identical to GCLgrid - needed because casts used in
 load_common_GCL_attributes get the object type */
-Metadata GCLscalarfield::get_attributes()
+Metadata GCLscalarfield::get_attributes() const
 {
     Metadata attributes;
     attributes=load_common_GCL_attributes(this);
     return attributes;
 }
-Metadata GCLvectorfield::get_attributes()
+Metadata GCLvectorfield::get_attributes() const
 {
   Metadata attributes;
   attributes=load_common_GCL_attributes(this);
   attributes.put("nv",this->nv);
   return attributes;
 }
-Metadata GCLgrid3d::get_attributes()
+Metadata GCLgrid3d::get_attributes() const
 {
   Metadata attributes;
   attributes=load_common_GCL_attributes(this);
   load_3d_attributes(*this,attributes);
   return attributes;
 }
-Metadata GCLscalarfield3d::get_attributes()
+Metadata GCLscalarfield3d::get_attributes() const
 {
   Metadata attributes;
   attributes=load_common_GCL_attributes(this);
   load_3d_attributes(*this,attributes);
   return attributes;
 }
-Metadata GCLvectorfield3d::get_attributes()
+Metadata GCLvectorfield3d::get_attributes() const
 {
   Metadata attributes;
   attributes=load_common_GCL_attributes(this);

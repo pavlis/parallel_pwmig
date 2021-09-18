@@ -1,9 +1,11 @@
 #include <math.h>
+#include "mspass/utility/dmatrix.h"
 #include "pwmig/dsap/coords.h"
 #include "misc/blas.h"
 #include "pwmig/gclgrid/RegionalCoordinates.h"
 namespace pwmig::gclgrid
 {
+using mspass::utility::dmatrix;
 using pwmig::gclgrid::Cartesian_point;
 using pwmig::gclgrid::Geographic_point;
 RegionalCoordinates::RegionalCoordinates()
@@ -35,8 +37,8 @@ RegionalCoordinates::RegionalCoordinates(const double olat, const double olon,
     double x0[3], xpole[3], xcros[3];
 
     /* This is copied from set_transformation_matrix in gclgrid library.
-       latlon call defines great circle path to a pole defined by 
-       azimuth_y.  Rest is vector manipulation to set up Cartesian 
+       latlon call defines great circle path to a pole defined by
+       azimuth_y.  Rest is vector manipulation to set up Cartesian
        system with x2 along azimuth_y at origin */
     latlon(lat0, lon0, M_PI_2,azimuth_y, &pole_lat, &pole_lon);
     dsphcar(lon0,lat0,x0);
@@ -85,7 +87,7 @@ RegionalCoordinates& RegionalCoordinates::operator=(const RegionalCoordinates& p
     }
     return(*this);
 }
-Cartesian_point RegionalCoordinates::cartesian(const double lat, 
+Cartesian_point RegionalCoordinates::cartesian(const double lat,
   const double lon, const double r) const
 {
     Cartesian_point p;
@@ -130,7 +132,7 @@ Geographic_point RegionalCoordinates::geographic(const double xin[3]) const
     /*
     First apply rotation matrix to put this point in the
     standard geographic reference frame.  We use a safe
-    BLAS algorithm for the multiply of the transpose 
+    BLAS algorithm for the multiply of the transpose
     */
     for(i=0;i<3;++i) dxp[i]=0.0;
     daxpy(3,xin[0],gtoc_rmatrix[0],1,dxp,1);
@@ -171,11 +173,11 @@ Geographic_point RegionalCoordinates::origin() const
     gp.r=r0;
     return(gp);
 }
-/* This method returns a transformation matrix that will take 
+/* This method returns a transformation matrix that will take
    a point in a local geographic reference frame (e=x1, n=x2, z=x3)
    and transform it to the coordinate system used in this object.
-   It works by a crude finite difference approach.   
- 
+   It works by a crude finite difference approach.
+
  lat and lon are point to compute matrix and should be in radians*/
 
 dmatrix RegionalCoordinates::l2rtransformation

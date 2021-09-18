@@ -11,10 +11,7 @@
 #include "pwmig/gclgrid/swapbytes_pwmig.h"
 namespace pwmig::gclgrid
 {
-using namespace std;
-using mspass::utility::dmatrix;
-using mspass::utility::Metadata;
-using namespace pwmig::gclgrid;
+//using namespace pwmig::gclgrid;
 
 //==================================================================
 /*!
@@ -71,9 +68,9 @@ using namespace pwmig::gclgrid;
 //==================================================================
 
 /*! Standardize name for output file format keyword.*/
-const string default_output_format("pfhdr");
+const std::string default_output_format("pfhdr");
 /*! Standardize name for output file data component extention. */
-const string dfileext("dat");
+const std::string dfileext("dat");
 
 /*!
  This data structure is used to encapsulate data to describe a point on
@@ -164,7 +161,7 @@ public:
 /*!
  Name assigned to this object
 */
-	string name;
+	std::string name;
 /*!
  Latitude (radians) of origin of the grid's Cartesian coordinate system.
 */
@@ -278,7 +275,7 @@ public:
 /*!
  Returns the transformation matrix for this grid as a 3x3 dmatrix object.
 */
-	dmatrix fetch_transformation_matrix() const;
+	mspass::utility::dmatrix fetch_transformation_matrix() const;
 /*!
  Returns a newly allocated 3 vector of double containing a copy of the translation
  vector defining the GCLgrid transformation property.  The user must be sure to
@@ -355,7 +352,7 @@ implementation we always save the grid and field data to files, but the
 attributes are saved in MongoDB.  Because Metadata maps cleanly to MongoDB's
 name-value pair paradigm that works as it does in MsPASS for seismic data.
 */
-  virtual Metadata get_attributes()=0;
+  virtual mspass::utility::Metadata get_attributes() const = 0;
 /*!
  Comparison of two grids for equality.  Equality in this context is NOT the obvious.
  Equality means the transformation properties of the two grids being compared are the same.
@@ -447,7 +444,7 @@ public:
   \param jorigin 2 axis grid index of the origin in generalized coordinate grid frame.
 
 */
-	GCLgrid(const int n1size, const int n2size, const string n,
+	GCLgrid(const int n1size, const int n2size, const std::string n,
 		const double la0, const double lo0,
 		const double radius0, const double az, double dx1n, const double dx2n,
 		const int iorigin, const int jorigin);
@@ -471,7 +468,7 @@ public:
           this constructor.
 
           */
-  GCLgrid(const string fname, const string format=default_output_format);
+  GCLgrid(const std::string fname, const std::string format=default_output_format);
 	/*! Metadata driven constructor.
 
 	This constructor was added to allow this package to work with MongoDB.
@@ -502,7 +499,7 @@ public:
 	\throw GCLgridError for a long list of possible failuers.   Any
 	  exceptions mean the object was not constucted.
 	 */
-	GCLgrid(const Metadata& md);
+	GCLgrid(const mspass::utility::Metadata& md);
 /*! Standard copy constructor.*/
 	GCLgrid(const GCLgrid&);  //standard copy constructor
 /*!
@@ -544,8 +541,8 @@ public:
 
       \exception GCLgridError is throw if save fails.
     */
-    Metadata save(const string fname, const string dir,
-            const string format=default_output_format);
+    mspass::utility::Metadata save(const std::string fname, const std::string dir,
+            const std::string format=default_output_format);
 	/*!
 	 Find the index position of a point in a GCLgrid.
 	 This is a low level function to find the location of a point
@@ -616,7 +613,7 @@ public:
 	double depth(const int i1, const int i2) const;
 
 	/*! Returns all scalar attributes of the object in Metadata container. */
-	virtual Metadata get_attributes();
+	virtual mspass::utility::Metadata get_attributes() const;
 
 	/*! Sets extents attributes based on min and max values */
 	void compute_extents();
@@ -744,7 +741,7 @@ public:
 
 
 */
-	GCLgrid3d(const int n1size, const int n2size, const int n3size, const string n,
+	GCLgrid3d(const int n1size, const int n2size, const int n3size, const std::string n,
 		const double la0, const double lo0, const double radius0, const double az,
 		const double dx1n, const double dx2n, const double dx3n,
 		const int iorigin, const int jorigin);
@@ -768,7 +765,7 @@ public:
           likely want to force default and use only one argument to
           this constructor.
           */
-        GCLgrid3d(const string fname, const string format=default_output_format,
+        GCLgrid3d(const std::string fname, const std::string format=default_output_format,
                 const bool fl=true);
 
 	/*! Metadata driven constructor.
@@ -801,7 +798,7 @@ public:
 	\throw GCLgridError for a long list of possible failuers.   Any
 		exceptions mean the object was not constucted.
 	 */
-	GCLgrid3d(const Metadata& md);
+	GCLgrid3d(const mspass::utility::Metadata& md);
 	/** Standard copy constructor. */
 	GCLgrid3d(const GCLgrid3d&);
 	/** Standard assignment operator. */
@@ -830,8 +827,8 @@ public:
 						 object sans grid data.
           \exception GCLgridError is throw if save fails.
         */
-        Metadata save(const string fname, const string dir,
-                const string format=default_output_format);
+        mspass::utility::Metadata save(const std::string fname, const std::string dir,
+                const std::string format=default_output_format);
 	/*!
 	 Find the index position of a point in a GCLgrid3d object.
 	 This is a low level function to find the location of a point
@@ -907,7 +904,7 @@ public:
 	*/
 	double depth(const int i1,const int i2,const int i3) const;
 	/*! Returns all scalar attributes of the object in Metadata container. */
-	virtual Metadata get_attributes();
+	virtual mspass::utility::Metadata get_attributes() const;
 
 	/*! Sets extents attributes based on min and max values */
 	void compute_extents();
@@ -1037,7 +1034,7 @@ public:
           in some situations and to read a grid linked to a field
           ignoring the field data.
           */
-  GCLscalarfield(const string fname, const string format=default_output_format,
+  GCLscalarfield(const std::string fname, const std::string format=default_output_format,
                 const bool enforce_object_type=true);
 
 	/*! Metadata driven constructor.
@@ -1075,7 +1072,7 @@ public:
 	\throw GCLgridError for a long list of possible failuers.   Any
 		exceptions mean the object was not constucted.
 	 */
-  GCLscalarfield(const Metadata& md);
+  GCLscalarfield(const mspass::utility::Metadata& md);
 	/*!
 	 Destructor.
 	 Nontrivial destructor as it has to destroy components
@@ -1111,10 +1108,10 @@ public:
 
           \exception GCLgridError is throw if save fails.
         */
-  Metadata save(const string fname, const string dir,
-                const string format=default_output_format);
+  mspass::utility::Metadata save(const std::string fname, const std::string dir,
+                const std::string format=default_output_format);
 	/*! Returns all scalar attributes of the object in Metadata container. */
-	Metadata get_attributes();
+	mspass::utility::Metadata get_attributes() const;
 	/*! Get the field value at specified grid cell */
 	double get_value(const int i, const int j) const;
 	/*! Sets the value of the field variable at grid cell i,j */
@@ -1233,7 +1230,7 @@ public:
           in some situations and to read a grid linked to a field
           ignoring the field data.
           */
-  GCLvectorfield(const string fname, const string format=default_output_format,
+  GCLvectorfield(const std::string fname, const std::string format=default_output_format,
                 const bool enforce_object_type=true);
 	/*! Metadata driven constructor.
 
@@ -1270,7 +1267,7 @@ public:
 	\throw GCLgridError for a long list of possible failuers.   Any
 		exceptions mean the object was not constucted.
 	 */
-	GCLvectorfield(const Metadata& md);
+	GCLvectorfield(const mspass::utility::Metadata& md);
 	/** Standard assignment operator. */
 	GCLvectorfield& operator=(const GCLvectorfield&);
 	/*!
@@ -1306,8 +1303,8 @@ public:
           \exception GCLgridError is throw if save fails.
         */
 
-  Metadata save(const string fname, const string dir,
-                const string format=default_output_format);
+  mspass::utility::Metadata save(const std::string fname, const std::string dir,
+                const std::string format=default_output_format);
 	/*! Get the field value at specified grid cell */
 	std::vector<double> get_value(const int i, const int j) const;
 	/*! Set the field value at grid point i,j.
@@ -1366,7 +1363,7 @@ public:
 	*/
 	double *interpolate(const double x1p, const double x2p, const double x3p);
 	/*! Returns all scalar attributes of the object in Metadata container. */
-	Metadata get_attributes();
+	mspass::utility::Metadata get_attributes() const;
 	/*!
 	 stream output operator for a vector field.
 	 Format is:
@@ -1433,8 +1430,8 @@ public:
           likely want to force default and use only one argument to
           this constructor.
           */
-        GCLscalarfield3d(const string fname,
-					const string format=default_output_format);
+        GCLscalarfield3d(const std::string fname,
+					const std::string format=default_output_format);
 
 	/*! Metadata driven constructor.
 
@@ -1472,7 +1469,7 @@ public:
 	\throw GCLgridError for a long list of possible failuers.   Any
 		exceptions mean the object was not constucted.
 	 */
-	GCLscalarfield3d(const Metadata& md);
+	GCLscalarfield3d(const mspass::utility::Metadata& md);
 	/*!
 	Destructor.
 	Note the same precautions about application of the default constructor as noted
@@ -1512,8 +1509,8 @@ public:
 						 object sans grid data.
           \exception GCLgridError is throw if save fails.
         */
-        Metadata save(const string fname, const string dir,
-                const string format=default_output_format);
+        mspass::utility::Metadata save(const std::string fname, const std::string dir,
+                const std::string format=default_output_format);
 	/*!
 	Add one field to another.
 
@@ -1543,7 +1540,7 @@ public:
 	*/
 	double interpolate(const double,const double,const double);
 	/*! Returns all scalar attributes of the object in Metadata container. */
-	Metadata get_attributes();
+	mspass::utility::Metadata get_attributes() const;
 	/*!
 	 stream output operator for a 3d scalar field.
 	 Format is:
@@ -1616,7 +1613,7 @@ public:
           likely want to force default and use only one argument to
           this constructor.
           */
-  GCLvectorfield3d(const string fname, const string format=default_output_format);
+  GCLvectorfield3d(const std::string fname, const std::string format=default_output_format);
 	/*! Metadata driven constructor.
 
 	This constructor was added to allow this package to work with MongoDB.
@@ -1653,7 +1650,7 @@ public:
 	\throw GCLgridError for a long list of possible failuers.   Any
 		exceptions mean the object was not constucted.
 	 */
-	GCLvectorfield3d(const Metadata& md);
+	GCLvectorfield3d(const mspass::utility::Metadata& md);
 	/*!
 	Destructor.
 	Note the same precautions about application of the default constructor as noted
@@ -1701,8 +1698,8 @@ public:
 						 object sans grid data.
           \exception GCLgridError is throw if save fails.
         */
-  Metadata save(const string fname, const string dir,
-                const string format=default_output_format);
+  mspass::utility::Metadata save(const std::string fname, const std::string dir,
+                const std::string format=default_output_format);
 	/*!
 	Add one field to another.
 
@@ -1727,7 +1724,7 @@ public:
 	*/
 	void operator*=(const double c);
 	/*! Returns all scalar attributes of the object in Metadata container. */
-	Metadata get_attributes();
+	mspass::utility::Metadata get_attributes() const;
 	/*! Interpolate a 3d scalar field.
 
 	Usage and caveats are the same as described in
@@ -1764,20 +1761,20 @@ double r0_ellipse(const double);
 
  see man(3) extract_gridline.
 */
-dmatrix *extract_gridline(const GCLgrid3d& grid, const int ix1,
+mspass::utility::dmatrix *extract_gridline(const GCLgrid3d& grid, const int ix1,
 	const int ix2, const int ix3, const int comp, const bool reverse);
 /*!
  Integrate a 3D field variable along a predefined path.
 
  see man(3) pathintegral.
 */
-vector<double> pathintegral(const GCLscalarfield3d& field,const dmatrix& path);
+vector<double> pathintegral(const GCLscalarfield3d& field,const mspass::utility::dmatrix& path);
 /*!
 Transformation from standard spherical to local coordinates.
 
  see man(3) ustrans.
 */
-dmatrix ustrans(const GCLgrid& g, const double lat, const double lon);
+mspass::utility::dmatrix ustrans(const GCLgrid& g, const double lat, const double lon);
 /*!
 Initialize a field with a layered structure.
 
@@ -1824,8 +1821,8 @@ two coordinate systems.  This function simplifies that process.
 
 \return a 3 X n matrix of points in the newpathgrid coordinate system.
 */
-dmatrix remap_path(const GCLgrid3d& parentgrid,
-	const dmatrix& path, const GCLgrid3d& newpathgrid);
+mspass::utility::dmatrix remap_path(const GCLgrid3d& parentgrid,
+	const mspass::utility::dmatrix& path, const GCLgrid3d& newpathgrid);
 /*!
 Saves a 3d scalarfield to a stream in Data Explorer's native forma (dx).
 
@@ -2146,201 +2143,8 @@ assumed big endian.  If the datatype and the actual do not match
 the function returns true.   If they match it returns false.  Note the
 default if datatype is not defined is little endian because Intel won the
 byte order wars a while back. */
-bool byte_swap_is_needed(const Metadata& md);
+bool byte_swap_is_needed(const mspass::utility::Metadata& md);
 
-
-template <typename GCLtype> void read_GCL2d_coord_arrays(GCLtype& d, const Metadata& md)
-{
-	try{
-		string base_error("read_GCL2d_coord_arrays:  ");
-		pfload_common_GCL_attributes(d,md);
-		bool need_to_swap_bytes;
-		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
-		string fname,dir,dfile,dfileext;
-		dir=md.get_string("dir");
-		dfile=md.get_string("grid_data_file");
-		fname=dir+"/"+dfile;
-		if(md.is_defined("grid_data_file_extension"))
-		{
-			dfileext=md.get_string("grid_data_file_extension");
-			fname+=".";
-			fname+=dfileext;
-		}
-	  FILE *fp = fopen(fname.c_str(),"r");
-	  if(fp == NULL)
-		  throw GCLgridError(base_error
-						+ "fopen failed on file "
-						+ dfile);
-    d.x1 = create_2dgrid_contiguous(d.n1,d.n2);
-	  d.x2 = create_2dgrid_contiguous(d.n1,d.n2);
-	  d.x3 = create_2dgrid_contiguous(d.n1,d.n2);
-	  /* Database stores data in geographic coordinates.
-	  File stores Cartesian form.  A bit inconsistent,
-	  but a design choice.  Storing geo coordinates
-	  would be a future format choice.*/
-	  int gridsize = d.n1*d.n2;
-		if(md.is_defined("grid_data_foff"))
-		{
-			long foff;
-			foff=md.get_long("grid_data_foff");
-			if(fseek(fp,foff,SEEK_SET))
-			{
-				stringstream ss;
-				ss << base_error
-				  << "fseek to offset="<<foff<<" failed for file="<<dfile;
-				throw GCLgridError(ss.str());
-			}
-		}
-	  if(fread(d.x1[0],sizeof(double),gridsize,fp) != gridsize)
-	  {
-		  fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x1 coordinate  array"
-						+ dfile);
-	  }
-	  if(fread(d.x2[0],sizeof(double),gridsize,fp) != gridsize)
-    {
-	  	fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x2 coordinate  array"
-						+ dfile);
-    }
-    if(fread(d.x3[0],sizeof(double),gridsize,fp) != gridsize)
-    {
-		  fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x3 coordinate array"
-						+ dfile);
-    }
-	  fclose(fp);
-	  if(need_to_swap_bytes)
-	  {
-		  swapdvec(d.x1[0],gridsize);
-		  swapdvec(d.x2[0],gridsize);
-		  swapdvec(d.x3[0],gridsize);
-	  }
-  }catch(...){throw;}
-};
-/* this is version for 3d grids - different because of dimensions of arrays */
-template <typename GCLtype> void read_GCL3d_coord_arrays(GCLtype& d, const Metadata& md)
-{
-	try{
-		string base_error("read_GCL3d_coord_arrays:  ");
-		pfload_common_GCL_attributes(d,md);
-		bool need_to_swap_bytes;
-		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
-		string fname,dir,dfile,dfileext;
-		dir=md.get_string("dir");
-		dfile=md.get_string("grid_data_file");
-		fname=dir+"/"+dfile;
-		if(md.is_defined("grid_data_file_extension"))
-		{
-			dfileext=md.get_string("grid_data_file_extension");
-			fname+=".";
-			fname+=dfileext;
-		}
-	  FILE *fp = fopen(fname.c_str(),"r");
-	  if(fp == NULL)
-		  throw GCLgridError(base_error
-						+ "fopen failed on file "
-						+ dfile);
-    d.x1 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
-	  d.x2 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
-	  d.x3 = create_3dgrid_contiguous(d.n1,d.n2,d.n3);
-	  /* Database stores data in geographic coordinates.
-	  File stores Cartesian form.  A bit inconsistent,
-	  but a design choice.  Storing geo coordinates
-	  would be a future format choice.*/
-	  int gridsize = d.n1*d.n2*d.n3;
-		if(md.is_defined("grid_data_foff"))
-		{
-			long foff;
-			foff=md.get_long("grid_data_foff");
-			if(fseek(fp,foff,SEEK_SET))
-			{
-				stringstream ss;
-				ss << base_error
-				  << "fseek to offset="<<foff<<" failed for file="<<dfile;
-				throw GCLgridError(ss.str());
-			}
-		}
-	  if(fread(d.x1[0][0],sizeof(double),gridsize,fp) != gridsize)
-	  {
-		  fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x1 coordinate  array"
-						+ dfile);
-	  }
-	  if(fread(d.x2[0][0],sizeof(double),gridsize,fp) != gridsize)
-    {
-	  	fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x2 coordinate  array"
-						+ dfile);
-    }
-    if(fread(d.x3[0][0],sizeof(double),gridsize,fp) != gridsize)
-    {
-		  fclose(fp);
-		  throw GCLgridError(base_error
-						+ "fread failed on file reading x3 coordinate array"
-						+ dfile);
-    }
-	  fclose(fp);
-	  if(need_to_swap_bytes)
-	  {
-		  swapdvec(d.x1[0][0],gridsize);
-		  swapdvec(d.x2[0][0],gridsize);
-		  swapdvec(d.x3[0][0],gridsize);
-	  }
-  }catch(...){throw;}
-};
-template <typename GCLtype> void read_fielddata(const Metadata& md,
-	  double *buffer,size_t buffer_size)
-{
-	const string base_error("read_fieldata:  ");
-	try{
-		string fname,dir,dfile,dfileext;
-		dir=md.get_string("dir");
-		dfile=md.get_string("field_data_file");
-		fname=dir+"/"+dfile;
-		if(md.is_defined("field_data_file_extension"))
-		{
-			dfileext=md.get_string("field_data_file_extension");
-			fname+=".";
-			fname+=dfileext;
-		}
-	  FILE *fp = fopen(fname.c_str(),"r");
-	  if(fp == NULL)
-		  throw GCLgridError(base_error
-						+ "fopen failed on file "
-						+ fname);
-		size_t foff;
-		foff=md.get_long("field_data_foff");
-		if(fseek(fp,foff,SEEK_SET))
-    {
-      fclose(fp);
-			stringstream ss;
-			ss<<base_error
-			  << "fseek to start of data area at byte offset="<<foff
-				<<" failed for file="<<fname<<endl;
-      throw GCLgridError(ss.str());
-    }
-		if(fread(buffer,sizeof(double),buffer_size,fp) != buffer_size)
-		{
-			fclose(fp);
-			stringstream ss;
-			ss<<base_error
-			  << "fread tried to read "<<buffer_size<<" bytes but failed"<<endl;
-			throw GCLgridError(ss.str());
-		}
-		bool need_to_swap_bytes;
-		need_to_swap_bytes=pwmig::gclgrid::byte_swap_is_needed(md);
-		if(need_to_swap_bytes)
-		{
-			swapdvec(buffer,buffer_size);
-		}
-	}catch(...){throw;};
-};
 
 }  // End of namespace
 #endif

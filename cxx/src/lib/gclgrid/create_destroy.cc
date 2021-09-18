@@ -7,90 +7,19 @@
 #include "pwmig/dsap/stock.h"
 #include "pwmig/dsap/coords.h"
 #include "pwmig/gclgrid/gclgrid.h"
+#include "pwmig/gclgrid/gclgrid_subs.h"
 #include "pwmig/gclgrid/swapbytes_pwmig.h"
-using namespace std;
-using namespace pwmig::gclgrid;
+
 namespace pwmig::gclgrid
 {
+using namespace std;
+using namespace pwmig::gclgrid;
 using mspass::utility::Metadata;
 using mspass::utility::AntelopePf;
 using mspass::utility::MsPASSError;
 using mspass::utility::rad;
-/* This series of internal procedures contain duplicate code
-   for file-based constructors.  They follow the class hierarchy.
-   Very convenient to put these in one place because the namespace
-   of attribute tags is hard coded into this code.
-   */
-template <class T>
-    void pfload_common_GCL_attributes(T& g,const Metadata& par)
-{
-    try {
-	/* This template loads common attributes from BasicGCLgrid base class*/
-	g.name=par.get_string("name");
-	g.lat0=par.get_double("origin_latitude");
-	g.lon0=par.get_double("origin_longitude");
-	// Immediately convert these to radians
-	g.lat0=rad(g.lat0);
-	g.lon0=rad(g.lon0);
-	g.r0=par.get_double("origin_radius");
-        g.azimuth_y=par.get_double("azimuth_y");
-        g.azimuth_y=rad(g.azimuth_y);
-        g.dx1_nom=par.get_double("dx1_nom");
-        g.dx2_nom=par.get_double("dx2_nom");
-	g.n1=par.get_int("n1");
-	g.n2=par.get_int("n2");
-	g.i0=par.get_int("i0");
-	g.j0=par.get_int("j0");
-        /* There perhaps should be a way to force these to be
-           computed, but for now we assume they were set by
-           a writer and we don't need to compute them. */
-        g.x1low=par.get_double("x1low");
-        g.x1high=par.get_double("x1high");
-        g.x2low=par.get_double("x2low");
-        g.x2high=par.get_double("x2high");
-        g.x3low=par.get_double("x3low");
-        g.x3high=par.get_double("x3high");
-        /* This perhaps should be set by caller, but since all
-           callers will need this do it here.*/
-        g.set_transformation_matrix();
-    } catch(MsPASSError& mderr)
-    {
-        throw GCLgridError(mderr.what());
-    }
-    catch(...) {throw;};
-}
-template <class T>
-    void pfload_3dgrid_attributes(T& g, const Metadata& par)
-{
-    try {
-        g.dx3_nom=par.get_double("dx3_nom");
-        g.n3=par.get_int("n3");
-        g.k0=par.get_int("k0");
-    } catch(...) {throw;};
-}
-bool byte_swap_is_needed(const Metadata& md)
-{
-  try{
-    const string base_error("byte_swap_is_needed:  ");
-    string datatype("u8");
-    if(md.is_defined("datatype"))
-    {
-      datatype=md.get_string("datatype");
-    }
-	  if( !((datatype=="u8") || (datatype=="t8") ) )
-		  throw GCLgridError(base_error
-						+ "Do not know how to handle datatype="
-						+ datatype
-						+"\nMust be u8 or t8");
-	  bool little_endian=IntelByteOrder();
-	  if( (datatype=="t8") && little_endian)
-      return true;
-	  else if( (datatype=="u8") && !little_endian)
-      return true;
-	  else
-      return false;
-  }catch(...){throw;};
-}
+
+
 /* These are create and free routines for 2d, 3d, and 4d arrays in plain C.
 They are used below for C++ constructors and destructors.  The MOST
 IMPORTANT thing to note about the constructions used here is that I have
@@ -376,7 +305,7 @@ GCLgrid::GCLgrid(const string fname, const string format)
             /* This would need to be a private method if
                attributes were not public.  Warning if interface
                is changed.*/
-            pfload_common_GCL_attributes<GCLgrid>(*this,params);
+            pwmig::gclgrid::pfload_common_GCL_attributes<pwmig::gclgrid::GCLgrid>(*this,params);
             /* Intentionally do not check for object_type to allow
              field constructors to use this */
            //string otype=params.get_string("object_type");
