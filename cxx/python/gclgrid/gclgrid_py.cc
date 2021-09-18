@@ -247,8 +247,8 @@ py::class_<GCLgrid,BasicGCLgrid>(m,"GCLgrid",py::buffer_protocol(),
     Metadata md=mspass::utility::restore_serialized_metadata_py(sbuf);
     /* Assume these are defined or we are hosed anyway*/
     int n1,n2;
-    n1=md.get<int>("n1");
-    n2=md.get<int>("n2");
+    n1=md.get_int("n1");
+    n2=md.get_int("n2");
     size_t array_size_from_md(n1*n2);
     GCLgrid result(n1,n2);
     /* This template function takes all the parameters from md and
@@ -346,9 +346,9 @@ py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
     Metadata md=mspass::utility::restore_serialized_metadata_py(sbuf);
     /* Assume these are defined or we are hosed anyway*/
     int n1,n2,n3;
-    n1=md.get<int>("n1");
-    n2=md.get<int>("n2");
-    n3=md.get<int>("n3");
+    n1=md.get_int("n1");
+    n2=md.get_int("n2");
+    n3=md.get_int("n3");
     size_t array_size_from_md(n1*n2*n3);
     GCLgrid3d result(n1,n2,n3);
     /* This template function takes all the parameters from md and
@@ -465,7 +465,7 @@ py::class_<GCLscalarfield3d,GCLgrid3d>(m,"GCLscalarfield3d","Three-dimensional g
         py::array_t<double, py::array::f_style> x1arr(size_arrays,&(self.x1[0][0][0]));
         py::array_t<double, py::array::f_style> x2arr(size_arrays,&(self.x2[0][0][0]));
         py::array_t<double, py::array::f_style> x3arr(size_arrays,&(self.x3[0][0][0]));
-        py::array_t<double, py::array::f_style> valarr(size_arrays,&(self.x3[0][0][0]));
+        py::array_t<double, py::array::f_style> valarr(size_arrays,&(self.val[0][0][0]));
         return py::make_tuple(sbuf,size_arrays,x1arr,x2arr,x3arr,valarr);
       }
   },
@@ -474,9 +474,9 @@ py::class_<GCLscalarfield3d,GCLgrid3d>(m,"GCLscalarfield3d","Three-dimensional g
     Metadata md=mspass::utility::restore_serialized_metadata_py(sbuf);
     /* Assume these are defined or we are hosed anyway*/
     int n1,n2,n3;
-    n1=md.get<int>("n1");
-    n2=md.get<int>("n2");
-    n3=md.get<int>("n3");
+    n1=md.get_int("n1");
+    n2=md.get_int("n2");
+    n3=md.get_int("n3");
     size_t array_size_from_md(n1*n2*n3);
     GCLscalarfield3d result(n1,n2,n3);
     /* This template function takes all the parameters from md and
@@ -569,10 +569,10 @@ py::class_<GCLvectorfield3d,GCLgrid3d>(m,"GCLvectorfield3d","Three-dimensional g
     Metadata md=mspass::utility::restore_serialized_metadata_py(sbuf);
     /* Assume these are defined or we are hosed anyway*/
     int n1,n2,n3,nv;
-    n1=md.get<int>("n1");
-    n2=md.get<int>("n2");
-    n3=md.get<int>("n3");
-    nv=md.get<int>("nv");
+    n1=md.get_int("n1");
+    n2=md.get_int("n2");
+    n3=md.get_int("n3");
+    nv=md.get_int("nv");
     size_t array_size_from_md(n1*n2*n3);
     GCLvectorfield3d result(n1,n2,n3,nv);
     /* This template function takes all the parameters from md and
