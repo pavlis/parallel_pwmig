@@ -390,9 +390,13 @@ py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
 py::class_<GCLscalarfield,GCLgrid>(m,"GCLscalarfield","Two-dimensional grid with scalar attributes at each node")
   .def(py::init<>())
   .def(py::init<const int, const int>())
+  /* The order here matters.  The copy constructor MUST appear before the
+  constructor that uses the GCLgrid base class.   If not the base class
+  constructor is called. The reason is that python resolves this kind of
+  overloading trying in the order that is defined by these bindings */
+  .def(py::init<const GCLscalarfield&>())
   .def(py::init<const GCLgrid&>())
   .def(py::init<const string, const string, const bool>())
-  .def(py::init<const GCLscalarfield&>())
   .def(py::init<const Metadata&>())
   .def("zero",&GCLscalarfield::zero,"Set all field attributes to 0")
   .def("save",&GCLscalarfield::save,"Save contents to a file")
@@ -402,18 +406,28 @@ py::class_<GCLscalarfield,GCLgrid>(m,"GCLscalarfield","Two-dimensional grid with
   .def("set_value",&GCLscalarfield::set_value,"Set the value at a specified grid point")
   .def("get_value",&GCLscalarfield::get_value,"Get the value at a specified grid point")
    /* This is normally the right syntax in pybind11 for operator+= but
-   not working here for some mysterious reason. Put aside until needed - solvable
-   problem just one of those annoying picky pybind11 details*/
-  //.def(py::self += py::self)
+   not working here for some mysterious reason.  After experimentation it is
+   clear the problem is that pybind11 demands operator+= have the signature
+     T& operator+=(const T& d);
+   That won't work with the design of gclgrid because the right hand side is
+   not const.   The iteration starting position is held internally.
+   Another method of handling sums is needed - adding an accumulate method
+   below
+  .def(py::self += py::self)
+  */
   .def(py::self *= double())
 ;
 
 py::class_<GCLvectorfield,GCLgrid>(m,"GCLvectorfield","Two-dimensional grid with vector attributes at each node")
   .def(py::init<>())
   .def(py::init<const int, const int,const int>())
+  /* The order here matters.  The copy constructor MUST appear before the
+  constructor that uses the GCLgrid base class.   If not the base class
+  constructor is called. The reason is that python resolves this kind of
+  overloading trying in the order that is defined by these bindings */
+  .def(py::init<const GCLvectorfield&>())
   .def(py::init<const GCLgrid&,const int>())
   .def(py::init<const string, const string, const bool>())
-  .def(py::init<const GCLvectorfield&>())
   .def(py::init<const Metadata&>())
   .def("zero",&GCLvectorfield::zero,"Set all field attributes to 0")
   .def("save",&GCLvectorfield::save,"Save contents to a file")
@@ -424,15 +438,20 @@ py::class_<GCLvectorfield,GCLgrid>(m,"GCLvectorfield","Two-dimensional grid with
   .def("set_value",&GCLvectorfield::set_value,"Set the value at a specified grid point")
   //.def(py::self += py::self)
   .def(py::self *= double())
+  //.def(py::self += py::self)
   .def_readwrite("nv",&GCLvectorfield::nv,"Number of components in each vector")
 ;
 // 3D versions of two class definitions above
 py::class_<GCLscalarfield3d,GCLgrid3d>(m,"GCLscalarfield3d","Three-dimensional grid with scalar attributes at each node")
   .def(py::init<>())
   .def(py::init<const int, const int, const int>())
+  /* The order here matters.  The copy constructor MUST appear before the
+  constructor that uses the GCLgrid3d base class.   If not the base class
+  constructor is called. The reason is that python resolves this kind of
+  overloading trying in the order that is defined by these bindings */
+  .def(py::init<const GCLscalarfield3d&>())
   .def(py::init<const GCLgrid3d&>())
   .def(py::init<const string, const string>())
-  .def(py::init<const GCLscalarfield3d&>())
   .def(py::init<const Metadata&>())
   .def("zero",&GCLscalarfield3d::zero,"Set all field attributes to 0")
   .def("save",&GCLscalarfield3d::save,"Save contents to a file")
@@ -442,6 +461,7 @@ py::class_<GCLscalarfield3d,GCLgrid3d>(m,"GCLscalarfield3d","Three-dimensional g
   .def("get_value",&GCLscalarfield3d::get_value,"Get the value at a specified grid point")
   .def("set_value",&GCLscalarfield3d::set_value,"Set the value at a specified grid point")
   .def(py::self *= double())
+  //.def(py::self += py::self)
   .def(py::pickle(
     [](const GCLscalarfield3d &self) {
       Metadata md;
@@ -522,9 +542,13 @@ py::class_<GCLscalarfield3d,GCLgrid3d>(m,"GCLscalarfield3d","Three-dimensional g
 py::class_<GCLvectorfield3d,GCLgrid3d>(m,"GCLvectorfield3d","Three-dimensional grid with vector attributes at each node")
   .def(py::init<>())
   .def(py::init<const int, const int,const int,const int>())
+  /* The order here matters.  The copy constructor MUST appear before the
+  constructor that uses the GCLgrid3d base class.   If not the base class
+  constructor is called. The reason is that python resolves this kind of
+  overloading trying in the order that is defined by these bindings */
+  .def(py::init<const GCLvectorfield3d&>())
   .def(py::init<const GCLgrid3d&,const int>())
   .def(py::init<const string, const string>())
-  .def(py::init<const GCLvectorfield3d&>())
   .def(py::init<const Metadata&>())
   .def("zero",&GCLvectorfield3d::zero,"Set all field attributes to 0")
   .def("save",&GCLvectorfield3d::save,"Save contents to a file")
@@ -535,6 +559,7 @@ py::class_<GCLvectorfield3d,GCLgrid3d>(m,"GCLvectorfield3d","Three-dimensional g
   .def("set_value",&GCLvectorfield3d::set_value,"Set the value at a specified grid point")
   //.def(py::self += py::self)
   .def(py::self *= double())
+  //.def(py::self += py::self)
   .def_readwrite("nv",&GCLvectorfield3d::nv,"Number of components in each vector")
   .def(py::pickle(
     [](const GCLvectorfield3d &self) {

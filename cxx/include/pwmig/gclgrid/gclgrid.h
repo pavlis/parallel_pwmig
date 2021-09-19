@@ -1131,7 +1131,7 @@ public:
 	done by interpolation but downsampling requires an antialiasing
 	(smoother) filter.
 	*/
-	void operator+=(GCLscalarfield& other);
+	GCLscalarfield& operator+=(GCLscalarfield& other);
 	/*!
 	Multiply all field values by a constant scale factor.
 

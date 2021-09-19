@@ -546,7 +546,7 @@ void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
 		}
 	}
 }
-void GCLscalarfield::operator += (GCLscalarfield& g)
+GCLscalarfield& GCLscalarfield::operator += (GCLscalarfield& g)
 {
 	int i,j;
 	double valnew;
@@ -588,6 +588,7 @@ void GCLscalarfield::operator += (GCLscalarfield& g)
 			};
 		}
 	}
+	return *this;
 }
 
 void GCLvectorfield::operator += (GCLvectorfield& g)
