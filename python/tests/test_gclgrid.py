@@ -38,6 +38,25 @@ def find_and_compare(db,query,md):
     doc=db.GCLfielddata.find_one(query)
     md2=dict2Metadata(doc)
     return comparemd(md2,md)
+def find_and_load(db,query):
+    """
+    Convenience function to apply query and return a GCL object
+    found in the GCLfieldata collection.  uses find_one so if there
+    are multiple copies it could give the wrong answer.
+
+    :param db:  database handle 
+    :param query:  dict mongodb query to use on GCLfieldata to 
+     get desired data.
+     
+    Raise a RuntimeError if the query returns a None.
+
+    """
+    doc=db.GCLfielddata.find_one(query)
+    if doc == None:
+        raise RuntimeError("query="+str(query)+" failed and doc return was set to None")
+    gclobject = GCLdbread(db,doc)
+    return gclobject
+    
 def find_and_compare_sampledata_3d(db,query,gcldata):
     """
     Read data defined by query from Mongod and compare 
@@ -53,9 +72,24 @@ def find_and_compare_sampledata_3d(db,query,gcldata):
     there match is perfect so the call can itself be in an assert
 
     """
-    doc=db.GCLfielddata.find_one(query)
-    data_from_db=GCLdbread(db,doc)
+    data_from_db = find_and_load(db,query)
     assert type(data_from_db) == type(gcldata)
+    return compare_sampledata_3d(data_from_db,gcldata)
+    
+def compare_sampledata_3d(gclcopy,gcldata):
+    """
+    Compares sample data of two gcl objects.  This function 
+    assume the scalar attributes of the object have already 
+    been tested for equality.  If not seg faults are likely 
+    if the array sizes are not compatible because gcl routines 
+    do not range check.  
+    
+    This is the 3d object version.  There is a different 2d
+    version.
+    
+    gclcopy and gcldata are assumed to be the same type.  
+    If not peculiar errors may cascade.
+    """
     # All types have common coordinate arrays 
     # This assumes the method comparing metadata has already 
     # been called so we can be sure the attributes of the two 
@@ -69,7 +103,7 @@ def find_and_compare_sampledata_3d(db,query,gcldata):
                 # Currently we don't have subscripting for these 
                 # arrays so we have to use these getters
                 cp1=gcldata.get_coordinates(i,j,k)
-                cp2=data_from_db.get_coordinates(i,j,k)
+                cp2=gclcopy.get_coordinates(i,j,k)
                 assert np.isclose(cp1.x1,cp2.x1)
                 assert np.isclose(cp1.x2,cp2.x2)
                 assert np.isclose(cp1.x3,cp2.x3)
@@ -79,17 +113,17 @@ def find_and_compare_sampledata_3d(db,query,gcldata):
             for j in range(n2):
                 for k in range (n3):
                     val1=gcldata.get_value(i,j,k)
-                    val2=data_from_db.get_value(i,j,k)
+                    val2=gclcopy.get_value(i,j,k)
                     assert np.isclose(val1,val2)
     elif isinstance(gcldata,GCLvectorfield3d):
         for i in range(n1):
             for j in range(n2):
                 for k in range (n3):
                     val1=gcldata.get_value(i,j,k)
-                    val2=data_from_db.get_value(i,j,k)
+                    val2=gclcopy.get_value(i,j,k)
                     # now val? are vectors so we add this 
                     assert gcldata.nv == len(val1)
-                    assert data_from_db.nv == len(val2)
+                    assert gclcopy.nv == len(val2)
                     assert len(val1) == len(val2)
                     for l in range(len(val1)):
                         assert np.isclose(val1[l],val2[l])
@@ -116,9 +150,23 @@ def find_and_compare_sampledata_2d(db,query,gcldata):
     there match is perfect so the call can itself be in an assert
 
     """
-    doc=db.GCLfielddata.find_one(query)
-    data_from_db=GCLdbread(db,doc)
+    data_from_db = find_and_load(db,query)
     assert type(data_from_db) == type(gcldata)
+    return compare_sampledata_2d(data_from_db,gcldata)
+def compare_sampledata_2d(gclcopy,gcldata):
+    """
+    Compares sample data of two gcl objects.  This function 
+    assume the scalar attributes of the object have already 
+    been tested for equality.  If not seg faults are likely 
+    if the array sizes are not compatible because gcl routines 
+    do not range check.  
+    
+    This is the 3d object version.  There is a different 2d
+    version.
+    
+    gclcopy and gcldata are assumed to be the same type.  
+    If not peculiar errors may cascade.
+    """
     # All types have common coordinate arrays 
     # This assumes the method comparing metadata has already 
     # been called so we can be sure the attributes of the two 
@@ -130,7 +178,7 @@ def find_and_compare_sampledata_2d(db,query,gcldata):
             # Currently we don't have subscripting for these 
             # arrays so we have to use these getters
             cp1=gcldata.get_coordinates(i,j)
-            cp2=data_from_db.get_coordinates(i,j)
+            cp2=gclcopy.get_coordinates(i,j)
             assert np.isclose(cp1.x1,cp2.x1)
             assert np.isclose(cp1.x2,cp2.x2)
             assert np.isclose(cp1.x3,cp2.x3)
@@ -139,16 +187,16 @@ def find_and_compare_sampledata_2d(db,query,gcldata):
         for i in range(n1):
             for j in range(n2):
                 val1=gcldata.get_value(i,j)
-                val2=data_from_db.get_value(i,j)
+                val2=gclcopy.get_value(i,j)
                 assert np.isclose(val1,val2)
     elif isinstance(gcldata,GCLvectorfield):
         for i in range(n1):
             for j in range(n2):
                 val1=gcldata.get_value(i,j)
-                val2=data_from_db.get_value(i,j)
+                val2=gclcopy.get_value(i,j)
                 # now val? are vectors so we add this 
                 assert gcldata.nv == len(val1)
-                assert data_from_db.nv == len(val2)
+                assert gclcopy.nv == len(val2)
                 assert len(val1) == len(val2)
                 for l in range(len(val1)):
                     assert np.isclose(val1[l],val2[l])
@@ -280,6 +328,39 @@ assert find_and_compare(db,tag,md)
 assert find_and_compare_sampledata_3d(db,tag,f4)
 gcopy=pickle.loads(pickle.dumps(f4))
 assert find_and_compare_sampledata_3d(db,tag,gcopy)
+
+print('Testing copy constructors')
+# We make copies of each of the field objects
+
+f1copy=GCLscalarfield(f1)
+f2copy=GCLscalarfield3d(f2)
+f3copy=GCLvectorfield(f3)
+f4copy=GCLvectorfield3d(f4)
+# best use this opportunity to validate the copy constructors
+assert compare_sampledata_2d(f1copy,f1)
+assert compare_sampledata_2d(f3copy,f3)
+assert compare_sampledata_3d(f2copy,f2)
+assert compare_sampledata_3d(f4copy,f4)
+# Now add two copies of each field and compare to the same data *2.0
+print('testing operator+=')
+f1cpy2=GCLscalarfield(f1)
+f2cpy2=GCLscalarfield3d(f2)
+f3cpy2=GCLvectorfield(f3)
+f4cpy2=GCLvectorfield3d(f4)
+f1 += f1copy
+f2 += f2copy
+f3 += f3copy
+f4 += f4copy
+print('sums succeeded - now test operator*= scalar and see if this really worked')
+f1cpy2 *= 2.0
+f2cpy2 *= 2.0
+f3cpy2 *= 2.0
+f4cpy2 *= 2.0
+assert compare_sampledata_2d(f1cpy2,f1)
+assert compare_sampledata_2d(f3cpy2,f3)
+assert compare_sampledata_3d(f2cpy2,f2)
+assert compare_sampledata_3d(f4cpy2,f4)
+
 
 
 
