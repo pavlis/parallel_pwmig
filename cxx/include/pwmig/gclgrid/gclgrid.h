@@ -852,6 +852,8 @@ public:
 	 \param x3p - Cartesian x3 coordinate of point to find within the grid
 	*/
 	int lookup(const double x1p, const double x2p, const double x3p);
+	int parallel_lookup(const double x1p, const double x2p, const double x3p,
+	    int& ix1_0, int& ix2_0, int& ix3_0);
 	void reset_index() {ix1=i0; ix2=j0; ix3=k0;};
 	void get_index(int *ind) {ind[0]=ix1; ind[1]=ix2; ind[2]=ix3;};
 	/*!
@@ -1539,6 +1541,8 @@ public:
 	Usage and caveats are the same as described in GCLscalarfield.
 	*/
 	double interpolate(const double,const double,const double);
+	double parallel_interpolate(const double x1p, const double x2p, const double x3p,
+	                const int ix1_0, const int ix2_0, const int ix3_0);
 	/*! Returns all scalar attributes of the object in Metadata container. */
 	mspass::utility::Metadata get_attributes() const;
 	/*!
@@ -1733,6 +1737,8 @@ public:
 	 User must take caution to free this array to avoid memory leaks.
 	*/
 	double *interpolate(const double,const double,const double);
+	double *parallel_interpolate(const double x1p, const double x2p, const double x3p,
+	                const int i0, const int j0, const int k0);
 	/*!
 	 stream output operator for a 3d scalar field.
 	 Format is:

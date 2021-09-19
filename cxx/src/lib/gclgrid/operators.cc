@@ -112,7 +112,7 @@ GCLgrid3d& GCLgrid3d::operator=(const GCLgrid3d& g)
 		x2high=g.x2high;
 		x3low=g.x3low;
 		x3high=g.x3high;
-                fast_lookup=g.fast_lookup;
+    fast_lookup=g.fast_lookup;
 		x1=create_3dgrid_contiguous(n1,n2,n3);
 		x2=create_3dgrid_contiguous(n1,n2,n3);
 		x3=create_3dgrid_contiguous(n1,n2,n3);
@@ -440,6 +440,10 @@ void GCLscalarfield3d::operator+=(GCLscalarfield3d& g)
 	g.reset_index();
   // Used only if there are errors but needs to be defined here
 	stringstream ss;
+	/* These are needed for parallel_lookup.  Previously they were cached in
+	the object, but we define them and they are updated by the parallel_lookup
+	algoriithm in this loop */
+	int ix1,ix2,ix3;
 	for(i=0;i<n1;++i)
 	{
 		for(j=0;j<n2;++j)
@@ -457,7 +461,7 @@ void GCLscalarfield3d::operator+=(GCLscalarfield3d& g)
 					cx.x2=x2[i][j][k];
 					cx.x3=x3[i][j][k];
 				}
-				err=g.lookup(cx.x1,cx.x2,cx.x3);
+				err=g.parallel_lookup(cx.x1,cx.x2,cx.x3,ix1,ix2,ix3);
 				switch(err)
 				{
 
@@ -503,6 +507,8 @@ void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
 	else
 		remap=true;
   stringstream ss;
+	/* these are altered within the loop below by parallel_lookup */
+	int ix1,ix2,ix3;
 	for(i=0;i<n1;++i)
 	{
 		for(j=0;j<n2;++j)
@@ -521,7 +527,7 @@ void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
 					cx.x3=x3[i][j][k];
 				}
 
-				err=g.lookup(cx.x1,cx.x2,cx.x3);
+				err=g.parallel_lookup(cx.x1,cx.x2,cx.x3,ix1,ix2,ix3);
 				switch(err)
 				{
 				case -2:

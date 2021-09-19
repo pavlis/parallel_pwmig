@@ -451,7 +451,18 @@ const double minimum_search_distance(1.0);
 // generalized coordinate direction, recover is not attempted
 // This saves time in curved grids inside the bounding box
 const double border_cutoff(2.0);
+/* This used to be the workhorse method for lookup.  This small wrapper is
+used strictly for backward compatibility.  It should only be used for
+single threaded code. */
 int GCLgrid3d::lookup(const double x, const double y, const double z)
+{
+	try{
+		return this->parallel_lookup(x,y,z,this->ix1,this->ix2,this->ix3);
+	}catch(...){throw;};
+}
+
+int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
+     int& ix1_0, int& ix2_0, int& ix3_0)
 {
 	int i,j,k;
 	int ilast, jlast, klast;
@@ -478,9 +489,9 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 	  ||  (y > (x2high)) || (y < (x2low))
 	  ||  (z > (x3high)) || (z < (x3low)) ) return(1);
 
-	i = ix1;
-	j = ix2;
-	k = ix3;
+	i = ix1_0;
+	j = ix2_0;
+	k = ix3_0;
 	if(i<0) i=0;
 	if(j<0) j=0;
 	if(k<0) k=0;
@@ -587,22 +598,22 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 		}
 	}
 	while( (ctest>0) && (count<MAXIT) );
-	ix1 = i;
-	ix2 = j;
-	ix3 = k;
+	ix1_0 = i;
+	ix2_0 = j;
+	ix3_0 = k;
 
 	if(ctest==0)
 	{
-            if(fast_lookup)
-                return(0);
-            else
-            {
-		GridCell cell(*this, ix1,ix2,ix3);
-		if(cell.InsideTest(x,y,z,UnambiguousTest))
-		{
-			return(0);
-		}
-            }
+    if(fast_lookup)
+      return(0);
+    else
+    {
+			GridCell cell(*this, i,j,k);
+			if(cell.InsideTest(x,y,z,UnambiguousTest))
+			{
+				return(0);
+			}
+    }
 	}
 
 	// Use dxunit values to define search distance in each direction
@@ -610,8 +621,8 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 	for(ii=0;ii<3;++ii)search_distance[ii]=fabs(dxunit(ii));
 	// This is aimed to reduce search time for points outside the actual
 	// boundary.
-	if((ix1==0) || (ix2==0) || (ix3==0)
-		||(ix1==n1-2) || (ix2==n2-2) || (ix3==n3-2) )
+	if((ix1_0==0) || (ix2_0==0) || (ix3_0==0)
+		||(ix1_0==n1-2) || (ix2_0==n2-2) || (ix3_0==n3-2) )
 	{
 		for(ii=0;ii<3;++ii)
 		{
@@ -631,7 +642,7 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 	}
 
 
-	int *irecov=recover(*this,x,y,z,ix1,ix2,ix3,search_distance);
+	int *irecov=recover(*this,x,y,z,ix1_0,ix2_0,ix3_0,search_distance);
 	int iret;
 	if(irecov[0]<0)
 	{
@@ -640,9 +651,9 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 	}
 	else
 	{
-		ix1=irecov[0];
-		ix2=irecov[1];
-		ix3=irecov[2];
+		ix1_0=irecov[0];
+		ix2_0=irecov[1];
+		ix3_0=irecov[2];
 		iret=0;
 	}
 	delete [] irecov;

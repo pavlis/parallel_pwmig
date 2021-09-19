@@ -124,26 +124,27 @@ void compute_element_weights(const GCLgrid3d *g,
 
 //vector interpolators switch from loop to a blas call when nv larger than this
 #define BLAS_LIMIT 10
-double *GCLvectorfield3d::interpolate(const double xp1, const double xp2, const double xp3)
+double *GCLvectorfield3d::interpolate (const double xp1, const double xp2, const double xp3)
+{
+	/* parallel_interpolate doesn't throw exceptions so ther eis not try/catch block here.*/
+	int ix[3];
+
+	get_index(ix);
+	return this->parallel_interpolate(xp1,xp2,xp3,ix[0],ix[1],ix[2]);
+}
+double *GCLvectorfield3d::parallel_interpolate(const double xp1, const double xp2, const double xp3,
+    const int i0, const int j0, const int k0)
 {
 	int l;
 	/* This depends on a static being initialized once on first call */
 	static double xplast[3]={0.0,0.0,0.0};
 	static double weights[8];
 	double *f = new double[nv];
-	int ix[3];
 	int i,j,k;
 
-	get_index(ix);
-	//
-	//This is done to make this readable.  subscripted subscripts without
-	//this substitution are very hard to read
-	//
-	i=ix[0];
-	j=ix[1];
-	k=ix[2];
-
-
+	i=i0;
+	j=j0;
+	k=k0;
 
 	if( (xp1!=xplast[0]) || (xp2!=xplast[1]) || (xp3!=xplast[2]) )
 	{
@@ -191,22 +192,27 @@ double *GCLvectorfield3d::interpolate(const double xp1, const double xp2, const 
 	xplast[2]=xp3;
 	return(f);
 }
-//
-// parallel routine to above for scalar fields
-//
+/* Small wrapper for backward compatibility */
 double GCLscalarfield3d::interpolate (const double xp1, const double xp2, const double xp3)
+{
+	/* parallel_interpolate doesn't throw exceptions so ther eis not try/catch block here.*/
+	int ix[3];
+
+	get_index(ix);
+	return this->parallel_interpolate(xp1,xp2,xp3,ix[0],ix[1],ix[2]);
+}
+double GCLscalarfield3d::parallel_interpolate(const double xp1, const double xp2, const double xp3,
+	const int i0, const int j0, const int k0)
 {
 	/* This depends on a static being initialized once on first call */
 	static double xplast[3]={0.0,0.0,0.0};
 	static double weights[8];
 	double f;
-	int ix[3];
 	int i,j,k;
 
-	get_index(ix);
-	i=ix[0];
-	j=ix[1];
-	k=ix[2];
+	i=i0;
+	j=j0;
+	k=k0;
 
 	if( (xp1!=xplast[0]) || (xp2!=xplast[1]) || (xp3!=xplast[2]) )
 	{
