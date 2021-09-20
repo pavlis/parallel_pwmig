@@ -334,6 +334,8 @@ some grids, however, if that position is a poor place to start
 (e.g. sudden jump to a completely different location).  This function
 should be called if a lookup fails to try to recover.  Internal methods
 like the += operator does this automatically.
+
+This method may be depricated but is retained for now.
 */
 	virtual void reset_index()=0;
 /*!
@@ -341,9 +343,17 @@ Query for the current lookup index position.  The lookup functions used
 in the GCLgrid library keep and index of the previous lookup result under
 an assumption that the next point requested will be nearby.  This method
 is used to ask what the current index position.
-\param ind vector of ints of length sufficient to hold the index  (2 for 2d and 3 for 3d grids)
+
+This method may be depricated. the new parallel_lookup does not use the
+internal index preserving the previous state.
+
+\param ind vector of ints of length sufficient to hold the index
+(2 for 2d and 3 for 3d grids).  This is very dangerous and there is no
+bound checking.  Usual construct would be to declare a local int array
+of the right length and pass the array name to this method.
 */
 	virtual void get_index(int *ind)=0;
+
 /*! \brief Return all attributes of a GCL object in a Metadata container.
 
 This virtual method was added for the mspass conversion.  It is a core
@@ -853,7 +863,7 @@ public:
 	*/
 	int lookup(const double x1p, const double x2p, const double x3p);
 	int parallel_lookup(const double x1p, const double x2p, const double x3p,
-	    int& ix1_0, int& ix2_0, int& ix3_0);
+	    int& ix1_0, int& ix2_0, int& ix3_0) const;
 	void reset_index() {ix1=i0; ix2=j0; ix3=k0;};
 	void get_index(int *ind) {ind[0]=ix1; ind[1]=ix2; ind[2]=ix3;};
 	/*!
@@ -973,6 +983,30 @@ public:
 		const int i, const int j,const int k);
 	/*! Getter for grid point */
 	Cartesian_point get_coordinates(const int i, const int j, const int k) const;
+	/*! Get the lookup origin.
+
+	The parallel and single threaded lookup functions both utilize an iterative
+	algorithm to find the cell a specified point is within.  The iteration
+	can sometimes fail and the algorithm the always resets to the "lookup origin"
+	and tries again before giving up.  The parallel_lookup function uses this
+	method to do that reset.   The original version that was single threaded
+	had the index hard coded.
+	*/
+	std::vector<int> get_lookup_origin() const;
+	/*! \brief Set the lookup origin to the default value.
+
+	The default lookup origin is the grid center computed from n1/2, n2/2, and
+	n3/2.
+	*/
+	void set_lookup_origin();
+	/*! \brief Set the lookup origin to a user specified point.
+
+	The grid origin is used for recovery if the initial iteration fails.
+	Use this method to set the origin explicitly.  The lookup origin is
+	set to the grid index [i][j][k].  An exception will be thrown if any of
+	the indices given are outside the array dimensions.
+	*/
+	void set_lookup_origin(const int i, const int j, const int k);
 private:
 	int ix1, ix2, ix3;
         bool fast_lookup;
@@ -1139,7 +1173,7 @@ public:
 
 	\param c constant by which the field is to be scaled.
 	*/
-	void operator*=(const double c);
+	GCLscalarfield& operator*=(const double c);
 	/*!
 	Linear interpolation function for a field.
 
@@ -1340,7 +1374,7 @@ public:
 
 	\param c constant by which the field is to be scaled.
 	*/
-	void operator*=(const double c);
+	GCLvectorfield& operator*=(const double c);
 	/*!
 	Linear interpolation function for a field.
 
@@ -1529,20 +1563,20 @@ public:
 	done by interpolation but downsampling requires an antialiasing
 	(smoother) filter.
 	*/
-	void operator+=(GCLscalarfield3d& other);
+	GCLscalarfield3d& operator+=(const GCLscalarfield3d& other);
 	/*!
 	Multiply all field values by a constant scale factor.
 
 	\param c constant by which the field is to be scaled.
 	*/
-	void operator*=(const double c);
+	GCLscalarfield3d& operator*=(const double c);
 	/*! Interpolate a 3d scalar field.
 
 	Usage and caveats are the same as described in GCLscalarfield.
 	*/
 	double interpolate(const double,const double,const double);
 	double parallel_interpolate(const double x1p, const double x2p, const double x3p,
-	                const int ix1_0, const int ix2_0, const int ix3_0);
+	                const int ix1_0, const int ix2_0, const int ix3_0) const;
 	/*! Returns all scalar attributes of the object in Metadata container. */
 	mspass::utility::Metadata get_attributes() const;
 	/*!
@@ -1720,13 +1754,13 @@ public:
 	done by interpolation but downsampling requires an antialiasing
 	(smoother) filter.
 	*/
-	void operator+=(GCLvectorfield3d& other);
+	GCLvectorfield3d& operator+=(const GCLvectorfield3d& other);
 	/*!
 	Multiply all field values by a constant scale factor.
 
 	\param c constant by which the field is to be scaled.
 	*/
-	void operator*=(const double c);
+	GCLvectorfield3d& operator*=(const double c);
 	/*! Returns all scalar attributes of the object in Metadata container. */
 	mspass::utility::Metadata get_attributes() const;
 	/*! Interpolate a 3d scalar field.
@@ -1738,7 +1772,7 @@ public:
 	*/
 	double *interpolate(const double,const double,const double);
 	double *parallel_interpolate(const double x1p, const double x2p, const double x3p,
-	                const int i0, const int j0, const int k0);
+	                const int i0, const int j0, const int k0) const;
 	/*!
 	 stream output operator for a 3d scalar field.
 	 Format is:

@@ -39,7 +39,7 @@ mspass::utility::dmatrix* ray_path_tangent(mspass::utility::dmatrix& ray);
 mspass::utility::dmatrix compute_gradS(pwmig::gclgrid::GCLgrid3d& raygrid,
 	int ix1, int ix2, pwmig::seispp::VelocityModel_1d& Vs1d);
 std::vector<double> compute_unit_normal_P(pwmig::gclgrid::GCLgrid3d& raygrid,
-	double x1, double x2, double x3);
+	double x1, double x2, double x3,int& ix1_0, int& ix2_0, int& ix3_0);
 pwmig::pwmigcore::SlownessVectorMatrix pad_svm(const pwmig::pwmigcore::SlownessVectorMatrix& svm,
 	const int pad);
 bool grid_mismatched(const pwmig::gclgrid::GCLgrid& parent,

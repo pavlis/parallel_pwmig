@@ -133,7 +133,7 @@ double *GCLvectorfield3d::interpolate (const double xp1, const double xp2, const
 	return this->parallel_interpolate(xp1,xp2,xp3,ix[0],ix[1],ix[2]);
 }
 double *GCLvectorfield3d::parallel_interpolate(const double xp1, const double xp2, const double xp3,
-    const int i0, const int j0, const int k0)
+    const int i0, const int j0, const int k0) const
 {
 	int l;
 	/* This depends on a static being initialized once on first call */
@@ -152,7 +152,7 @@ double *GCLvectorfield3d::parallel_interpolate(const double xp1, const double xp
 		xp[0]=xp1;
 		xp[1]=xp2;
 		xp[2]=xp3;
-		compute_element_weights(dynamic_cast<GCLgrid3d *>(this),
+		compute_element_weights(dynamic_cast<const GCLgrid3d *>(this),
 			i,j,k,xp,weights);
 	}
 	/* Compute interpolated vector as a linear combination of the
@@ -202,7 +202,7 @@ double GCLscalarfield3d::interpolate (const double xp1, const double xp2, const 
 	return this->parallel_interpolate(xp1,xp2,xp3,ix[0],ix[1],ix[2]);
 }
 double GCLscalarfield3d::parallel_interpolate(const double xp1, const double xp2, const double xp3,
-	const int i0, const int j0, const int k0)
+	const int i0, const int j0, const int k0) const
 {
 	/* This depends on a static being initialized once on first call */
 	static double xplast[3]={0.0,0.0,0.0};
@@ -220,7 +220,7 @@ double GCLscalarfield3d::parallel_interpolate(const double xp1, const double xp2
 		xp[0]=xp1;
 		xp[1]=xp2;
 		xp[2]=xp3;
-		compute_element_weights(dynamic_cast<GCLgrid3d *>(this),
+		compute_element_weights(dynamic_cast<const GCLgrid3d *>(this),
 			i,j,k,xp,weights);
 	}
 

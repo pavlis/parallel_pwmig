@@ -1,5 +1,6 @@
 #include <math.h>
 #include <list>
+#include <sstream>
 /* This fortran routine is used to invert Jacobian.  It is
 preferable to a general inversion routine as it is analytic for
 a 3x3 system making it faster. */
@@ -32,12 +33,12 @@ public:
 		*point6, *point7, *point8;
 	dmatrix normals;
 	double *front, *back, *right, *left, *top, *bottom;
-	GridCell(GCLgrid3d& g, const int ii, const int jj, const int kk);
+	GridCell(const GCLgrid3d& g, const int ii, const int jj, const int kk);
 	GridCell(const GridCell& parent);
 	GridCell& operator=(const GridCell& parent);
 	bool InsideTest(const double x, const double y, const double z, const double tolerance);
 };
-GridCell::GridCell(GCLgrid3d& g, const int i, const int j, const int k)
+GridCell::GridCell(const GCLgrid3d& g, const int i, const int j, const int k)
 		: points(3,8),normals(3,6)
 {
 	int l;
@@ -272,7 +273,7 @@ Arguments:
 		make search distance variable in different directions
 		to reduce search times.
 */
-int *recover(GCLgrid3d& g, const double x, const double y, const double z,
+int *recover(const GCLgrid3d& g, const double x, const double y, const double z,
 	const int i0, const int j0, const int k0,const double *dr)
 {
 	int i,j,k;
@@ -462,7 +463,7 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 }
 
 int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
-     int& ix1_0, int& ix2_0, int& ix3_0)
+     int& ix1_0, int& ix2_0, int& ix3_0) const
 {
 	int i,j,k;
 	int ilast, jlast, klast;
@@ -644,9 +645,14 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 
 	int *irecov=recover(*this,x,y,z,ix1_0,ix2_0,ix3_0,search_distance);
 	int iret;
+	std::vector<int> origin_index;
 	if(irecov[0]<0)
 	{
-		this->reset_index();
+		//this->reset_index();
+		origin_index = this->get_lookup_origin();
+		ix1_0 = origin_index[0];
+		ix2_0 = origin_index[1];
+		ix3_0 = origin_index[2];
 		iret=-1;
 	}
 	else
@@ -757,5 +763,67 @@ int GCLgrid::lookup(const double target_lat, const double target_lon)
 		return(-1);
 	else
 		return(1);
+}
+/* Added 2021 for mspass conversion.  A key issue that led to these is the
+need for the parallel_lookup extension method to the old lookup method.
+These are getters and setters for the "lookup origin" defined currently by the
+public variables i0, j0, and k0.   Those variable may be made private
+eventually but for the present they were left as public attributes.   They
+have effectively been made private in the python bindings by not referencing them.
+*/
+std::vector<int> GCLgrid3d::get_lookup_origin() const
+{
+	std::vector<int> result;
+	result.reserve(3);
+	result.push_back(i0);
+	result.push_back(j0);
+	result.push_back(k0);
+	return result;
+}
+/*! \brief Set the lookup origin to the default value.
+
+The default lookup origin is the grid center computed from n1/2, n2/2, and
+n3/2.
+*/
+void GCLgrid3d::set_lookup_origin()
+{
+	this->i0 = (this->n1)/2;
+	this->j0 = (this->n2)/2;
+	this->k0 = (this->n3)/2;
+}
+/*! \brief Set the lookup origin to a user specified point.
+
+The grid origin is used for recovery if the initial iteration fails.
+Use this method to set the origin explicitly.  The lookup origin is
+set to the grid index [i][j][k].  An exception will be thrown if any of
+the indices given are outside the array dimensions.
+*/
+void GCLgrid3d::set_lookup_origin(const int i, const int j, const int k)
+{
+	const string base_error("GCLgrid3d::set_lookup_origin(i,j,k):  ");
+	if( i<0 || i>(this->n1))
+	{
+		stringstream ss;
+		ss << base_error << "Illegal first array index ="<<i<<endl
+		   << "Must be > 0 and < "<<this->n1<<endl;
+		throw GCLgridError(ss.str());
+	}
+	if( j<0 || j>(this->n2))
+	{
+		stringstream ss;
+		ss << base_error << "Illegal second array index ="<<j<<endl
+		   << "Must be > 0 and < "<<this->n2<<endl;
+		throw GCLgridError(ss.str());
+	}
+	if( k<0 || k>(this->n3))
+	{
+		stringstream ss;
+		ss << base_error << "Illegal third array index ="<<k<<endl
+		   << "Must be > 0 and < "<<this->n3<<endl;
+		throw GCLgridError(ss.str());
+	}
+	this->i0 = i;
+	this->j0 = j;
+	this->k0 = k;
 }
 } //end namespace

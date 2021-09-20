@@ -164,6 +164,20 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
   /* This is how the slowness vector was set in original pwmig.  Here we pass
   u0 as an arg */
   //SlownessVector u0=svm0(i,j);
+  /* This modification was required for parallel processing in revision
+  Sept 2021.   The reason is that the lookup method was superceded by
+  a parallel_lookup that required the caller to manage the current
+  position index of the direction set iteration.   The old library
+  maintained that only with internal, private attributes.  That was found to
+  NOT be thread safe.  So, we use parallel_lookup.  Note in this loop
+  that that happens twice - once in the compute_unit_normal_P function
+  and in the direct call to parallel_lookup. */
+  std::vector<int> lookup_origin;
+	lookup_origin = TPgrid.get_lookup_origin();
+	int ix1_0, ix2_0, ix3_0;
+	ix1_0 = lookup_origin[0];
+	ix2_0 = lookup_origin[1];
+	ix3_0 = lookup_origin[2];
   for(k=0,kk=raygrid.n3-1;k<raygrid.n3;++k,--kk)
   {
     vector<double>nu;
@@ -173,7 +187,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
     x_gp=raygrid.geo_coordinates(i,j,kk);
 
     nu = compute_unit_normal_P(TPgrid,raygrid.x1[i][j][kk],
-      raygrid.x2[i][j][kk], raygrid.x3[i][j][kk]);
+      raygrid.x2[i][j][kk], raygrid.x3[i][j][kk],ix1_0,ix2_0,ix3_0);
     for(auto l=0;l<3;++l) nup(l,kk)=nu[l];
     // zP and gradTp are computed in reverse order
     zP[k]=raygrid.depth(i,j,kk);
@@ -182,8 +196,8 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
     /* This section used to be a procedure.  Inlined for
     speed during a cleanup June 2012 */
     int error_lookup;
-    error_lookup=TPgrid.lookup(raygrid.x1[i][j][kk],
-      raygrid.x2[i][j][kk],raygrid.x3[i][j][kk]);
+    error_lookup=TPgrid.parallel_lookup(raygrid.x1[i][j][kk],
+      raygrid.x2[i][j][kk],raygrid.x3[i][j][kk],ix1_0,ix2_0,ix3_0);
     switch(error_lookup)
     {
       case 0:
@@ -201,7 +215,8 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
       case -1:
       default:
         /* This is a convergence error in lookup and needs to be
-        flagged as an error */
+        flagged as an error.  NOTE:  may want to consider trying again
+        after resetting the origin */
         tcompute_problem=true;
         needs_padding=true;
         padmark=k;

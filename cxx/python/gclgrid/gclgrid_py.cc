@@ -178,8 +178,8 @@ py::class_<BasicGCLgrid,PyBasicGCLgrid>(m,"BasicGCLgrid","Base class for family 
   .def_readwrite("dx2_nom",&BasicGCLgrid::dx2_nom)
   .def_readwrite("n1",&BasicGCLgrid::n1)
   .def_readwrite("n2",&BasicGCLgrid::n2)
-  .def_readwrite("i0",&BasicGCLgrid::i0)
-  .def_readwrite("j0",&BasicGCLgrid::j0)
+  //.def_readwrite("i0",&BasicGCLgrid::i0)
+  //.def_readwrite("j0",&BasicGCLgrid::j0)
   .def_readwrite("x1low",&BasicGCLgrid::x1low)
   .def_readwrite("x2low",&BasicGCLgrid::x2low)
   .def_readwrite("x3low",&BasicGCLgrid::x3low)
@@ -295,7 +295,8 @@ py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
   .def(py::init<const GCLgrid3d&>())
   .def(py::init<const Metadata&>())
   .def("save",&GCLgrid3d::save,"Save to an external file")
-  .def("lookup",&GCLgrid3d::lookup,"Find point by cartesian coordinates")
+  .def("lookup",&GCLgrid3d::lookup,"Find point by cartesian coordinates (depricated)")
+  .def("parallel_lookup",&GCLgrid3d::parallel_lookup,"Thread safe lookup method")
   .def("reset_index",&GCLgrid3d::reset_index,"Initializer for lookup searches - rarely needed")
   .def("get_index",&GCLgrid3d::get_index,"Return index position found with lookup")
   .def("geo_coordinates",&GCLgrid3d::geo_coordinates,"Return geo coordinate struct")
@@ -313,9 +314,16 @@ py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
   .def("set_coordinates",py::overload_cast<const Cartesian_point&,
          const int, const int,const int>(&GCLgrid3d::set_coordinates),
          "Set grid point coordinates Geographic point (radians)")
+  .def("get_lookup_origin",&GCLgrid3d::get_lookup_origin,"Fetch the lookup origin - vector of 3 ints")
+  .def("set_lookup_origin",py::overload_cast<const int, const int, const int>
+      (&GCLgrid3d::set_lookup_origin),"Set lookup origin explicitly (3 int args)")
+  .def("set_lookup_origin",py::overload_cast<>(&GCLgrid3d::set_lookup_origin),
+      "Set lookup origin to default")
   .def_readwrite("n3",&GCLgrid3d::n3)
   .def_readwrite("dx3_nom",&GCLgrid3d::dx3_nom)
-  .def_readwrite("k0",&GCLgrid3d::k0)
+  /* k0 is public, but we should use the new getters and setters that
+  are defined above instead of setting this via this mechanism. */
+  //.def_readwrite("k0",&GCLgrid3d::k0)
   .def(py::pickle(
     [](const GCLgrid3d &self) {
       Metadata md;
@@ -461,7 +469,7 @@ py::class_<GCLscalarfield3d,GCLgrid3d>(m,"GCLscalarfield3d","Three-dimensional g
   .def("get_value",&GCLscalarfield3d::get_value,"Get the value at a specified grid point")
   .def("set_value",&GCLscalarfield3d::set_value,"Set the value at a specified grid point")
   .def(py::self *= double())
-  //.def(py::self += py::self)
+  .def(py::self += py::self)
   .def(py::pickle(
     [](const GCLscalarfield3d &self) {
       Metadata md;
@@ -557,9 +565,8 @@ py::class_<GCLvectorfield3d,GCLgrid3d>(m,"GCLvectorfield3d","Three-dimensional g
      "Fetch all attributes into a Metadata container")
   .def("get_value",&GCLvectorfield3d::get_value,"Get the vector of values at a specified grid point")
   .def("set_value",&GCLvectorfield3d::set_value,"Set the value at a specified grid point")
-  //.def(py::self += py::self)
+  .def(py::self += py::self)
   .def(py::self *= double())
-  //.def(py::self += py::self)
   .def_readwrite("nv",&GCLvectorfield3d::nv,"Number of components in each vector")
   .def(py::pickle(
     [](const GCLvectorfield3d &self) {

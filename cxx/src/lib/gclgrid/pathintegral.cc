@@ -52,13 +52,27 @@ vector <double> pathintegral(GCLscalarfield3d& field,const dmatrix& path)
 	// push 0 to the first point
 	outvec.push_back(0.0);
 	// This was found to alway be prudent
+	// Sept 2012 changes:  this doesn't really do anything anymore but will
+	// retain out of caution as the cost is tiny
 	field.reset_index();
+	/* New code for parallel_lookup.  This is a bit awkward because the std::vector
+	container return doesn't match argument approach I used for holding the
+	last integer position managed by parallel_lookup. */
+	std::vector<int> lookup_origin;
+	lookup_origin = field.get_lookup_origin();
+	int ix1_0, ix2_0, ix3_0;
+	ix1_0 = lookup_origin[0];
+	ix2_0 = lookup_origin[1];
+	ix3_0 = lookup_origin[2];
 	for( i=1,outval=0.0,outval_last=0.0;i<npts;++i)
 	{
 		double dx1,dx2,dx3;
-		if(field.lookup(path(0,i-1),path(1,i-1),path(2,i-1))) break;
+		/* the if is used to do a safe return if the ray traverses outside the grid */
+		if( field.parallel_lookup(path(0,i-1),path(1,i-1),path(2,i-1),
+	     ix1_0,ix2_0,ix3_0) ) break;
 		val1=field.interpolate(path(0,i),path(1,i),path(2,i));
-		if(field.lookup(path(0,i),path(1,i),path(2,i))) break;
+		if( field.parallel_lookup(path(0,i),path(1,i),path(2,i),
+	     ix1_0,ix2_0,ix3_0) ) break;
 		val2=field.interpolate(path(0,i),path(1,i),path(2,i));
 		// This could be functionized, but I'll make it inline
 		dx1 = path(0,i)-path(0,i-1);

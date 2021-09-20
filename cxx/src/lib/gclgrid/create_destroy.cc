@@ -283,7 +283,7 @@ GCLgrid3d::GCLgrid3d (const int n1size, const int n2size,
 	x1=create_3dgrid_contiguous(n1size,n2size,n3size);
 	x2=create_3dgrid_contiguous(n1size,n2size,n3size);
 	x3=create_3dgrid_contiguous(n1size,n2size,n3size);
-        fast_lookup=fl;
+  fast_lookup=fl;
 }
 /* This routine is used in all file-based constructors using a
    pf to store attributes. */
@@ -535,7 +535,7 @@ GCLgrid3d::GCLgrid3d(const GCLgrid3d& g)
 		for(j=0;j<n2;++j)
 			for(k=0;k<n3;++k) x3[i][j][k]=g.x3[i][j][k];
 
-        fast_lookup=g.fast_lookup;
+  fast_lookup=g.fast_lookup;
 }
 
 /* This small function builds a baseline vector of latitude and
@@ -719,7 +719,7 @@ GCLgrid3d::GCLgrid3d(const int n1in, const int n2in, const int n3in,
         /* Fast lookup method is always enabled for a grid created this
            way.   Reason is this grid is alway very close to regular
            and the speed loss for lookup is ill advised. */
-        fast_lookup=false;
+  fast_lookup=false;
 	/* pole to baseline */
 	double pole_lat, pole_lon;
 	int i,j,k;

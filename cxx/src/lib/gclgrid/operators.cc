@@ -423,7 +423,7 @@ bool BasicGCLgrid::operator!=(const BasicGCLgrid& b)
 	else
 		return(false);
 }
-void GCLscalarfield3d::operator+=(GCLscalarfield3d& g)
+GCLscalarfield3d& GCLscalarfield3d::operator+=(const GCLscalarfield3d& g)
 {
 	int i,j,k;
 	double valnew;
@@ -436,10 +436,13 @@ void GCLscalarfield3d::operator+=(GCLscalarfield3d& g)
 		remap=false;
 	else
 		remap=true;
-
-	g.reset_index();
+  /* this used to be here, but caused const collision problem.  I don't
+	think it does anything so I'm going to just comment it out for now until
+	I'm sure */
+	//g.reset_index();
   // Used only if there are errors but needs to be defined here
 	stringstream ss;
+	std::vector<int> origin_index;  //needed below for parallel_lookup revision
 	/* These are needed for parallel_lookup.  Previously they were cached in
 	the object, but we define them and they are updated by the parallel_lookup
 	algoriithm in this loop */
@@ -471,10 +474,21 @@ void GCLscalarfield3d::operator+=(GCLscalarfield3d& g)
 					throw GCLgridError(ss.str());
 				case 1:
 				case -1:
+					/* this is handled silently because the assumption is it is
+					caused by traversing outside the grid.  Ths may be causing artifacts
+					and perhaps should be handled differently.  The old code did this
+					here:
 					g.reset_index();
+					This is the replacement for parallel_lookup.  Note I'm concerned
+					this is leaving holes in the output image volume from this failure.  */
+
+					origin_index=this->get_lookup_origin();
+					ix1=origin_index[0];
+					ix2=origin_index[1];
+					ix3=origin_index[2];
 					break;
 				case 0:
-					valnew = g.interpolate(cx.x1,cx.x2,cx.x3);
+					valnew = g.parallel_interpolate(cx.x1,cx.x2,cx.x3,ix1,ix2,ix3);
 					val[i][j][k]+=valnew;
 
 					break;
@@ -485,13 +499,14 @@ void GCLscalarfield3d::operator+=(GCLscalarfield3d& g)
 			}
 		}
 	}
+	return *this;
 }
 // Modified April 14, 2005:  now tests for grid consistency and
 // bypasses geographic conversion when grids have same coordinate
 // system.  This was found important as early versions spent a lot
 // of cpu time doing geographic conversions.
 
-void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
+GCLvectorfield3d& GCLvectorfield3d::operator+=(const GCLvectorfield3d& g)
 {
 	int i,j,k,l;
 	double *valnew;
@@ -499,14 +514,17 @@ void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
 	bool remap;
 	Cartesian_point cx;
 	Geographic_point gp;
-
-	g.reset_index();
+	/* this used to be here, but caused const collision problem.  I don't
+	think it does anything so I'm going to just comment it out for now until
+	I'm sure */
+	//g.reset_index();
 
 	if(*this==g)
 		remap=false;
 	else
 		remap=true;
   stringstream ss;
+	std::vector<int> origin_index;  //needed below for parallel_lookup revision
 	/* these are altered within the loop below by parallel_lookup */
 	int ix1,ix2,ix3;
 	for(i=0;i<n1;++i)
@@ -536,10 +554,20 @@ void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
 				  throw GCLgridError(ss.str());
 				case 1:
 				case -1:
+				  /* this is handled silently because the assumption is it is
+					caused by traversing outside the grid.  Ths may be causing artifacts
+					and perhaps should be handled differently.  The old code did this
+					here:
 					g.reset_index();
+					This is the replacement for parallel_lookup.  Note I'm concerned
+					this is leaving holes in the output image volume from this failure.  */
+					origin_index=this->get_lookup_origin();
+					ix1=origin_index[0];
+					ix2=origin_index[1];
+					ix3=origin_index[2];
 					break;
 				case 0:
-					valnew = g.interpolate(cx.x1,cx.x2,cx.x3);
+					valnew = g.parallel_interpolate(cx.x1,cx.x2,cx.x3,ix1,ix2,ix3);
 					for(l=0;l<nv;++l) val[i][j][k][l]+=valnew[l];
 					delete [] valnew;
 					break;
@@ -551,8 +579,9 @@ void GCLvectorfield3d::operator += (GCLvectorfield3d& g)
 			}
 		}
 	}
+	return *this;
 }
-GCLscalarfield& GCLscalarfield::operator += (GCLscalarfield& g)
+GCLscalarfield& GCLscalarfield::operator+=(GCLscalarfield& g)
 {
 	int i,j;
 	double valnew;
@@ -597,7 +626,7 @@ GCLscalarfield& GCLscalarfield::operator += (GCLscalarfield& g)
 	return *this;
 }
 
-void GCLvectorfield::operator += (GCLvectorfield& g)
+void GCLvectorfield::operator+=(GCLvectorfield& g)
 {
 	int i,j,l;
 	double *valnew;
@@ -641,15 +670,16 @@ void GCLvectorfield::operator += (GCLvectorfield& g)
 	}
 }
 // Multiplication by scalar operators
-void GCLscalarfield3d::operator *= (const double c1)
+GCLscalarfield3d& GCLscalarfield3d::operator*= (const double c1)
 {
 	int i,j,k;
 	for(i=0;i<n1;++i)
 		for(j=0;j<n2;++j)
 			for(k=0;k<n3;++k)
 				val[i][j][k]*=c1;
+	return *this;
 }
-void GCLvectorfield3d::operator *= (const double c1)
+GCLvectorfield3d& GCLvectorfield3d::operator*= (const double c1)
 {
 	int i,j,k,l;
 	for(i=0;i<n1;++i)
@@ -657,21 +687,24 @@ void GCLvectorfield3d::operator *= (const double c1)
 			for(k=0;k<n3;++k)
 				for(l=0;l<nv;++l)
 					val[i][j][k][l]*=c1;
+	return *this;
 }
-void GCLscalarfield::operator *= (const double c1)
+GCLscalarfield& GCLscalarfield::operator*= (const double c1)
 {
 	int i,j;
 	for(i=0;i<n1;++i)
 		for(j=0;j<n2;++j)
 			val[i][j]*=c1;
+	return *this;
 }
-void GCLvectorfield::operator *= (const double c1)
+GCLvectorfield& GCLvectorfield::operator*= (const double c1)
 {
 	int i,j,l;
 	for(i=0;i<n1;++i)
 		for(j=0;j<n2;++j)
 			for(l=0;l<nv;++l)
 				val[i][j][l]*=c1;
+	return *this;
 }
 
 ostream& operator << (ostream& fout, GCLscalarfield& g)

@@ -236,12 +236,22 @@ namespace pwmig::pwmigcore
     times.push_back(0.0);                           /* First point is always 0 */
     tsum=0.0;
     count=1;
+    /* New code for parallel_lookup.  This is a bit awkward because the std::vector
+	   container return doesn't match argument approach I used for holding the
+	   last integer position managed by parallel_lookup. */
+	  std::vector<int> lookup_origin;
+	  lookup_origin = U3d.get_lookup_origin();
+	  int ix1_0, ix2_0, ix3_0;
+	  ix1_0 = lookup_origin[0];
+	  ix2_0 = lookup_origin[1];
+  	ix3_0 = lookup_origin[2];
     for(int i=1;i<npts;++i)
     {
       double dx1,dx2,dx3;
       double du;                                    // interpolated slowness perturbation
       /* Only add points when lookup succeeds - returns 0 */
-      int iret=U3d.lookup(path(0,i),path(1,i),path(2,i));
+      int iret=U3d.parallel_lookup(path(0,i),path(1,i),path(2,i),
+                         ix1_0, ix2_0, ix3_0);
       if(iret==0)
       {
         du=U3d.interpolate(path(0,i),path(1,i),path(2,i));
@@ -387,7 +397,8 @@ namespace pwmig::pwmigcore
   }
 
 
-  vector<double> compute_unit_normal_P(GCLgrid3d& raygrid,double x1, double x2, double x3)
+  vector<double> compute_unit_normal_P(GCLgrid3d& raygrid,
+    double x1, double x2, double x3,int& ix1_0, int& ix2_0, int& ix3_0)
   {
     // Ray path tangents do not vary rapidly with position.  We just get the nearest
     // neighbor and compute by finite differences
@@ -399,8 +410,13 @@ namespace pwmig::pwmigcore
     double rtest;
     int k;
     Geographic_point geo;
-
-    err=raygrid.lookup(x1,x2,x3);
+    /* Note this function always alsters x1_0 etc.  and because we
+    call it by reference the callers copy is altered */
+    err=raygrid.parallel_lookup(x1,x2,x3,ix1_0,ix2_0,ix3_0);
+    /* Note:  I think the previous version of this function had a bug in
+    how it handled lookup error returns.   It wasn't disasterous it gave
+    wrong but not drastically inaccurate results.   Important point for
+    validation against previous results. Sept 2021 glp*/
     switch(err)
     {
       case 1:
@@ -426,23 +442,37 @@ namespace pwmig::pwmigcore
           }
         }
         if(k>=raygrid.n3) index[2]= raygrid.n3 - 2; // set to one below surface
+        break;
+        /* This was the old code.  code 2 was depricated and we don't want
+        to set normal return (0) like this any more.  See replacement.
       case 0:
       case 2:
         raygrid.get_index(index);
-        // Standard fix for forward diff.  Back off one if at the top edge
-        if(index[2]>=raygrid.n3-1)--index[2];
-        dx=raygrid.x1[index[0]][index[1]][index[2]+1];
-        dx-=raygrid.x1[index[0]][index[1]][index[2]];
-        nu.push_back(dx);
-        dx=raygrid.x2[index[0]][index[1]][index[2]+1];
-        dx-=raygrid.x2[index[0]][index[1]][index[2]];
-        nu.push_back(dx);
-        dx=raygrid.x3[index[0]][index[1]][index[2]+1];
-        dx-=raygrid.x3[index[0]][index[1]][index[2]];
-        nu.push_back(dx);
-        nrmx=dnrm2(3,&(nu[0]),1);
-        dscal(3,1.0/nrmx,&(nu[0]),1);
-    }
+        */
+        case 0:
+          index[0] = ix1_0;
+          index[1] = ix2_0;
+          index[2] = ix3_0;
+          break;
+        default:
+          throw MsPASSError(string("compute_unit_normal_P: ")
+             + " parallel_lookup function returned an unexpected error code.\n"
+             + "Something is drastically wrong and the code needs a fix",
+           ErrorSeverity::Fatal);
+      };
+      // Standard fix for forward diff.  Back off one if at the top edge
+      if(index[2]>=raygrid.n3-1)--index[2];
+      dx=raygrid.x1[index[0]][index[1]][index[2]+1];
+      dx-=raygrid.x1[index[0]][index[1]][index[2]];
+      nu.push_back(dx);
+      dx=raygrid.x2[index[0]][index[1]][index[2]+1];
+      dx-=raygrid.x2[index[0]][index[1]][index[2]];
+      nu.push_back(dx);
+      dx=raygrid.x3[index[0]][index[1]][index[2]+1];
+      dx-=raygrid.x3[index[0]][index[1]][index[2]];
+      nu.push_back(dx);
+      nrmx=dnrm2(3,&(nu[0]),1);
+      dscal(3,1.0/nrmx,&(nu[0]),1);
     return(nu);
   }
 
