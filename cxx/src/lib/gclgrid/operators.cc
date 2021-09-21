@@ -447,6 +447,13 @@ GCLscalarfield3d& GCLscalarfield3d::operator+=(const GCLscalarfield3d& g)
 	the object, but we define them and they are updated by the parallel_lookup
 	algoriithm in this loop */
 	int ix1,ix2,ix3;
+        origin_index = g.get_lookup_origin();
+        ix1=origin_index[0];
+        ix2=origin_index[1];
+        ix3=origin_index[2];
+        //DEBUG
+        cout << "operator+= lhs size="<<n1<<"x"<<n2<<"x"<<n3<<endl;
+        cout << "rhs size="<<g.n1<<"x"<<g.n2<<"x"<<g.n3<<endl;
 	for(i=0;i<n1;++i)
 	{
 		for(j=0;j<n2;++j)
@@ -465,6 +472,14 @@ GCLscalarfield3d& GCLscalarfield3d::operator+=(const GCLscalarfield3d& g)
 					cx.x3=x3[i][j][k];
 				}
 				err=g.parallel_lookup(cx.x1,cx.x2,cx.x3,ix1,ix2,ix3);
+                                //DEBUG
+                                cout << err << " "
+                                     << i << " "
+                                     << j << " "
+                                     << k << " "
+                                     << ix1 << " "
+                                     << ix2 << " "
+                                     << ix3 << endl;
 				switch(err)
 				{
 
@@ -527,6 +542,10 @@ GCLvectorfield3d& GCLvectorfield3d::operator+=(const GCLvectorfield3d& g)
 	std::vector<int> origin_index;  //needed below for parallel_lookup revision
 	/* these are altered within the loop below by parallel_lookup */
 	int ix1,ix2,ix3;
+        origin_index = g.get_lookup_origin();
+        ix1=origin_index[0];
+        ix2=origin_index[1];
+        ix3=origin_index[2];
 	for(i=0;i<n1;++i)
 	{
 		for(j=0;j<n2;++j)

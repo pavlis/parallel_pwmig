@@ -1,4 +1,5 @@
 #include <math.h>
+#include <float.h>
 #include <list>
 #include <sstream>
 /* This fortran routine is used to invert Jacobian.  It is
@@ -461,7 +462,49 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 		return this->parallel_lookup(x,y,z,this->ix1,this->ix2,this->ix3);
 	}catch(...){throw;};
 }
+//temporary DEBUG function
+void print_index(int i,int j,int k)
+{
+cout <<"("<< i<< ","<<j<<","<<k<<")"<<endl;
+}
+/* Found problems in 2021 revisions with convergence issues when
+grid cells were an exact match.   Roundoff errors were causing
+problems with integer truncation when the step size was almost but not
+quite a multiple of a unit cell.  Rounding won't work because that
+frequently causes an nonconvergence when the indexes boundes between
+one unit cell until the loop in loopup is broken by count.  This
+small function replaces a simple static_cast<int> on dx that was used
+in the old code.  Here we return round only if the step is within the
+fudge factor times DBL_EPSILON of the nearest integer.   There is no
+scaling with eps because the numbers are assumed always of order 1.
 
+dx is the number to be converted.  Returns the cautiously integer truncated
+result. */
+int unit_cell_stepsize(const double dx)
+{
+	//const double RoundoffFudgeFactor(5.0);
+	int itest=static_cast<int>(round(dx));
+	int trunctest=static_cast<int>(dx);
+	/* for multiple cell jumps always just return the rounded value */
+	if(abs(itest)>1)
+	  return itest;
+	if(abs(trunctest)==1)
+	  return trunctest;
+	else
+	   return 0;
+
+	/* The sign matters here because if truncation yields 0 it means we
+	are inside the cell.  The complication we have to handle is small
+	negative numbers. */
+	/*
+	if( dx<0.0 && fabs(dx)<RoundoffFgeFactor)
+	  return 0;
+	else if(dx>1.0)
+	  return 1;
+	else
+	  return static_cast<int>(dx);
+		*/
+}
 int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
      int& ix1_0, int& ix2_0, int& ix3_0) const
 {
@@ -483,6 +526,9 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 	dvector dxraw(3),dxunit(3);
 	int three(3);
 	double det;
+
+        cout << "Entering parallel_lookup with index=";
+        print_index(ix1_0,ix2_0,ix3_0);
 
 
 	/* return immediately if outside the extents bounding box */
@@ -554,9 +600,18 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 		if(dxunit(0)<0) dxunit(0)-=1.0;
 		if(dxunit(1)<0) dxunit(1)-=1.0;
 		if(dxunit(2)<0) dxunit(2)-=1.0;
+
+cout <<"dxunit:  "<< dxunit(0) <<","<<dxunit(1)<<","<<dxunit(2)<<endl;
+                /* old
 		di=static_cast<int>(dxunit(0));
 		dj=static_cast<int>(dxunit(1));
 		dk=static_cast<int>(dxunit(2));
+                */
+		di=unit_cell_stepsize(dxunit(0));
+		dj=unit_cell_stepsize(dxunit(1));
+		dk=unit_cell_stepsize(dxunit(2));
+
+print_index(di,dj,dk);
 
 		i += di;
 		j += dj;
@@ -589,6 +644,8 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 		drunit_last=drunit;
 		ctest = abs(di)+abs(dj)+abs(dk);
 		++count;
+cout << "loop count="<<count;
+print_index(i,j,k);
 		if(i==ilast && j==jlast && k==klast && ctest>0)
 			break;
 		else
@@ -603,6 +660,10 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 	ix2_0 = j;
 	ix3_0 = k;
 
+cout << " loop exit:  loop count="<<count;
+print_index(i,j,k);
+cout << "ctest="<<ctest<<endl;
+
 	if(ctest==0)
 	{
     if(fast_lookup)
@@ -616,6 +677,8 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 			}
     }
 	}
+
+cout << "Entering recover section"<<endl;
 
 	// Use dxunit values to define search distance in each direction
 	double search_distance[3];
@@ -643,7 +706,14 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 	}
 
 
+cout << "Calling recover";
+print_index(ix1_0,ix2_0,ix3_0);
+
 	int *irecov=recover(*this,x,y,z,ix1_0,ix2_0,ix3_0,search_distance);
+
+cout << "recover returned this index:  ";
+print_index(irecov[0],irecov[1],irecov[2]);
+
 	int iret;
 	std::vector<int> origin_index;
 	if(irecov[0]<0)
