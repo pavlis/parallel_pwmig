@@ -482,26 +482,31 @@ GCLscalarfield3d& GCLscalarfield3d::operator+=(const GCLscalarfield3d& g)
                                      << ix3 << endl;
 				switch(err)
 				{
-
-				case -2:
-				case 2:
-					ss << "Coding error:  return code "<<err<<" from GCLgrid3d::lookup method depricated"<<endl;
-					throw GCLgridError(ss.str());
 				case 1:
+				  /* 1 always means the point is outside the extents or
+					was found be a search to be outside the grid.  In that case we
+					just do nothing and keep going */
+					break;
 				case -1:
-					/* this is handled silently because the assumption is it is
-					caused by traversing outside the grid.  Ths may be causing artifacts
-					and perhaps should be handled differently.  The old code did this
-					here:
-					g.reset_index();
-					This is the replacement for parallel_lookup.  Note I'm concerned
-					this is leaving holes in the output image volume from this failure.  */
-
+					/* this means the search failed.  To assure it isn't a nonconvergence
+					problem from an inappropriate starting point we try again
+					iterating from the lookup origin   */
 					origin_index=this->get_lookup_origin();
 					ix1=origin_index[0];
 					ix2=origin_index[1];
 					ix3=origin_index[2];
-					break;
+					err=g.parallel_lookup(cx.x1,cx.x2,cx.x3,ix1,ix2,ix3);
+					/* Subtle detail of switch is exploited here.  If err is zero
+					this falls to the case 0 and the result is set with interpolate.
+					When nonzero we skip and do nothing to this point. We do, however,
+					reset the origin in case lookup left it in a weird place. */
+					if(err!=0)
+					{
+						ix1=origin_index[0];
+						ix2=origin_index[1];
+						ix3=origin_index[2];
+					  break;
+				  }
 				case 0:
 					valnew = g.parallel_interpolate(cx.x1,cx.x2,cx.x3,ix1,ix2,ix3);
 					val[i][j][k]+=valnew;
@@ -567,24 +572,31 @@ GCLvectorfield3d& GCLvectorfield3d::operator+=(const GCLvectorfield3d& g)
 				err=g.parallel_lookup(cx.x1,cx.x2,cx.x3,ix1,ix2,ix3);
 				switch(err)
 				{
-				case -2:
-				case 2:
-				  ss << "Coding error:  return code "<<err<<" from GCLgrid3d::lookup method depricated"<<endl;
-				  throw GCLgridError(ss.str());
 				case 1:
+				  /* 1 always means the point is outside the extents or
+				  was found be a search to be outside the grid.  In that case we
+				  just do nothing and keep going */
+				  break;
 				case -1:
-				  /* this is handled silently because the assumption is it is
-					caused by traversing outside the grid.  Ths may be causing artifacts
-					and perhaps should be handled differently.  The old code did this
-					here:
-					g.reset_index();
-					This is the replacement for parallel_lookup.  Note I'm concerned
-					this is leaving holes in the output image volume from this failure.  */
+					/* this means the search failed.  To assure it isn't a nonconvergence
+					problem from an inappropriate starting point we try again
+					iterating from the lookup origin   */
 					origin_index=this->get_lookup_origin();
 					ix1=origin_index[0];
 					ix2=origin_index[1];
 					ix3=origin_index[2];
-					break;
+					err=g.parallel_lookup(cx.x1,cx.x2,cx.x3,ix1,ix2,ix3);
+					/* Subtle detail of switch is exploited here.  If err is zero
+					this falls to the case 0 and the result is set with interpolate.
+					When nonzero we skip and do nothing to this point. We do, however,
+					reset the origin in case lookup left it in a weird place. */
+					if(err!=0)
+					{
+						ix1=origin_index[0];
+						ix2=origin_index[1];
+						ix3=origin_index[2];
+					  break;
+				  }
 				case 0:
 					valnew = g.parallel_interpolate(cx.x1,cx.x2,cx.x3,ix1,ix2,ix3);
 					for(l=0;l<nv;++l) val[i][j][k][l]+=valnew[l];

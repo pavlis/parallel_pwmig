@@ -119,6 +119,20 @@ void compute_element_weights(const GCLgrid3d *g,
 	weights[5]=0.125*xim*etap*zetap;
 	weights[6]=0.125*xip*etap*zetap;
 	weights[7]=0.125*xip*etap*zetam;
+	//Debug
+	cout << "compute_element_weights debug"<<endl;
+	cout << dxunit(0) << ", "
+	     << dxunit(1) << ", "
+			 << dxunit(2) << ", "
+			 << xi(0) << ", "
+			 << xi(1) << ", "
+			 << xi(2) << ", "
+			 << xim << ", "
+			 << etam << ", "
+			 << zetam << endl;
+	cout << "Weights: ";
+	for(auto k=0;k<9;++k)cout<<weights[k]<<" ";
+	cout << endl;
 }
 
 

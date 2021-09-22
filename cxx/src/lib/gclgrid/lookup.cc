@@ -480,36 +480,28 @@ scaling with eps because the numbers are assumed always of order 1.
 
 dx is the number to be converted.  Returns the cautiously integer truncated
 result. */
+/*
 int unit_cell_stepsize(const double dx)
 {
 	//const double RoundoffFudgeFactor(5.0);
-	int itest=static_cast<int>(round(dx));
+	int roundtest=static_cast<int>(round(dx));
 	int trunctest=static_cast<int>(dx);
-	/* for multiple cell jumps always just return the rounded value */
-	if(abs(itest)>1)
-	  return itest;
-	if(abs(trunctest)==1)
+	if(roundtest>1)
 	  return trunctest;
+	else if(roundtest < (-1))
+		return roundtest;   // Better estimate when jumping negative
+	else if( dx>=-1.0 && dx<=0.0)
+	  return -1;
 	else
-	   return 0;
-
-	/* The sign matters here because if truncation yields 0 it means we
-	are inside the cell.  The complication we have to handle is small
-	negative numbers. */
-	/*
-	if( dx<0.0 && fabs(dx)<RoundoffFgeFactor)
-	  return 0;
-	else if(dx>1.0)
-	  return 1;
-	else
-	  return static_cast<int>(dx);
-		*/
+		return 0;
 }
+*/
 int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
      int& ix1_0, int& ix2_0, int& ix3_0) const
 {
 	int i,j,k;
 	int ilast, jlast, klast;
+	int itest, jtest, ktest;
 	int ii;
 	double dxi[3],dxj[3],dxk[3];
 	//double nrmdxi,nrmdxj,nrmdxk;
@@ -517,11 +509,7 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 	int di, dj, dk;
 	int ctest;
 	int count=0;
-	/* When inside this number of cell units, increasing distance
-	from the target point will break the iterative loop.  Found
-	necessary to stop excessive iterations on edge points */
-	const double InnerRCut(4.0);
-	double drunit,drunit_last;
+	bool on_boundary(false),continue_iteration(true);
 	dmatrix J(3,3),Jinv(3,3);  // Jacobian and it's inverse
 	dvector dxraw(3),dxunit(3);
 	int three(3);
@@ -546,12 +534,11 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 	if(j>=((n2)-1)) j = (n2)-2;
 	if(k>=((n3)-1)) k = (n3)-2;
 	ilast =i;  jlast=j;  klast=k;
-	// A conservative large value for drunit to start the loop
-	drunit_last=static_cast<double>(n1+n2+n3);
 
-
+	continue_iteration = true;
 	do
 	{
+		on_boundary=false;
 		/* This is the unit cell step directions along x1, x2, and x3 grid lines*/
 		dxi[0] = (x1[i+1][j][k]) - (x1[i][j][k]);
 		dxi[1] = (x2[i+1][j][k]) - (x2[i][j][k]);
@@ -590,6 +577,19 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 		treex3_(J.get_address(0,0),&three,
 			Jinv.get_address(0,0),&three,&det);
 		dxunit=Jinv*dxraw;
+		//DEBUB
+		//cout << "Determinate of Jinv="<<det<<endl;
+		/* TODO  Here and in interpolate the simple analytic inverse
+		is used to compute the inverse in tree3.  I (glp) suspect strongly
+		some artifacs we've had in pwmig outputs in the past come from
+		singularity or near singularity of J.   normally a determinate
+		cannot be used to estimate condition nubmer but because the
+		elements of J are always order 1 it should be possible to
+		make the inversion more bombproof if det is less than some
+		threshold.   If so we would revert to an eigenvalue decomposition
+		and a pseudoinverse.  That would need some serious testing befoore
+		trying it though so I'm shelving the idea for now sept 2021.
+		*/
 
 		// This is necessary as int truncation for
 		// negative numbers removes the fractional
@@ -597,70 +597,125 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 		//direction as it does for positive numbers
 		// Necessary as we are search for the lower right corner
 		// of each cell.
-		if(dxunit(0)<0) dxunit(0)-=1.0;
-		if(dxunit(1)<0) dxunit(1)-=1.0;
-		if(dxunit(2)<0) dxunit(2)-=1.0;
-
-cout <<"dxunit:  "<< dxunit(0) <<","<<dxunit(1)<<","<<dxunit(2)<<endl;
-                /* old
 		di=static_cast<int>(dxunit(0));
 		dj=static_cast<int>(dxunit(1));
 		dk=static_cast<int>(dxunit(2));
-                */
-		di=unit_cell_stepsize(dxunit(0));
-		dj=unit_cell_stepsize(dxunit(1));
-		dk=unit_cell_stepsize(dxunit(2));
-
-print_index(di,dj,dk);
-
-		i += di;
-		j += dj;
-		k += dk;
-		drunit=dr3mag(dxunit.get_address(0,0));
-		if( (drunit<InnerRCut) && (drunit_last<drunit) )
+		itest = i + di;
+		if(dxunit(0)<0.0)
 		{
-			// crude, but assures recovery loop will
-			// be entered
-			ctest=-1;
-			break;
+			if( (di<0) && (itest>0) )
+			{
+				--di;
+			}
+			i += di;
+			if(i<0)
+			{
+				i=0;
+				on_boundary = true;
+			}
 		}
-		/* We reset i, j, or k if they move outside the grid
-		and just continue the iteration.  We catch nonconvergence
-		when the loop is exited and try to decide if the
-		nonconvergence is nonconvergence or a point in the
-		grey zone between the bounding box and the actual grid. */
-		if(i >= (n1-1) )
-			i = n1-2;
-		if(j >= (n2-1) )
-			j = n2-2;
-		if(k >= (n3-1) )
-			k = n3-2;
-		if(i<0)
-			i=0;
-		if(j<0)
-			j=0;
-		if(k<0)
-			k=0;
-		drunit_last=drunit;
-		ctest = abs(di)+abs(dj)+abs(dk);
-		++count;
-cout << "loop count="<<count;
-print_index(i,j,k);
-		if(i==ilast && j==jlast && k==klast && ctest>0)
-			break;
 		else
 		{
-			ilast=i;
-			jlast=j;
-			klast=k;
+			if(itest>=(this->n1 - 1))
+			{
+				/* This and related below are -2 because we always force
+				the index to be to the left of the box in which the box is
+				contained.  */
+				i=(this->n1)-2;
+				on_boundary = true;
+			}
+			else
+			{
+				i = itest;
+			}
 		}
+		jtest = j + dj;
+		if(dxunit(1)<0)
+		{
+			if( (dj<0) && (jtest>0) )
+			{
+				--dj;
+			}
+			j += dj;
+			if(j<0)
+			{
+				j=0;
+				on_boundary = true;
+			}
+		}
+		else
+		{
+			if(jtest>=(this->n2 - 1))
+			{
+				j=(this->n2)-2;
+				on_boundary = true;
+			}
+			else
+			{
+				j = jtest;
+			}
+		}
+		ktest = k + dk;
+		if(dxunit(2)<0)
+		{
+			if( (dk<0) && (ktest>0) )
+			{
+				--dk;
+			}
+			k += dk;
+			if(k<0)
+			{
+				k=0;
+				on_boundary = true;
+			}
+		}
+		else
+		{
+			if(ktest>=(this->n3 - 1))
+			{
+				k=(this->n3)-2;
+				on_boundary = true;
+			}
+			else
+			{
+				k = ktest;
+			}
+		}
+		cout <<"dxunit:  "<< dxunit(0) <<","<<dxunit(1)<<","<<dxunit(2)<<endl;
+		cout << "integer deltas=";
+		print_index(di,dj,dk);
+		cout << "Adjusted index:  ";
+		print_index(i,j,k);
+
+		ctest = abs(di)+abs(dj)+abs(dk);
+		++count;
+		cout << "loop count="<<count;
+		print_index(i,j,k);
+		/* Use a different test for on_boundary case.  Needed because in
+		the past found convergence issues when working along a boundary */
+		if(on_boundary)
+		{
+			if( fabs(dxunit(0))<=1.0 && fabs(dxunit(1))<=1.0 && fabs(dxunit(2))<=1.0
+		    && i==ilast && j==jlast && k==klast)
+			{
+				continue_iteration=false;
+			}
+		}
+		else
+		{
+			if(ctest==0)
+			continue_iteration=false;
+		}
+		ilast=i;
+		jlast=j;
+		klast=k;
 	}
-	while( (ctest>0) && (count<MAXIT) );
+	while( continue_iteration && (count<MAXIT) );
 	ix1_0 = i;
 	ix2_0 = j;
 	ix3_0 = k;
 
-cout << " loop exit:  loop count="<<count;
+cout << " loop exit:  loop count="<<count<<endl;
 print_index(i,j,k);
 cout << "ctest="<<ctest<<endl;
 
@@ -686,7 +741,7 @@ cout << "Entering recover section"<<endl;
 	// This is aimed to reduce search time for points outside the actual
 	// boundary.
 	if((ix1_0==0) || (ix2_0==0) || (ix3_0==0)
-		||(ix1_0==n1-2) || (ix2_0==n2-2) || (ix3_0==n3-2) )
+		||(ix1_0>=n1-2) || (ix2_0>=n2-2) || (ix3_0>=n3-2) )
 	{
 		for(ii=0;ii<3;++ii)
 		{
