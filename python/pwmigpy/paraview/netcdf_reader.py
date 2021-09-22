@@ -347,24 +347,12 @@ def netcdf_arrays_to_GCLfield(lon,lat,depth,V,vkey=None,
     g.dx1_nom=dx
     g.dx2_nom=dy
     g.dx3_nom=dz
-    # this next calculation is accurate only if the grid is regular
-    # in lat,lon, and depth
-    i0=int((lat0-latmin)/delta_lat)
-    j0=int((lon0-lonmin)/delta_lon)
-
-    if i0<0:
-        print(prog+'computed i0=',i0,' reset to 0')
-        i0=0
-    if j0<0:
-        print(prog+'computed i0=',i0,' reset to 0')
-        j0=0
-    k0=int((radius-r0)/dz)
-    if k0<0:
-        print(prog+'computed k0=',i0,' reset to 0')
-        j0=0
-    g.i0=i0
-    g.j0=j0
-    g.k0=k0
+    # These don't matter much for this context but we set them as follows. 
+    # This would be problematic for a global model
+    i0=int(nx/2)
+    j0=int(ny/2)
+    k0=int(nz/2)
+    g.set_lookup_origin(i0,j0,k0)
     #g=GCLgrid3d(nx,ny,nz,gridname,
     #        np.deg2rad(lat0),np.deg2rad(lon0),r0,np.deg2rad(azimuth_y),
     #           dx,dy,dz,i0,j0)
