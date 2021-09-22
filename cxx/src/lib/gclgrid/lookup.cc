@@ -462,11 +462,7 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 		return this->parallel_lookup(x,y,z,this->ix1,this->ix2,this->ix3);
 	}catch(...){throw;};
 }
-//temporary DEBUG function
-void print_index(int i,int j,int k)
-{
-cout <<"("<< i<< ","<<j<<","<<k<<")"<<endl;
-}
+
 /* Found problems in 2021 revisions with convergence issues when
 grid cells were an exact match.   Roundoff errors were causing
 problems with integer truncation when the step size was almost but not
@@ -480,22 +476,7 @@ scaling with eps because the numbers are assumed always of order 1.
 
 dx is the number to be converted.  Returns the cautiously integer truncated
 result. */
-/*
-int unit_cell_stepsize(const double dx)
-{
-	//const double RoundoffFudgeFactor(5.0);
-	int roundtest=static_cast<int>(round(dx));
-	int trunctest=static_cast<int>(dx);
-	if(roundtest>1)
-	  return trunctest;
-	else if(roundtest < (-1))
-		return roundtest;   // Better estimate when jumping negative
-	else if( dx>=-1.0 && dx<=0.0)
-	  return -1;
-	else
-		return 0;
-}
-*/
+
 int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
      int& ix1_0, int& ix2_0, int& ix3_0) const
 {
@@ -514,10 +495,6 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 	dvector dxraw(3),dxunit(3);
 	int three(3);
 	double det;
-
-        cout << "Entering parallel_lookup with index=";
-        print_index(ix1_0,ix2_0,ix3_0);
-
 
 	/* return immediately if outside the extents bounding box */
 	if( (x > (x1high)) || (x < (x1low))
@@ -681,16 +658,9 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 				k = ktest;
 			}
 		}
-		cout <<"dxunit:  "<< dxunit(0) <<","<<dxunit(1)<<","<<dxunit(2)<<endl;
-		cout << "integer deltas=";
-		print_index(di,dj,dk);
-		cout << "Adjusted index:  ";
-		print_index(i,j,k);
 
 		ctest = abs(di)+abs(dj)+abs(dk);
 		++count;
-		cout << "loop count="<<count;
-		print_index(i,j,k);
 		/* Use a different test for on_boundary case.  Needed because in
 		the past found convergence issues when working along a boundary */
 		if(on_boundary)
@@ -711,14 +681,10 @@ int GCLgrid3d::parallel_lookup(const double x, const double y, const double z,
 		klast=k;
 	}
 	while( continue_iteration && (count<MAXIT) );
+
 	ix1_0 = i;
 	ix2_0 = j;
 	ix3_0 = k;
-
-cout << " loop exit:  loop count="<<count<<endl;
-print_index(i,j,k);
-cout << "ctest="<<ctest<<endl;
-
 	if(ctest==0)
 	{
     if(fast_lookup)
@@ -732,9 +698,6 @@ cout << "ctest="<<ctest<<endl;
 			}
     }
 	}
-
-cout << "Entering recover section"<<endl;
-
 	// Use dxunit values to define search distance in each direction
 	double search_distance[3];
 	for(ii=0;ii<3;++ii)search_distance[ii]=fabs(dxunit(ii));
@@ -759,21 +722,11 @@ cout << "Entering recover section"<<endl;
 			search_distance[ii]=minimum_search_distance;
 
 	}
-
-
-cout << "Calling recover";
-print_index(ix1_0,ix2_0,ix3_0);
-
 	int *irecov=recover(*this,x,y,z,ix1_0,ix2_0,ix3_0,search_distance);
-
-cout << "recover returned this index:  ";
-print_index(irecov[0],irecov[1],irecov[2]);
-
 	int iret;
 	std::vector<int> origin_index;
 	if(irecov[0]<0)
 	{
-		//this->reset_index();
 		origin_index = this->get_lookup_origin();
 		ix1_0 = origin_index[0];
 		ix2_0 = origin_index[1];
