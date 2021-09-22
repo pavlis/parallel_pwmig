@@ -76,7 +76,7 @@ def find_and_compare_sampledata_3d(db,query,gcldata):
     assert type(data_from_db) == type(gcldata)
     return compare_sampledata_3d(data_from_db,gcldata)
     
-def compare_sampledata_3d(gclcopy,gcldata):
+def compare_sampledata_3d(gclcopy,gcldata,rtol=5e-4,atol=1e-9):
     """
     Compares sample data of two gcl objects.  This function 
     assume the scalar attributes of the object have already 
@@ -116,7 +116,7 @@ def compare_sampledata_3d(gclcopy,gcldata):
                     val2=gclcopy.get_value(i,j,k)
                     # debug
                     print(i,j,k,val1,val2)
-                    #assert np.isclose(val1,val2)
+                    assert np.isclose(val1,val2,rtol=rtol,atol=atol)
     elif isinstance(gcldata,GCLvectorfield3d):
         for i in range(n1):
             for j in range(n2):
@@ -128,7 +128,7 @@ def compare_sampledata_3d(gclcopy,gcldata):
                     assert gclcopy.nv == len(val2)
                     assert len(val1) == len(val2)
                     for l in range(len(val1)):
-                        assert np.isclose(val1[l],val2[l])
+                        assert np.isclose(val1[l],val2[l],rtol=rtol,atol=atol)
     elif isinstance(gcldata,GCLgrid3d):
         return True
     else:
