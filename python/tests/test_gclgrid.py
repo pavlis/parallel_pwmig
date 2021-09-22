@@ -115,7 +115,7 @@ def compare_sampledata_3d(gclcopy,gcldata,rtol=5e-4,atol=1e-9):
                     val1=gcldata.get_value(i,j,k)
                     val2=gclcopy.get_value(i,j,k)
                     # debug
-                    print(i,j,k,val1,val2)
+                    #print(i,j,k,val1,val2)
                     assert np.isclose(val1,val2,rtol=rtol,atol=atol)
     elif isinstance(gcldata,GCLvectorfield3d):
         for i in range(n1):
