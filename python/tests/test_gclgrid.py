@@ -8,7 +8,8 @@ Created on Thu Apr 15 10:06:01 2021
 import pickle
 from pwmigpy.db.database import (GCLdbsave, GCLdbread)
 from pwmigpy.ccore.gclgrid import (GCLgrid, GCLgrid3d, GCLscalarfield,GCLscalarfield3d,
-                     GCLvectorfield,GCLvectorfield3d,r0_ellipse,DoubleVector)
+                     GCLvectorfield,GCLvectorfield3d,r0_ellipse,DoubleVector,
+                     Geographic_point)
 import numpy as np
 from mspasspy.db.client import DBClient
 from mspasspy.db.database import Database 
@@ -262,14 +263,14 @@ for i in range(f2.n1):
         for k in range(f2.n3):
             f2.set_value(count,i,j,k)
             valtest=f2.get_value(i,j,k)
-        assert np.isclose(count,valtest)
-        for l in range(f4.nv):
-            vec[l] = count*float(l+1)
-        f4.set_value(vec,i,j,k)
-        vec_retrieved=f4.get_value(i,j,k)
-        for l in range(len(vec)):    
-            assert np.isclose(vec_retrieved[l],vec[l])
-        count += 1.0
+            assert np.isclose(count,valtest)
+            for l in range(f4.nv):
+                vec[l] = count*float(l+1)
+            f4.set_value(vec,i,j,k)
+            vec_retrieved=f4.get_value(i,j,k)
+            for l in range(len(vec)):
+                assert np.isclose(vec_retrieved[l],vec[l])
+            count += 1.0
 
 print('testing save and read of GCLgrid ')
 tag={'tag' : 'test1'}
@@ -331,6 +332,20 @@ assert find_and_compare_sampledata_3d(db,tag,f4)
 gcopy=pickle.loads(pickle.dumps(f4))
 assert find_and_compare_sampledata_3d(db,tag,gcopy)
 
+print('Testing get methods directly')
+val=f1.get_value(1,1)
+assert np.isclose(val,7.0)
+val=f2.get_value(1,1,1)
+assert np.isclose(val,62.0)
+vec=f3.get_value(1,1)
+assert np.isclose(vec[0],7.0)
+assert np.isclose(vec[1],14.0)
+vec=f4.get_value(1,1,1)
+assert np.isclose(vec[0],62.0)
+assert np.isclose(vec[1],124.0)
+assert np.isclose(vec[2],186.0)
+assert np.isclose(vec[3],248.0)
+
 print('Testing copy constructors')
 # We make copies of each of the field objects
 
@@ -363,7 +378,46 @@ f4cpy2 *= 2.0
 #assert compare_sampledata_2d(f3cpy2,f3)
 assert compare_sampledata_3d(f2cpy2,f2)
 assert compare_sampledata_3d(f4cpy2,f4)
-
+print('testing new methods added for python interface')
+i=int(f2.n1/2)
+j=int(f2.n2/2)
+k=int(f2.n3/2)
+cp=f2.get_coordinates(i,j,k)
+gp=f2.ctog(cp)
+print('testing this geographic point  - at a grid point')
+print(np.degrees(gp.lat),np.degrees(gp.lon),r0_ellipse(gp.lat)-gp.r)
+assert f2.point_is_inside_grid(gp)
+val=f2.get_value(i,j,k)
+val2=f2.get_value(gp)
+assert np.isclose(val,val2)
+vec=f4.get_value(gp)
+for x in vec:
+    print(x)
+# these numbers work only for the way the grid values were set above
+assert np.isclose(vec[0],552.0)
+assert np.isclose(vec[1],1104.0)
+assert np.isclose(vec[2],1656.0)
+assert np.isclose(vec[3],2208.0)
+# offset cp a just small amount (about 1.5 cells each directoin and see if this still works
+cp.x1+=15.0
+cp.x2+=15.0
+cp.x3+=7.5
+gp=f2.ctog(cp)
+print('testing this geographic point - in grid but not on a grid point')
+print(np.degrees(gp.lat),np.degrees(gp.lon),r0_ellipse(gp.lat)-gp.r)
+assert f2.point_is_inside_grid(gp)
+val2=f2.get_value(gp)
+vec=f4.get_value(gp)
+for x in vec:
+    print(x)
+# this is a loose test that works for now.  the pybind11 wrappers for 
+# parallel lookup are broken.
+assert np.isclose(val2,735.09343)
+# Now use a point definitely outside the grid 
+cp.x1+=1000.0
+gp=f2.ctog(cp)
+print(np.degrees(gp.lat),np.degrees(gp.lon),r0_ellipse(gp.lat)-gp.r)
+assert not f2.point_is_inside_grid(gp)
 
 
 

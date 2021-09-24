@@ -852,6 +852,13 @@ public:
 	 as a common problem that could happen millions of times this was
 	 a potential efficiency problems (the books all say throwing exceptions
 	 is an expensive operation).
+
+	 This function was the original api for this library.  To adapt the code
+	 to mspass it was quickly realized the algorithm was not thread safe because
+	 of the internally maintained index it depended up.  This method
+	 was retained for backward compatibility but users are warned it may be
+	 depricated in the future and should not be used.
+
 	 \return 2 when point is in gray area within on nominal grid spacing of the edge
 	 \return 1 when the point is outside the bounding box.
 	 \return 0 on success.\
@@ -862,9 +869,65 @@ public:
 	 \param x3p - Cartesian x3 coordinate of point to find within the grid
 	*/
 	int lookup(const double x1p, const double x2p, const double x3p);
+	/*! \brief Thread safe lookup method.
+
+	 Finds the index position of a point in a GCLgrid3d object.
+	 This is a low level function to find the location of a point
+	 specified as the Cartesian, ordered triplet (x1p,x2p,x3p) in a grid.
+	 The routine is very procedural returning an
+	 integer code (see below) indicating success or failure of the lookup.
+	 This was intentional as this routine is called millions of times in
+	 some contexts so efficiency is critical.  The alternative would be
+	 to throw an exception when a lookup failed, but since this is viewed
+	 as a common problem that could happen millions of times this was
+	 a potential efficiency problems (the books all say throwing exceptions
+	 is an expensive operation).
+
+	 This method uses the same algorithm as the origina lookup method
+	 (see above) but the user is responsible for maintaining the lookup
+	 index through the arguments ix1_0, ix2_0, and ix3_0.   This makes
+	 the method stateless which the old code was note.   The decision about
+	 what value to use for the starting index is dependent on data and
+	 the use.  Random lookups should normally alway just use the lookup origin
+	 and ignore what is returned.  Lookups working along a coordinate axis,
+	 which is the norm for most grid processing algorithms, should maintain
+	 the index within the loop and use the previous value as a starting point
+	 for the next point.  A key point of this method is that type of lookup
+	 in distorted grids can be an order of magnitude faster than a search
+	 from the origin.
+
+	 \return 1 when the point is outside the bounding box.
+	 \return 0 on success.\
+	 \return -1 if the lookup function did not converge.
+
+	 \param x1p - Cartesian x1 coordinate of point to find within the grid
+	 \param x2p - Cartesian x2 coordinate of point to find within the grid
+	 \param x3p - Cartesian x3 coordinate of point to find within the grid
+	 \param ix1_0 - first grid index value from which the iteration should start.
+	 \param ix2_0 - second grid index value from which the iteration should start.
+	 \param ix3_0 - thrid grid index value from which the iteration should start.
+
+	*/
 	int parallel_lookup(const double x1p, const double x2p, const double x3p,
 	    int& ix1_0, int& ix2_0, int& ix3_0) const;
+	/*! Overloaded convenience method to use an std::vector to hold the index. */
+	int parallel_lookup(const double x1p, const double x2p, const double x3p,
+	    std::vector<int>& index) const;
+	/*! \brief Test if a point is inside a grid.
+
+	It is not generally trivial to determine if a point is inside a
+	distorted box (the concept a GCLgrid3d implements).  This method can
+	be used a convenience to test for whether or not a point is inside the
+	grid.  It is a useful alternative to calling the low level parallel_lookup
+	method.   This function is only appropriate for random tests or where
+	readability is more important than speed because it always uses a search
+	starting from the lookup origin. */
+	bool point_is_inside_grid(const Geographic_point gp);
+	/*! Companion to the old lookup method.  It should not be used as it
+	will may be depricated in the fugure. */
 	void reset_index() {ix1=i0; ix2=j0; ix3=k0;};
+	/*! Companion to the old lookup method.  It should not be used as it
+	will may be depricated in the fugure. */
 	void get_index(int *ind) {ind[0]=ix1; ind[1]=ix2; ind[2]=ix3;};
 	/*!
 	 Returns the geographical coordinates of a point in the grid specified by grid index positions.
@@ -1007,6 +1070,7 @@ public:
 	the indices given are outside the array dimensions.
 	*/
 	void set_lookup_origin(const int i, const int j, const int k);
+
 private:
 	int ix1, ix2, ix3;
         bool fast_lookup;
@@ -1150,6 +1214,8 @@ public:
 	mspass::utility::Metadata get_attributes() const;
 	/*! Get the field value at specified grid cell */
 	double get_value(const int i, const int j) const;
+
+
 	/*! Sets the value of the field variable at grid cell i,j */
 	void set_value(const double newvalue, const int i, const int j);
 	/*! \brief Add one field to another.
@@ -1343,6 +1409,7 @@ public:
                 const std::string format=default_output_format);
 	/*! Get the field value at specified grid cell */
 	std::vector<double> get_value(const int i, const int j) const;
+
 	/*! Set the field value at grid point i,j.
 
         The input vector, newvals, size is tested against this->nv.
@@ -1516,6 +1583,20 @@ public:
 	void zero();
 	/*! Get the field value at specified grid cell */
 	double get_value(const int i, const int j, const int k) const;
+	/*! \brief Get the field value at a specified point.
+
+	This overloaded method does a lookup and interpolation before returning
+	a value.  It should normally always be proceeded by a call to
+	GCLgrid3d::point_is_inside_grid to make sure the lookup wil look
+	algorithm confirms the point can be found and is inside the grid.
+	If lookup fails this function will throw an exception.  That means
+	any processing function that uses this method in a batch process must
+	either have an error handler or precede the call by one to
+	point_is_inside_grid.
+
+	\param gp is the point to retieve a value.
+	*/
+	double get_value(const Geographic_point gp) const;
 	/*! Sets the value of the field variable at grid cell i,j */
 	void set_value(const double newvalue, const int i, const int j, const int k);
 	/** Standard assignment operator. */
@@ -1699,6 +1780,20 @@ public:
 	void zero();
 	/*! Get the field value at specified grid cell */
 	std::vector<double> get_value(const int i, const int j, const int k) const;
+	/*! \brief Get the field value at a specified point.
+
+	This overloaded method does a lookup and interpolation before returning
+	a value.  It should normally always be proceeded by a call to
+	GCLgrid3d::point_is_inside_grid to make sure the lookup wil look
+	algorithm confirms the point can be found and is inside the grid.
+	If lookup fails this function will throw an exception.  That means
+	any processing function that uses this method in a batch process must
+	either have an error handler or precede the call by one to
+	point_is_inside_grid.
+
+	\param gp is the point to retieve a value.
+	*/
+	std::vector<double> get_value(const Geographic_point gp) const;
 	/*! Set the field value at grid point i,j,k.
 
         The input vector, newvals, size is tested against this->nv.

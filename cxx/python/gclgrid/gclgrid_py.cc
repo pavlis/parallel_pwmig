@@ -296,7 +296,10 @@ py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
   .def(py::init<const Metadata&>())
   .def("save",&GCLgrid3d::save,"Save to an external file")
   .def("lookup",&GCLgrid3d::lookup,"Find point by cartesian coordinates (depricated)")
-  .def("parallel_lookup",&GCLgrid3d::parallel_lookup,"Thread safe lookup method")
+  .def("parallel_lookup",py::overload_cast<const double,const double,const double,int&,int&,int&>
+      (&GCLgrid3d::parallel_lookup,py::const_),"Thread save lookup method")
+  .def("parallel_lookup",py::overload_cast<const double,const double,const double,std::vector<int>&>
+      (&GCLgrid3d::parallel_lookup,py::const_),"Thread save lookup method - vector index overloading")
   .def("reset_index",&GCLgrid3d::reset_index,"Initializer for lookup searches - rarely needed")
   .def("get_index",&GCLgrid3d::get_index,"Return index position found with lookup")
   .def("geo_coordinates",&GCLgrid3d::geo_coordinates,"Return geo coordinate struct")
@@ -319,6 +322,8 @@ py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
       (&GCLgrid3d::set_lookup_origin),"Set lookup origin explicitly (3 int args)")
   .def("set_lookup_origin",py::overload_cast<>(&GCLgrid3d::set_lookup_origin),
       "Set lookup origin to default")
+  .def("point_is_inside_grid",&GCLgrid3d::point_is_inside_grid,
+      "Test if a point specified by geographic coordinates is inside this grid")
   .def_readwrite("n3",&GCLgrid3d::n3)
   .def_readwrite("dx3_nom",&GCLgrid3d::dx3_nom)
   /* k0 is public, but we should use the new getters and setters that
@@ -466,7 +471,12 @@ py::class_<GCLscalarfield3d,GCLgrid3d>(m,"GCLscalarfield3d","Three-dimensional g
   .def("interpolate",&GCLscalarfield3d::interpolate,"Interpolate grid to get value at point passed")
   .def("get_attributes",&GCLscalarfield3d::get_attributes,
      "Fetch all attributes into a Metadata container")
-  .def("get_value",&GCLscalarfield3d::get_value,"Get the value at a specified grid point")
+  .def("get_value",
+    py::overload_cast<const int, const int, const int>(&GCLscalarfield3d::get_value,py::const_),
+    "Get the value at a specified grid point")
+  .def("get_value",
+    py::overload_cast<const Geographic_point>(&GCLscalarfield3d::get_value,py::const_),
+    "Get the value at a point specified by geographic coordinates")
   .def("set_value",&GCLscalarfield3d::set_value,"Set the value at a specified grid point")
   .def(py::self *= double())
   .def(py::self += py::self)
@@ -563,7 +573,12 @@ py::class_<GCLvectorfield3d,GCLgrid3d>(m,"GCLvectorfield3d","Three-dimensional g
   .def("interpolate",&GCLvectorfield3d::interpolate,"Interpolate grid to get vector values at point passed")
   .def("get_attributes",&GCLvectorfield3d::get_attributes,
      "Fetch all attributes into a Metadata container")
-  .def("get_value",&GCLvectorfield3d::get_value,"Get the vector of values at a specified grid point")
+  .def("get_value",
+    py::overload_cast<const int, const int, const int>(&GCLvectorfield3d::get_value,py::const_),
+    "Get the vector of values at a specified grid point")
+  .def("get_value",
+    py::overload_cast<const Geographic_point>(&GCLvectorfield3d::get_value,py::const_),
+    "Get the value at a specified point specified by geographic coordinates")
   .def("set_value",&GCLvectorfield3d::set_value,"Set the value at a specified grid point")
   .def(py::self += py::self)
   .def(py::self *= double())

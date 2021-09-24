@@ -462,7 +462,18 @@ int GCLgrid3d::lookup(const double x, const double y, const double z)
 		return this->parallel_lookup(x,y,z,this->ix1,this->ix2,this->ix3);
 	}catch(...){throw;};
 }
-
+int GCLgrid3d::parallel_lookup(const double x1p, const double x2p, const double x3p,
+	   std::vector<int>& index) const
+{
+	if(index.size() != 3)
+	{
+		throw GCLgridError(string("parallel_lookup:  ")
+	     + "Received index vector of incorrect size - must be exactly 3.  Coding error");
+	}
+	int return_code;
+	return_code = this->parallel_lookup(x1p,x2p,x3p,index[0],index[1],index[2]);
+	return return_code;
+}
 /* Found problems in 2021 revisions with convergence issues when
 grid cells were an exact match.   Roundoff errors were causing
 problems with integer truncation when the step size was almost but not
