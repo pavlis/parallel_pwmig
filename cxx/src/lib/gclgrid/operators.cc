@@ -470,7 +470,6 @@ GCLscalarfield3d& GCLscalarfield3d::operator+=(const GCLscalarfield3d& g)
 					cx.x3=x3[i][j][k];
 				}
 				err=g.parallel_lookup(cx.x1,cx.x2,cx.x3,ix1,ix2,ix3);
-
 				switch(err)
 				{
 				case 1:
