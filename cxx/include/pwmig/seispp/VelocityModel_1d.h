@@ -2,6 +2,11 @@
 #define _VELOCITYMODEL_1D_H_
 #include <string>
 #include <vector>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
 namespace pwmig::seispp {
 
 /*! \brief Object to encapsulate concept of a 1d (layered Earth) velocity model.
@@ -66,7 +71,7 @@ public:
 	(z,vp,vs) where z is depth, vp is P velocity at z, and vs is
 	S velocity at z.
 
-	\exception SeisppError if is an i/o problem of any kind.
+	\exception MsPASSError if is an i/o problem of any kind.
 
 	\param fname is file name to be read.
 	\param form is either rbh or plain.  Anything else will cause
@@ -92,6 +97,17 @@ public:
 	point velocity and the last point gradient.
 	**/
 	double getv(const double zin) const;
+/* Normally this use of boost serialization is private but for mysterious
+reasons pybind11 throws a compilation error we declare it private. */
+//private:
+	template<class Archive>
+       void serialize(Archive & ar, const unsigned int version)
+  {
+    ar & nlayers;
+    ar & z;
+    ar & v;
+    ar & grad;
+  };
 };
 
 } // End namespace

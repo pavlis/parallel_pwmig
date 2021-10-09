@@ -16,7 +16,8 @@
 /* these are needed to make std::vector containers function propertly.
 This was borrowed from mspass pybind11 cc files */
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
-PYBIND11_MAKE_OPAQUE(std::vector<mspass::seismic::TimeSeries>);
+/* Commented out for reason noted below */
+//PYBIND11_MAKE_OPAQUE(std::vector<mspass::seismic::TimeSeries>);
 
 namespace pwmig {
 namespace pwmigpy {
@@ -39,8 +40,13 @@ using pwmig::seispp::VelocityModel_1d;
 
 PYBIND11_MODULE(seispp, m) {
 /* more std::vector requirements borrowed from mspass */
+/* Note I had to comment out the bind_vector line below for TimeSeriesVector.  The 
+reason seems to be that that symbol is registered global in MsPASS.  DoubleVector, on 
+the other hand, uses the default which the documentation for pybind11 says means it 
+will be treated as local to only this module.   Hence we have to retain DoubleVector 
+but not TimeSeriesVector*/
 py::bind_vector<std::vector<double>>(m, "DoubleVector");
-py::bind_vector<std::vector<TimeSeries>>(m, "TimeSeriesVector", pybind11::module_local(false));
+//py::bind_vector<std::vector<TimeSeries>>(m, "TimeSeriesVector");
 
 
 py::class_<Hypocenter>(m,"Hypocenter","Class to hold earthquake space-time coordinates")
@@ -111,6 +117,25 @@ py::class_<VelocityModel_1d>(m,"VelocityModel_1d","Data object to hold a layered
   .def(py::init<const std::string,const std::string,const std::string>())
   .def(py::init<const VelocityModel_1d&>())
   .def("getv",&VelocityModel_1d::getv,"Get the velocity at specified depth")
+  .def_readwrite("nlayers",&VelocityModel_1d::nlayers,"Number of grid points defining this model")
+  .def_readwrite("z",&VelocityModel_1d::z,"Vector of model node depth points (km)")
+  .def_readwrite("v",&VelocityModel_1d::v,"Vector of model velocity values (km/s)")
+  .def_readwrite("grad",&VelocityModel_1d::grad,"Vector of velocity gradients")
+  .def(py::pickle(
+    [](const VelocityModel_1d &self) {
+      stringstream ss;
+      boost::archive::text_oarchive ar(ss);
+      ar << self;
+      return py::make_tuple(ss.str());
+    },
+    [](py::tuple t){
+      stringstream ss(t[0].cast<std::string>());
+      boost::archive::text_iarchive ar(ss);
+      VelocityModel_1d vmod;
+      ar>>vmod;
+      return vmod;
+    }
+  ))
 ;
 }
 }  // end namespace pwmigpy
