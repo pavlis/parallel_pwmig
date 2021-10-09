@@ -1,18 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Apr 14 11:40:25 2021
 
-@author: pavlis
-"""
 import os
 from bson.objectid import ObjectId
 
-from mspasspy.ccore.utility import (MsPASSError, Metadata)
+from mspasspy.ccore.utility import (MsPASSError, Metadata,AntelopePf)
 from mspasspy.util.converter import Metadata2dict
-# This is a temporary for testing
 from pwmigpy.ccore.gclgrid import (GCLgrid, GCLgrid3d, GCLscalarfield, GCLscalarfield3d,
                      GCLvectorfield, GCLvectorfield3d)
+from pwmigpy.ccore.seispp import VelocityModel_1d
+import pandas as pd
 
 
 def GCLdbsave_attributes(db, md, collection="GCLfielddata"):
@@ -133,12 +128,14 @@ def GCLdbsave(db, obj, collection="GCLfielddata",
     # object's internal attributes returned in md OR the
     # foff parameters that can only be known during the save
     # that is grid_data_foff and field_data_foff
-    md['dir']=outdir
+    md['dir']=outdir 
     md['grid_data_file']=outfile
-    md['field_data_file']=outfile
-    # these are a bit of a kludge.  They are frozen in the C++ library
-    # but we need them here to mesh with the C++  api without changing it
-    md['field_data_file_extension']='dat'
+    # These attributes are not needed when we only store the grid data
+    if not (isinstance(obj,GCLgrid) or isinstance(obj,GCLgrid3d)):
+        md['field_data_file']=outfile
+        # these are a bit of a kludge.  They are frozen in the C++ library
+        # but we need them here to mesh with the C++  api without changing it
+        md['field_data_file_extension']='dat'
     md['grid_data_file_extension']='dat'
     # WE add this as a useful more generic name  - it is ignored by reader
     md['dfile']=outfile
@@ -201,3 +198,248 @@ def GCLdbread(db, id_or_doc, collection="GCLfielddata"):
         return GCLvectorfield(md)
     elif objtype == 'pwmig::gclgrid::GCLvectorfield3d':
         return GCLvectorfield3d(md)
+
+# This set of procedures are used for managing layered earth models
+# encapsulated in the seispp object called VelocityModel_1d.
+def read_1d_model_file(fname,format='plain',property='P',
+     depth_key='depth',gradient_key=None,model='ak135'):
+    """
+    Use this function to read a text file defining a layered earth
+    model of any kind.   The result will be returned as a VelocityModel_1d
+    object but any scalar property could be return in the v vector of the object.
+    The format argument defines the format of the text file to be read.
+    The idea is this function can be readily hacked to support new formats.
+    The currently supported list of formats is defined below:
+
+    :param fname:  string defining the file name containing the data to be read.
+    :param format:  string defining the format of the file.  The following is a
+      list of supported formats:
+        plain - text file of just z, velocity, and grad values separated by
+          white space.  This format is a legacy format form seispp and the
+          original pwmig
+        rbh - Herrmann's velocity model format.  Similar to plain but with a
+          lengthy header
+        csv - a standard csv file BUT this file must contain header lines
+          that are consistent with the values passed through the arguments
+          property, depth_key, and gradient_key.
+    :param property: physical property to be loaded.  For plain or rbh format
+      must be either "P" or "S".  For csvit must match a column heading name
+      for the column of data to be loaded.  for mod1d must be the name used 
+      in the property field for the antelope mod1d table.  
+      ('Pvelocity' or 'Svelocity' for all examples I know)
+    :param depth_key:  header name for depth field in a csv file.  Ignore for
+      rbh and plain formats.  (default "P")
+    :param gradient_key:  some models use gradients between grid points in the
+      model definition.   This parameter is referenced for csv file and when
+      defined the column with which it is associated is loaded as the gradient
+      for the model BELOW the comparable depth point.   Default is None which
+      means grad will be set zero (constant velocity layer model)
+    :param model:  model name - used only for mod1d format to select 
+      subset of mod1d table for a particular named model 
+
+    """
+    if format == 'plain' or format == 'rbh':
+        # These two formats are handled by the VelocityModel_1d constructor
+        # That contructor can throw a MsPASSError exception but we assume
+        # a usage where normally this function would not be called deep
+        # within  large parallel job
+        vmod = VelocityModel_1d(fname,format,property)
+    elif format == 'csv':
+        # This example illustrates a generic way to read a text file and
+        # create a VelocityModel_1d object.  This case uses pandas and
+        # requires a header with a label matching property
+        df = pd.read_csv(fname)
+        z = df[depth_key]
+        v = df[property]
+        if gradient_key != None:
+            grad = df[gradient_key]
+        else:
+            grad = []
+            for k in range(len(v)):
+                grad.append(0.0)
+        # In a dataframe v an z can always assumed to be the same length
+        vmod = VelocityModel_1d(len(z))
+        vmod.nlayers = len(z)
+        for i in range(len(z)):
+            vmod.z.append(z[i])
+            vmod.v.append(v[i])
+            vmod.grad.append(grad[i])
+    elif format == 'mod1d':
+        # These names and columns are locked to Antelope schema css3.0
+        df=pd.read_csv(fname,sep='\s+',
+                names=['model_name','property','depth','value','gradient','units','auth','lddate'])
+        # panda subset with match to model_name and property columns
+        df = df.loc[lambda dfl: dfl['model_name'] == model]
+        df = df.loc[lambda dfl: dfl['property'] == property]
+        vmod = VelocityModel_1d()
+        for index, row in df.iterrows():
+            vmod.z.append(row['depth'])
+            vmod.v.append(row['value'])
+            vmod.grad.append(row['gradient'])
+        vmod.nlayers = len(vmod.z)
+    else:
+        raise MsPASSError('read_1d_model_file:  unsupported format name with tag='+format,'fatal')
+
+    return vmod
+
+def vmod1d_dbsave(db,vmod1d,model_name,property='Pvelocity',collection="VelocityModel_1d"):
+    dbcol = db[collection]
+    doc={'property' : property, 'name' : model_name}
+    doc['nlayers'] = vmod1d.nlayers
+    # the C++ object here uses an std::vector container.  
+    # mongodb doesn't support that native so we have convert the 
+    # vectors to python arrays
+    z=[]
+    v=[]
+    grad=[]
+    for i in range(vmod1d.nlayers):
+        z.append(vmod1d.z[i])
+        v.append(vmod1d.v[i])
+        grad.append(vmod1d.grad[i])
+    doc['depth'] = z
+    doc['velocity'] = v
+    doc['gradient'] = grad
+    ret = dbcol.insert_one(doc)
+    return ret.inserted_id
+
+def vmod1d_dbread(db,id_or_doc,collection='VelocityModel_1d'):
+    dbcol = db[collection]
+    if isinstance(id_or_doc, ObjectId):
+        doc = dbcol.find_one({"_id": id_or_doc})
+    elif isinstance(id_or_doc, dict):
+        doc = id_or_doc
+    else:
+        raise MsPASSError("vmod1d_dbread:  Arg 2 has invalid type - must be objectid or doc",
+                          "Invalid") 
+    vmod = VelocityModel_1d()
+    z=doc['depth']
+    v=doc['velocity']
+    grad=doc['gradient']
+    # Assume z,v,and grad are same length.  Let python throw 
+    # an exception if they aren't - should not happen anyway
+    vmod.nlayers = doc['nlayers']
+    for i in range(vmod.nlayers):
+        vmod.z.append(z[i])
+        vmod.v.append(v[i])
+        vmod.grad.append(grad[i])
+    return vmod
+    
+
+# This set of functions are used to implement a verify procedure on
+# parametric data that can be cast into the tree structure of an AntelopePf.
+# With these procedures pf data can be stored and retrieved from
+# MongoDB and verified against a set of test restrictions.
+def pf_dbsave(db,pf,name_tag, collection='AntelopePf'):
+    """
+    Save an AntelopePf object to MongoDB as document. If
+
+    The data structure of an AntelopePf is actually not dependent upon the
+    format invented by Dan Quinlan of BRTT they call a "pf file".
+    A Pf basically defines a tree structured set of data indexed with key-value
+    pairs.  That maps exactly into a MongoDB document when subdocuments of
+    any level are allowed.  The one item in a Pf that does not mesh perfectly
+    is a Tbl which in the API is converted to an std::list of strings.  The
+    consumer of the data in a Tbl is responsible for parsing the data in that
+    list of strings.
+
+    This function saves an AntelopePf as a document in a collection defined by
+    the collection argument.   No schema is enforced on what is saved
+    the AntelopePf is strongly typed.
+
+    :param db:  MsPASS database handle (a parent MongoDB database handle should work also)
+    :param pf:  The AntelopePf object that is to be saved.
+    :param name_tag:   This is required to be a string that is saved with
+      the frozen key name of 'pfname'.   (e.g. if name_tag is 'pwmig' if
+      if successful this function will create an entry {'pfname' : 'pwmig'}
+      in the document stored by that call to this function).  The AntelopePf
+      must not contain the keyword pfname.
+    :param collection:  MongoDB collection to which the data should be stored.
+      (default is 'AntelopePf')
+
+    :return: ObjectID of the document saved.
+    """
+    # First we do a few sanity checks.
+    if not isinstance(name_tag,str):
+        raise MsPASSError('pf_dbsave:  name_tag argument must be a string','Fatal')
+    # All the work is done in this function.  It returns a dict but we call it
+    # doc only because we will treat it that way when we save it to Mongodb
+    doc = pf_to_dict(pf)
+    # We can't allow doc to contain the keyword pfname
+    if 'pfname' in doc.keys():
+        raise MsPASSError('pfsave:  pf object contains a value for the keyword=pfname.  Not allowed','Fatal')
+    doc['pfname'] = name_tag
+    col = db[collection]
+    result = col.insert_one(doc)
+    return result.inserted_id
+
+def pf_dbread(db,id_or_doc,collection='AntelopePf'):
+    """
+    Creates and returns an AntelopePf from a MongoDB database. 
+    
+    This function is the inverse of pf_dbsave.  It reads the data stored in 
+    MongoDb as a set of documents and subdocuments and reconstructs an 
+    AntelopePf object from that data.   The types of the returned data 
+    are determined by how MongoDB defined them, which should be the 
+    same as the original pf used to create the db record.   
+
+    """
+    dbcol = db[collection]
+    if isinstance(id_or_doc, ObjectId):
+        doc = dbcol.find_one({"_id": id_or_doc})
+    elif isinstance(id_or_doc, dict):
+        doc = id_or_doc
+    else:
+        raise MsPASSError("pf_dbread:  Arg 2 has invalid type - must be objectid or doc",
+                          "Invalid")
+    result = dict_to_pf(doc)
+    return result
+    
+#def pf_verify(db,pfname):
+def pf_to_dict(pf):
+    """
+    Returns a dict representation of an AntelopePf object.  Simple parameters
+    map directly to key-value pairs.  Branches (Arr& in the pf format) are
+    converted to dict values keyed to the Arr key name.   (Note the conversion
+    is recursive so branches of artibrarily deep level can be converted.)
+    This function can be called standalone for a conversion but is used
+    by the pf_dbsave function as a first step because a dict can be saved
+    directly in MongoDB with pymongo.
+
+    :param pf:  AntelopePf object to be converted.
+    :return: dict that is an alternate representation of pf
+    """
+    # This is a trick to extract only the simple name-value pairs.
+    # It can work because Arr and Tbl data are stored in separate maps
+    # in the pf object
+    # TODO:  that is theoretical - test me
+    md = Metadata(pf)
+    result = Metadata2dict(md)
+    # Tbls are stored as an array of strings 
+    for tag in pf.tbl_keys():
+        tbl = pf.get_tbl(tag)
+        result[tag] = tbl
+    for tag in pf.arr_keys():
+        branchpf = pf.get_branch(tag)
+        # WARNING:  this is a recursion
+        branch_dict = pf_to_dict(branchpf)
+        result[tag] = branch_dict
+    return result
+
+def dict_to_pf(doc):
+    """
+    Inverse of pf_to_dict.
+    """
+    pf = AntelopePf()
+    # For simple types we can use the Metadata put method 
+    # and it will resolve the type correctly (VERIFY)
+    for key in doc.keys():
+        val = doc[key]
+        if isinstance(val,str) or isinstance(val,float) or isinstance(val,bool) or isinstance(val,int):
+            pf.put(key,val)
+        if isinstance(val,list):
+            pf.put(key,val)
+            
+    # needs some testing externally - next handle Tbl data at this level 
+    #  Think we can do that with a test for python array type 
+    # Then call this function on each entry found as a python dict - also need to verify before continuing
+            
