@@ -401,4 +401,6 @@ def netcdf_arrays_to_GCLfield(lon,lat,depth,V,vkey=None,
                     f.set_coordinates(cp,i,j,kk)
                     #print(i,j,k,kk,X[i][j][k],Y[i][j][k],Z[i][j][k],cp.x1,cp.x2,cp.x3)
                     f.set_value(v[i][j][k],i,j,kk)
+    # This method is needed to set the bounding box attributes
+    f.compute_extents()
     return f
