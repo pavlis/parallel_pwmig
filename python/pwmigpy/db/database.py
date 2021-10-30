@@ -131,7 +131,9 @@ def GCLdbsave(db, obj, collection="GCLfielddata",
     md['dir']=outdir 
     md['grid_data_file']=outfile
     # These attributes are not needed when we only store the grid data
-    if not (isinstance(obj,GCLgrid) or isinstance(obj,GCLgrid3d)):
+    # Hence we load them only for field data.  Note a not of testing 
+    # for grid doesn't work because of inheritance 
+    if isinstance(obj,GCLscalarfield) or isinstance(obj,GCLscalarfield3d) or isinstance(obj,GCLvectorfield) or isinstance(obj,GCLvectorfield3d):
         md['field_data_file']=outfile
         # these are a bit of a kludge.  They are frozen in the C++ library
         # but we need them here to mesh with the C++  api without changing it
