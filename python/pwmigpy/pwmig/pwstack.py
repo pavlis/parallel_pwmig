@@ -219,6 +219,7 @@ def read_ensembles(db,querydata,control):
     else:
         query=querydata['query']
         n=db.wf_Seismogram.count_documents(query)
+        print(query,n)
         if n==0:
             # This shouldn't ever really be executed unless fold_cutoff 
             # is 0 or the query is botched
@@ -231,8 +232,8 @@ def read_ensembles(db,querydata,control):
     # these are required for running the C++ code pwstack_ensemble
     d.put('pseuostation_lat',querydata['lat'])
     d.put('pseuostation_lon',querydata['lon'])   
-    d.put('pseuostation_ix1',querydata['ix1']) 
-    d.put('pseuostation_ix2',querydata['ix2'])
+    d.put('ix1',querydata['ix1']) 
+    d.put('ix2',querydata['ix2'])
     return d
                               
             
@@ -301,6 +302,10 @@ def pwstack(db,pf,source_query=None,
     # parallel reader - result is a bag of ensembles created from 
     # queries held in query
     mybag.map(lambda q : read_ensembles(db,q,control))
+    # debug test
+    #for q in allqueries:
+    #    d=read_ensembles(db,q,control)
+    #    print(d['ix1'],d['ix2'],len(d.member))
     # Now run pwstack_ensemble - it has a long arg list
     mybag.map(lambda d : pwstack_ensemble(d,control.data_mute,
                 control.stack_mute,
@@ -313,3 +318,4 @@ def pwstack(db,pf,source_query=None,
                               control.mdlcopy,
                                 False,'') )
     mybag.map(lambda d : db.save_ensemble_data(d))
+    mybag.compute()
