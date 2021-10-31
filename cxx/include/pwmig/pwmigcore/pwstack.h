@@ -96,7 +96,6 @@ mspass::seismic::LoggingEnsemble<mspass::seismic::Seismogram> pwstack_ensemble
         const pwmig::pwmigcore::DepthDependentAperture& aperture,
          const double aperture_taper_length,
           const double centroid_cutoff,
-           const mspass::utility::MetadataList& mdlcopy,
             const bool save_history,
              const std::string algid);
 } // end namespace pwmig::pwmigcore

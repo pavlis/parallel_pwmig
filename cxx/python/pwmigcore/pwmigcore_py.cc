@@ -102,7 +102,6 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
    py::arg("aperture"),
    py::arg("aperture_taper_length"),
    py::arg("centroid_cutoff"),
-   py::arg("mdlcopy"),
    py::arg("save_history"),
    py::arg("algid")
  );

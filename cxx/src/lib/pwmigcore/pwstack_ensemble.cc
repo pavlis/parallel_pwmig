@@ -272,7 +272,6 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata
         const DepthDependentAperture& aperture,
          const double aperture_taper_length,
           const double centroid_cutoff,
-           const MetadataList& mdlcopy,
             const bool save_history,
              const string algid)
 {
@@ -715,6 +714,14 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata
             // Create the output stack as a 3c trace object and copy
             // metadata from the input into the output object.
             stackout = new Seismogram(nsout);
+            /* copy the input ensemble's metadata to stackout.  
+            We add to it later, but we use this mechanism to pass 
+            global metadata to from the input ensemble to the stacks
+            Note in older versions this was done with a selective copy.
+            (copy_selected_metadata function).
+            Note this is an obscure trick with inheritance in C++
+            */
+            stackout->Metadata::operator=(indata);
             /*
             stackout->dt=dt;
             stackout->t0=tstart;
@@ -727,8 +734,10 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata
             stackout->set_npts(nsout);
             dcopy(3*nsout,stack.get_address(0,0),1,stackout->u.get_address(0,0),1);
             stackout->set_tref(TimeReferenceType::Relative);
+            /*
             copy_selected_metadata(dynamic_cast<Metadata&>(indata),
                 dynamic_cast<Metadata&>(*stackout),mdlcopy);
+                */
             stackout->put("ix1",ix1);
             stackout->put("ix2",ix2);
             stackout->put("ux",ux);
