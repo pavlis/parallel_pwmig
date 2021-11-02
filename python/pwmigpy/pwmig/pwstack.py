@@ -12,8 +12,16 @@ import math
 
 
 from mspasspy.ccore.seismic import SeismogramEnsemble
-from mspasspy.algorithms.window import TopMute
-from mspasspy.ccore.utility import MsPASSError
+# We have a python wrapper for the C++ implementation of top mutes (_TopMute)
+# but here we need the direct C++ call because we are calling the 
+# pwstack_ensemble function that wants the C++ function not the wrapper
+#from mspasspy.algorithms.window import TopMute
+from mspasspy.ccore.algorithms.basic import _TopMute
+from mspasspy.ccore.utility import MsPASSError,ErrorSeverity
+
+from obspy.taup import TauPyModel
+from obspy.geodetics import gps2dist_azimuth,kilometers2degrees
+
 from pwmigpy.ccore.pwmigcore import (RectangularSlownessGrid,
                                    DepthDependentAperture,
                                    pwstack_ensemble)
@@ -50,7 +58,7 @@ def TopMuteFromPf(pf,tag):
         t1=pfbranch.get_double('t1')
     else:
         t1=pfbranch.get_double('end_time')
-    return TopMute(t0,t1,mutetype)
+    return _TopMute(t0,t1,mutetype)
         
 class pwstack_control:
     """
@@ -64,6 +72,8 @@ class pwstack_control:
                  stack_mute_tag='stack_top_mute',
                      save_history=False,instance='undefined'): 
         # These are control parameters passed to pwstack_ensemble
+        self.tstart = pf.get_double('data_time_window_start')
+        self.tend = pf.get_double('data_time_window_end')
         self.SlowGrid=RectangularSlownessGrid(pf,slowness_grid_tag)
         self.data_mute=TopMuteFromPf(pf,data_mute_tag)
         self.stack_mute=TopMuteFromPf(pf,stack_mute_tag)
@@ -80,13 +90,19 @@ class pwstack_control:
             self.aperture=DepthDependentAperture(pf,"depth_dependent_aperture")
         self.aperture_taper_length=pf.get_double("aperture_taper_length")
         self.centroid_cutoff=pf.get_double("centroid_cutoff")
-        self.fold_cutoff = pf.get_long("stack_count_cutoff")
+        self.stack_count_cutoff = pf.get_long("stack_count_cutoff")
+        # These were added for mspass converion - old pfs will need to 
+        # add these
+        self.data_tag=pf.get_string('data_tag')
         self.save_history=save_history 
         self.algid=instance
+        modelname = pf.get_string('global_earth_model_name')
+        self.model = TauPyModel(model=modelname)
         # These parameters define thing things outside pwstack_ensemble 
         # but are important control
         self.db=db
         gridname=pf.get_string("pseudostation_grid_name")
+        self.pseudostation_gridname=gridname
         # We query by name and object type - this may require additional 
         # tags to find the unique grid requested but for how keep it simple
         query={'name' : gridname,'object_type' : 'pwmig::gclgrid::GCLgrid'}
@@ -202,7 +218,25 @@ def build_wfquery(sid,rids):
     # small
     allqdata['fold'] = len(idlist)
     return allqdata
-
+def get_source_metadata(ensemble):
+    """
+    Helper for below.  Returns source metadata from the first live 
+    member of ensemble as a dict.  That is safer than just using the first member 
+    as there are many ways a dead datum could lack the required metadata. 
+    Less likely here but a minor cost for robustness.   Returns an empty 
+    dict if there are no live members.   Caller must handle that condition.
+    """
+    result=dict()
+    for d in ensemble.member:
+        if d.live():
+            result['source_lat'] = d.get_double('source_lat')
+            result['source_lon'] = d.get_double('source_lon')
+            result['source_depth'] = d.get_double('source_depth')
+            result['source_time'] = d.get_double('source_time')
+            break
+    return result
+            
+        
 def read_ensembles(db,querydata,control):
     """
     Constructs a query from dict created by build_wfquery, runs it 
@@ -210,30 +244,77 @@ def read_ensembles(db,querydata,control):
     on the cursor returned by MongoDB.  It the sets the ensemble 
     metadata for lat, lon, ix1, and ix2 before returning the ensembles
     
-    We need to pass the control class to access the fold_cutoff attribute.
+    We need to pass the control class to access the stack_count_cutoff attribute.
     """
     # don't even issue a query if the fold is too low
     fold=querydata['fold']
-    if fold<=control.fold_cutoff:
+    if fold<=control.stack_count_cutoff:
         d=SeismogramEnsemble()
     else:
         query=querydata['query']
         n=db.wf_Seismogram.count_documents(query)
-        print(query,n)
+        #debug
+        #print(query,n)
         if n==0:
-            # This shouldn't ever really be executed unless fold_cutoff 
+            # This shouldn't ever really be executed unless stack_count_cutoff 
             # is 0 or the query is botched
             d=SeismogramEnsemble()
         else:
             cursor=db.wf_Seismogram.find(query)
-            d=db.read_ensemble_data(cursor,collection='wf_Seismogram')
-    # We always load these into ensemble's metadata even if the ensemble 
-    # has no data.  Null data are otherwise ambiguous.   With live data 
-    # these are required for running the C++ code pwstack_ensemble
-    d.put('pseuostation_lat',querydata['lat'])
-    d.put('pseuostation_lon',querydata['lon'])   
-    d.put('ix1',querydata['ix1']) 
-    d.put('ix2',querydata['ix2'])
+            d=db.read_ensemble_data(cursor,collection='wf_Seismogram',
+                                    normalize=['event','site'],
+                                    data_tag=control.data_tag)
+        if len(d.member) > 0:
+            # When the ensemble is not empty we have to compute the 
+            # slowness vector of the incident wavefield using source \
+            # coordinates and the pseudostation location.  This section 
+            # depends on a feature of the reader that it the normalize 
+            # parameter causes all members to have source coordinates loaded
+            # this small function copies source metadata from the first 
+            # live member
+            srcdata = get_source_metadata(d)
+            if len(srcdata)==0:
+                d.kill()
+                d.elog.log_error("pwstack",
+                        "Ensembled read from database has no live members",
+                        ErrorSeverity.Invalid)
+            else:
+                # post the source metadata to the ensemble metadata
+                for k in srcdata:
+                    d[k] = srcdata[k]
+                # a bit of a weird way to fetch the pseudostation 
+                # coordinates but the only way without using additional arts
+                pslat=querydata['lat']
+                pslon=querydata['lon']
+                georesult=gps2dist_azimuth(srcdata['source_lat'],
+                                        srcdata['source_lon'],pslat,pslon)
+                # obspy's function we just called returns distance in m in element 0 of a tuple
+                # their travel time calculator it is degrees so we need this conversion
+                Rearth=6378.164
+                dist=kilometers2degrees(georesult[0]/1000.0)
+                # We pass the model object through control because I think 
+                # there is a nontrivial overhead in creating it
+                arrivals=control.model.get_travel_times(
+                    source_depth_in_km=srcdata['source_depth'],
+                    distance_in_degree=dist,phase_list=['P']
+                    )
+                ray_param=arrivals[0].ray_param
+                umag=ray_param/Rearth    # need slowness in s/km but ray_param is s/radian
+                baz=georesult[2]   # The obspy function seems to return back azimuth
+                az=baz+180.0
+                # az can be > 360 here but all known trig function algs handl this automatically
+                ux=umag*math.sin(math.radians(az))
+                uy=umag*math.cos(math.radians(az))
+                d.put('ux0', ux)
+                d.put('uy0',uy)
+                d.put('pseudostation_lat',pslat)
+                d.put('pseudostation_lon',pslon) 
+                # this more obscure name is needed as an alias by pwstack_ensemble
+                # we save the longer tag for less obscure database tags
+                d.put('lat0',pslat)
+                d.put('lon0',pslon) 
+                d.put('ix1',querydata['ix1']) 
+                d.put('ix2',querydata['ix2'])
     return d
                               
             
@@ -258,8 +339,7 @@ def pwstack(db,pf,source_query=None,
     for doc in base_cursor:
         id=doc['_id']
         source_id_list.append(id)
-    #TODO  Need to add this method to api
-    cutoff=control.aperture.maximum_aperture()
+    cutoff=control.aperture.maximum_cutoff()
     staids=list()
     for i in range(control.stagrid.n1):
         for j in range(control.stagrid.n2):
@@ -293,21 +373,22 @@ def pwstack(db,pf,source_query=None,
             #q=dask.delayed(build_wfquery)(sid,rids)
             q=build_wfquery(sid,rids)
             # debug
-            print(q['ix1'],q['ix2'],q['fold'])
+            #print(q['ix1'],q['ix2'],q['fold'])
             allqueries.append(q)
-    mybag=dask.bag.from_sequence(allqueries)
+    #mybag=dask.bag.from_sequence(allqueries)
     # These can now be deleted to save memory 
     del source_id_list
     del staids
     # parallel reader - result is a bag of ensembles created from 
     # queries held in query
-    mybag.map(lambda q : read_ensembles(db,q,control))
+    #mybag.map(lambda q : read_ensembles(db,q,control))
     # debug test
-    #for q in allqueries:
-    #    d=read_ensembles(db,q,control)
-    #    print(d['ix1'],d['ix2'],len(d.member))
-    # Now run pwstack_ensemble - it has a long arg list
-    mybag.map(lambda d : pwstack_ensemble(d,control.data_mute,
+    for q in allqueries:
+        d=read_ensembles(db,q,control)
+        print(d['ix1'],d['ix2'],len(d.member))
+        dret=pwstack_ensemble(d,
+            control.SlowGrid,
+              control.data_mute,
                 control.stack_mute,
                   control.stack_count_cutoff,
                     control.tstart,
@@ -315,7 +396,19 @@ def pwstack(db,pf,source_query=None,
                         control.aperture,
                           control.aperture_taper_length,
                             control.centroid_cutoff,
-                              control.mdlcopy,
-                                False,'') )
-    mybag.map(lambda d : db.save_ensemble_data(d))
-    mybag.compute()
+                                False,'')
+        print(dret.keys())
+        #db.save_ensemble_data(dret)
+    # Now run pwstack_ensemble - it has a long arg list
+    #mybag.map(lambda d : pwstack_ensemble(d,control.data_mute,
+    #            control.stack_mute,
+    #              control.stack_count_cutoff,
+   #                 control.tstart,
+   #                   control.tend, 
+   #                     control.aperture,
+   #                       control.aperture_taper_length,
+   #                         control.centroid_cutoff,
+    #                            False,'') )
+    #mybag.map(lambda d : db.save_ensemble_data(d))
+    #mybag.compute()
+    
