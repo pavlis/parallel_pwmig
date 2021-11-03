@@ -93,10 +93,18 @@ class pwstack_control:
         self.stack_count_cutoff = pf.get_long("stack_count_cutoff")
         # These were added for mspass converion - old pfs will need to 
         # add these
-        self.data_tag=pf.get_string('data_tag')
+        # None is used for a null for data_tag.   We default that here
+        if pf.is_defined('data_tag'):
+            self.data_tag=pf.get_string('data_tag')
+        else:
+            self.data_tag = None
         self.save_history=save_history 
         self.algid=instance
-        modelname = pf.get_string('global_earth_model_name')
+        # default this one to iasp91
+        if pf.is_defined('global_earth_model_name'):
+            modelname = pf.get_string('global_earth_model_name')
+        else:
+            modelname = 'iasp91'
         self.model = TauPyModel(model=modelname)
         # These parameters define thing things outside pwstack_ensemble 
         # but are important control
@@ -228,7 +236,7 @@ def get_source_metadata(ensemble):
     """
     result=dict()
     for d in ensemble.member:
-        if d.live():
+        if d.live:
             result['source_lat'] = d.get_double('source_lat')
             result['source_lon'] = d.get_double('source_lon')
             result['source_depth'] = d.get_double('source_depth')
@@ -261,8 +269,10 @@ def read_ensembles(db,querydata,control):
             d=SeismogramEnsemble()
         else:
             cursor=db.wf_Seismogram.find(query)
+            # Note control.data_tag can be a None type here - see 
+            # control object constructor
             d=db.read_ensemble_data(cursor,collection='wf_Seismogram',
-                                    normalize=['event','site'],
+                                    normalize=['source','site'],
                                     data_tag=control.data_tag)
         if len(d.member) > 0:
             # When the ensemble is not empty we have to compute the 
@@ -315,6 +325,7 @@ def read_ensembles(db,querydata,control):
                 d.put('lon0',pslon) 
                 d.put('ix1',querydata['ix1']) 
                 d.put('ix2',querydata['ix2'])
+                d.put('gridname',control.pseudostation_gridname)
     return d
                               
             
@@ -322,7 +333,8 @@ def pwstack(db,pf,source_query=None,
         slowness_grid_tag='RectangularSlownessGrid',
             data_mute_tag='Data_Top_Mute',
                  stack_mute_tag='Stack_Top_Mute',
-                     save_history=False,instance='undefined'):
+                     save_history=False,instance='undefined',
+                        output_data_tag='test_pwstack_output'):
     # the control structure pretty much encapsulates the args for 
     # this driver function
     control=pwstack_control(db,pf,slowness_grid_tag,data_mute_tag,
@@ -385,7 +397,10 @@ def pwstack(db,pf,source_query=None,
     # debug test
     for q in allqueries:
         d=read_ensembles(db,q,control)
-        print(d['ix1'],d['ix2'],len(d.member))
+        if d.live():
+            print(d['ix1'],d['ix2'],len(d.member))
+        else:
+            print('processing dead ensemble - should handle this or it is a bug')
         dret=pwstack_ensemble(d,
             control.SlowGrid,
               control.data_mute,
@@ -397,8 +412,8 @@ def pwstack(db,pf,source_query=None,
                           control.aperture_taper_length,
                             control.centroid_cutoff,
                                 False,'')
-        print(dret.keys())
-        #db.save_ensemble_data(dret)
+        print(dret.keys(),len(dret.member))
+        db.save_ensemble_data(dret,data_tag=output_data_tag)
     # Now run pwstack_ensemble - it has a long arg list
     #mybag.map(lambda d : pwstack_ensemble(d,control.data_mute,
     #            control.stack_mute,
