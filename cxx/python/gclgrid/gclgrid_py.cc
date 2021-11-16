@@ -5,11 +5,17 @@
 #include <pybind11/operators.h>
 #include <pybind11/embed.h>
 
+#include <boost/archive/basic_archive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/serialization.hpp>
+
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/AntelopePf.h"
 #include "pwmig/gclgrid/gclgrid.h"
 #include "pwmig/gclgrid/gclgrid_subs.h"
 #include "pwmig/gclgrid/RegionalCoordinates.h"
+#include "pwmig/gclgrid/PWMIGfielddata.h"
 
 /* these are needed to make std::vector containers function propertly.
 This was borrowed from mspass pybind11 cc files */
@@ -666,6 +672,112 @@ py::class_<GCLvectorfield3d,GCLgrid3d>(m,"GCLvectorfield3d","Three-dimensional g
   }
   ))
 ;
+py::class_<PWMIGfielddata,GCLvectorfield3d>(m,"PWMIGfielddata",
+    "Extension of generic GCLvectorfield3d for pwmig output - mostly add error logger")
+  .def(py::init<>())
+  .def(py::init<const pwmig::gclgrid::GCLgrid3d>())
+  .def(py::init<const pwmig::gclgrid::PWMIGfielddata>())
+  .def("accumulate",&PWMIGfielddata::accumulate,"Sum a single seismogram like migrated output to field")
+  .def_readwrite("elog",&PWMIGfielddata::elog,"ErrorLogger object for handling errors in mspass way")
+  /* This is annoyingly parallel to GCLvectorfield3d but I don't see how to do it
+  with pybind11 to use inheritance unless we did a double pickle which would be a
+  very slow thing to do for this (usually large) object. */
+  .def(py::pickle(
+    [](const PWMIGfielddata &self) {
+      Metadata md;
+      md=self.get_attributes();
+      pybind11::object sbuf;
+      sbuf=serialize_metadata_py(md);
+      /* this incantation was borrowed from mspass pickle section
+      of pybind11 code for Seismogram*/
+      size_t size_arrays=self.n1*self.n2*self.n3;
+      size_t size_val = size_arrays*self.nv;
+      /* Added for elog part - only difference really from GCLvectorfield3d*/
+      stringstream ss;
+      boost::archive::text_oarchive ar(ss);
+      ar << self.elog;
+      string serialized_elog(ss.str());
+      if(size_arrays == 0)
+      {
+        // We need this for default constructed grids
+        py::array_t<double, py::array::f_style> x1arr(size_arrays,NULL);
+        py::array_t<double, py::array::f_style> x2arr(size_arrays,NULL);
+        py::array_t<double, py::array::f_style> x3arr(size_arrays,NULL);
+        py::array_t<double, py::array::f_style> valarr(size_val,NULL);
+        return py::make_tuple(sbuf,size_arrays,x1arr,x2arr,x3arr,valarr,serialized_elog);
+      }
+      else
+      {
+        py::array_t<double, py::array::f_style> x1arr(size_arrays,&(self.x1[0][0][0]));
+        py::array_t<double, py::array::f_style> x2arr(size_arrays,&(self.x2[0][0][0]));
+        py::array_t<double, py::array::f_style> x3arr(size_arrays,&(self.x3[0][0][0]));
+        py::array_t<double, py::array::f_style> valarr(size_val,&(self.val[0][0][0][0]));
+        return py::make_tuple(sbuf,size_arrays,x1arr,x2arr,x3arr,valarr,serialized_elog);
+      }
+  },
+  [](py::tuple t) {
+    /* this function differs a fair bit from the GCLvectorfield3d version
+    due to the need to handle elog */
+    pybind11::object sbuf=t[0];
+    Metadata md=mspass::utility::restore_serialized_metadata_py(sbuf);
+    /* Assume these are defined or we are hosed anyway*/
+    int n1,n2,n3,nv;
+    n1=md.get_int("n1");
+    n2=md.get_int("n2");
+    n3=md.get_int("n3");
+    nv=md.get_int("nv");
+    size_t array_size_from_md(n1*n2*n3);
+    /* We have to reconstruct elog first as it is used in the specialized
+    constructor called immediately after it is deserialized. */
+    ErrorLogger elog_to_clone;
+    stringstream ss(t[6].cast<std::string>());
+    boost::archive::text_iarchive ar(ss);
+    ar>>elog_to_clone;
+    PWMIGfielddata result(n1,n2,n3,elog_to_clone);
+    /* This template function takes all the parameters from md and
+    sets the transformation vector and matrix properly.  It does NOT
+    alloc the arrays.  Hence for zero size we can just return */
+    pwmig::gclgrid::pfload_common_GCL_attributes<GCLgrid3d>(result,md);
+    /* We need this additional call for 3d grid - a design flaw in gclgrid*/
+    pwmig::gclgrid::pfload_3dgrid_attributes<GCLgrid3d>(result,md);
+    /* I think we need to set this one specially - the above may not set it */
+    result.nv=nv;
+    /* If the size is zero the arrays are assumed set NULL - that would
+    be behavior for a default constructed object.  Otherwise the constructor
+    we used above will create the data arrays we can push the array data to.*/
+    if(array_size_from_md>0)
+    {
+      size_t size_array = t[1].cast<size_t>();
+      if(size_array != array_size_from_md)
+        throw mspass::utility::MsPASSError("pickle serialization:  metadata grid size does not match buffer size",
+           mspass::utility::ErrorSeverity::Fatal);
+
+      py::array_t<double, py::array::f_style> array_buffer;
+      array_buffer=t[2].cast<py::array_t<double, py::array::f_style>>();
+      py::buffer_info info = array_buffer.request();
+      /* x1 is double **.  x[0][0] is a confusing but standard way to get the
+      base pointer.  In gclgrid the base pointer is the first type of
+      a contiguous array block of size_array doubles created above*/
+      memcpy(result.x1[0][0],info.ptr,sizeof(double)*size_array);
+      /* now pretty much exactly the same for x2 and x3.
+      array_buffer is just a pointer we are reassigning so this should work */
+      array_buffer=t[3].cast<py::array_t<double, py::array::f_style>>();
+      info = array_buffer.request();
+      memcpy(result.x2[0][0],info.ptr,sizeof(double)*size_array);
+      array_buffer=t[4].cast<py::array_t<double, py::array::f_style>>();
+      info = array_buffer.request();
+      memcpy(result.x3[0][0],info.ptr,sizeof(double)*size_array);
+      /* We have to compute a new buffer size for the val array because it
+      has this nv multiplier.  We also have another level of pointer*/
+      size_t size_val=size_array*nv;
+      array_buffer=t[5].cast<py::array_t<double, py::array::f_style>>();
+      info = array_buffer.request();
+      memcpy(result.val[0][0][0],info.ptr,sizeof(double)*size_val);
+    }
+    return result;
+  }
+  ))
+  ;
 py::class_<RegionalCoordinates>(m,"RegionalCoordinates",
       "Encapsulates coordinate system used in gclgrid objects")
   .def(py::init<>())

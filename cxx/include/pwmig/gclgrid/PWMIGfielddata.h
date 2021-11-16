@@ -22,6 +22,14 @@ public:
   PWMIGfielddata(const pwmig::gclgrid::GCLgrid3d& g);
   PWMIGfielddata(const PWMIGfielddata& parent);
   PWMIGfielddata& operator=(const PWMIGfielddata& parent);
+  /* this constructor probably does not need to be bound to python,  It is
+  a tiny wrapper made to mesh with the pickle interface in pybind11.
+  The args are the 3 grid dimensions and an ErrorLogger object from
+  deserialization inside unpickling pybind11 function. */
+  PWMIGfielddata(const int n1, const int n2, const int n3,
+    const mspass::utility::ErrorLogger elog_to_clone)
+      : GCLvectorfield3d(n1,n2,n3,5),elog(elog_to_clone){};
+
   /*! Accumulate the data encapsulated in one PWMIGmigrated_seismogram object.
 
   The inner loop of pwmig constructs a set of values it interpolates onto a
@@ -44,7 +52,7 @@ public:
   pulled from d.ix1. and d.ix2
 
   \exception - can throw a MsPASSError exception if d is marked live but has
-    a size inconsistent with this object's internal n3 dimension.  
+    a size inconsistent with this object's internal n3 dimension.
 
   */
   void accumulate(const pwmig::pwmigcore::PWMIGmigrated_seismogram& d);
