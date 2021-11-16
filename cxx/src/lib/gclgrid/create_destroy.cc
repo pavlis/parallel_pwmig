@@ -290,7 +290,10 @@ GCLgrid3d::GCLgrid3d (const int n1size, const int n2size,
 Metadata pfload_GCLmetadata(const string fname)
 {
     try {
-        AntelopePf md(fname);
+        /* fname is expected to be a root name with out and extension. 
+        We thus need to extend the name with a pfext defined in gclgrid.h*/
+        string fullname=fname+"."+pfext;
+        AntelopePf md(fullname);
         return(dynamic_cast<Metadata&>(md));
     }catch(...){throw;};
 }

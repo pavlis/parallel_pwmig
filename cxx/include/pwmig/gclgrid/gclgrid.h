@@ -71,6 +71,8 @@ namespace pwmig::gclgrid
 const std::string default_output_format("pfhdr");
 /*! Standardize name for output file data component extention. */
 const std::string dfileext("dat");
+/*! Standardize name for the parameter file extention added to a dfile base*/
+const std:: string pfext("pf");
 
 /*!
  This data structure is used to encapsulate data to describe a point on
