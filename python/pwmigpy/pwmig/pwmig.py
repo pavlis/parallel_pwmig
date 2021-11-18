@@ -9,7 +9,7 @@ from mspasspy.ccore.seismic import (SlownessVector)
 from mspasspy.db.database import read_distributed_data
 from obspy.taup import TauPyModel
 from obspy.geodetics import gps2dist_azimuth,kilometers2degrees
-import pwmigpy.db.database as pwmigdb
+
 from pwmigpy.ccore.gclgrid import (GCLvectorfield3d,
                     PWMIGfielddata,
                     GCLgrid,
@@ -18,7 +18,10 @@ from pwmigpy.ccore.pwmigcore import (SlownessVectorMatrix,
                     Build_GCLraygrid,
                     ComputeIncidentWaveRaygrid,
                     migrate_one_seismogram)
-
+from pwmigpy.db.database import (GCLdbread,
+                                 vmod1d_dbread_by_name,
+                                 GCLdbread_by_name)
+from pwmigpy.ccore.seispp import VelocityModel_1d
 
 def _print_default_used_message(key,defval):
     print("Parameter warning:  AntelopePf file does not have key=",key,
@@ -51,7 +54,7 @@ def _build_control_metadata(control):
         stack_only=True
         _print_default_used_message("stack_only",stack_only)
     if control.is_defined("border_padding"):
-        border_pad = control.get_int("border_padding")
+        border_pad = control.get_long("border_padding")
     else:
         border_pad=20
         _print_default_used_message("border_padding",border_pad)
@@ -65,13 +68,13 @@ def _build_control_metadata(control):
     else:
         taper_length=2.0
         _print_default_used_message("taper_length_turning_rays",taper_length)
-    if control.is_defined("recompute_weight_function"):
+    if control.is_defined("recompute_weight_functions"):
         rcomp_wt=control.get_bool("recompute_weight_functions")
     else:
         rcomp_wt=True
         _print_default_used_message("recompute_weight_functions",rcomp_wt)
     if control.is_defined("weighting_function_smoother_length"):
-        nwtsmooth=control.get_int("weighting_function_smoother_length")
+        nwtsmooth=control.get_long("weighting_function_smoother_length")
     else:
         nwtsmooth=10
         _print_default_used_message("weighting_function_smoother_length",nwtsmooth)
@@ -145,8 +148,8 @@ def _set_incident_slowness_metadata(d,svm):
     the SlownessVectorMatrix object svm.
 
     """
-    i=d.get_int['ix1']
-    j=d.get_int['ix2']
+    i=d.get_long['ix1']
+    j=d.get_long['ix2']
     # not sure this is in the bindings but idea is to fetch a SlownessVector for i,j
     slowness=svm(i,j)
     # Warning:  these keys must be consistent with C++ function migrate_one_seismogram
@@ -242,15 +245,16 @@ def pwmig_verify(db,pffile="pwmig.pf",GCLcollection='GCLfielddata',
 
 
     """
+    print('Warning:  this function is not yet implemented.   Checks only if pf is readable')
     # First we test the parameter file for completeness.
     # we use a generic pf testing function in mspass.
     algorithm="pwmig"
     pf=AntelopePf(pffile)
     # TODO  this does not exists and is subject to design changes from github discussion
-    pfverify(algorithm,pf)
+    #pfverify(algorithm,pf)
     # this also doesn't exists.  Idea is to verify all model files are
     # present and valid
-    pwmig_verify_files(pf)
+    #pwmig_verify_files(pf)
     # now verify the database collection and print a report
     # TODO;  need to implement this fully - this is rough
     # 1  verify all gclfeield and vmodel data
@@ -295,7 +299,7 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata',
     # This is a new parameter in pf that was not found in the old
     # pwmig. For that reason we fetch it immediately.  Let the program
     # abort immediately then if it isn't defined
-    npartitions=pf.get_int("number_partitions")
+    npartitions=pf.get_long("number_partitions")
 
     # This function is the one that extracts parameters required in
     # what were once inner loops of this program.  As noted there are
@@ -309,7 +313,7 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata',
     # in this function.  This should, perhaps, be passed into this function
     # but the cost of extracting it from pf in this function is assumed tiny
     base_message="class pwmig constructor:  "
-    border_pad = pf.get_int("border_padding")
+    border_pad = pf.get_long("border_padding")
     # This isn't used in this function, but retain this for now for this test
     # This test will probably be depricated when we the pfmig_verify functions is
     # completed as it is planned to have a constraints on the data a parameter allows
@@ -336,12 +340,12 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata',
     tmax=pf.get_double("maximum_time_lag")
     #dux=pf.get_double("slowness_grid_deltau")
     dt=pf.get_double("data_sample_interval")
-    zdecfac=pf.get_int("Incident_TTgrid_zdecfac")
+    zdecfac=pf.get_long("Incident_TTgrid_zdecfac")
     #duy=dux
     #dumax=pf.get_double("delta_slowness_cutoff")
     #dz=pf.get_double("ray_trace_depth_increment")
     #rcomp_wt=pf.get_bool("recompute_weight_functions")
-    #nwtsmooth=pf.get_int("weighting_function_smoother_length")
+    #nwtsmooth=pf.get_long("weighting_function_smoother_length")
     #if nwtsmooth<=0:
     #    smooth_wt=False
     #else:
@@ -363,21 +367,21 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata',
     # WARNING - these names are new and not in any old pf files driving C++ version
     up3dname=pf.get_string('Pslowness_model_name')
     us3dname=pf.get_string('Sslowness_model_name')
-    Up3d=load_3d_slowness_model(db,up3dname)
-    Us3d=load_3d_slowness_model(db,us3dname)
+    Up3d=GCLdbread_by_name(db,up3dname)
+    Us3d=GCLdbread_by_name(db,us3dname)
     # Similar for 1d models.   The velocity name key is the pf here is the
     # same though since we don't convert to slowness in a 1d model
     # note the old program used files.  Here we store these in mongodb
     Pmodel1d_name=pf.get_string("P_velocity_model1d_name");
     Smodel1d_name=pf.get_string("S_velocity_model1d_name");
-    Vp1d=load_1d_velocity_model(db,Pmodel1d_name)
-    Vs1d=load_1d_velocity_model(db,Smodel1d_name)
+    Vp1d=vmod1d_dbread_by_name(db,Pmodel1d_name)
+    Vs1d=vmod1d_dbread_by_name(db,Smodel1d_name)
     # Now bring in the grid geometry.  First the 2d surface of pseudostation points
     parent_grid_name=pf.get_string("Parent_GCLgrid_Name");
     # CAUTION:  name may not be the right key
     query={'name' : parent_grid_name}
     doc=gclcollection.find_one(query)
-    parent=pwmigdb.GCLdbread(db,doc)
+    parent=GCLdbread(db,doc)
     # This functions is implemented in python because we currently know of
     # no stable and usable, open-source, travel time calculator in a lower
     # level language.  The performance hit doesn't seem horrible anyway
@@ -395,8 +399,9 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata',
     planewaves=evbag.map(query_by_id,db,source_id)
     # This function processes one plane wave component and returns a
     # GCLvectorfield3d object containing the migrated data in ray geometry.
-    migrated_data=planewaves.map(_migrate_component,parent,TPfield,svm0,Vp1d,Vs1d,control,
-                                number_partitions=npartitions)
+    migrated_data=planewaves.map(_migrate_component,parent,TPfield,svm0,
+                                 Us3d,Vp1d,Vs1d,control,
+                                   number_partitions=npartitions)
 
     migrated_data.repartition(npartitions=number_stack_partitions)
     delayed_data = migrated_data.to_delayed()
