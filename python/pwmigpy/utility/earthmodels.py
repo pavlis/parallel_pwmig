@@ -6,12 +6,14 @@ Created on Fri Oct 15 14:33:18 2021
 @author: pavlis
 """
 import math
+from mspasspy.ccore.utility import MsPASSError
 from pwmigpy.ccore.gclgrid import (GCLgrid3d,
                                    GCLscalarfield3d,
                                    GCLvectorfield3d,
                                    Geographic_point,
                                    r0_ellipse,
                                    DoubleVector)
+from pwmigpy.ccore.pwmigcore import remove_mean_x3
 import numpy as np
 
 def increment_index(n,i,increment,dimension_i):
@@ -221,3 +223,37 @@ def dftogcl(df,name_index=['lon','lat','depth','vp','hitcount'],
     gcf.compute_extents()
     return gcf
             
+def Velocity3DToSlowness(Vmod3D,ConvertToPerturbation=False):
+    """
+    Convert a model defined by a GCLscalarfield3d object with velocities 
+    as the node values to slowness.   (Note because the operator is 
+    just 1/value of each grid value calling this on a model defined as 
+    slowness convert it to velocity.)  Optionally remove the mean 
+    value of each constant x3 slice to convert the model to an approximate 
+    perturbation model.  Note this removes average slowness for a layer 
+    which is NOT the same as average velocity.  The old pure C version of 
+    pwmig did the opposite (remove mean velocity).
+    
+    Warning:  this function alters the data of Vmod3D in place to 
+    save memory.   
+    
+    :param Vmod3D the GCLscalar3d object to be converted
+    :param ConvertToPerturbation:  when true the mean value is 
+      removed from each constant x3 slice to approximate a perturbation 
+      model.  Note this works badly on some models near the Moho, but 
+      the impact on pwmig depth projects is usually minimal.  default is false
+      
+    """
+    if not isinstance(Vmod3D,GCLscalarfield3d):
+        raise MsPASSError("Velocity3DToSlowness:  arg0 must define a GCLscalarfield3d object",
+                          "Fatal")
+
+    for i in range(Vmod3D.n1):
+        for j in range(Vmod3D.n2):
+            for k in range(Vmod3D.n3):
+                vel = Vmod3D.get_value(i,j,k)
+                u = 1/vel
+                Vmod3D.set_value(u,i,j,k)
+    if ConvertToPerturbation:
+        remove_mean_x3(Vmod3D)
+        
