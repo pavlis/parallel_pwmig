@@ -128,11 +128,11 @@ def GCLdbsave(db, obj, collection="GCLfielddata",
     # object's internal attributes returned in md OR the
     # foff parameters that can only be known during the save
     # that is grid_data_foff and field_data_foff
-    md['dir']=outdir 
+    md['dir']=outdir
     md['grid_data_file']=outfile
     # These attributes are not needed when we only store the grid data
-    # Hence we load them only for field data.  Note a not of testing 
-    # for grid doesn't work because of inheritance 
+    # Hence we load them only for field data.  Note a not of testing
+    # for grid doesn't work because of inheritance
     if isinstance(obj,GCLscalarfield) or isinstance(obj,GCLscalarfield3d) or isinstance(obj,GCLvectorfield) or isinstance(obj,GCLvectorfield3d):
         md['field_data_file']=outfile
         # these are a bit of a kludge.  They are frozen in the C++ library
@@ -154,9 +154,45 @@ def GCLdbsave(db, obj, collection="GCLfielddata",
     md['_id']=id
     return md
 
+def GCLdbread_by_name(db,nametag,collection="GCLfielddata"):
+    """
+    This is a convenience method that can be used as a wrapper for the
+    lower level GCLdbread function.  It does little more than query
+    db for an entry in the specified collection for the key "name" using the
+    value defined by nametag.   Names are a convenient way to handle small
+    numbers of grid objects so this method can be useful in many contexts
+    like a parameter file defining a name to a specific object need for
+    a specific workflow.
 
+    This function will throw a MsPASSError exception if the name is not unique.
+    That was considered necessary because the name field is easily botched with
+    duplicate data of different type sharing a common name attribute.
+
+    :param db:  mspass Database handle to query
+    :param nametag:  value of name attribute to use in query (unique match)
+    :param collection:  MongoDB collection name to query (default is GCLfielddata)
+
+    :return:  requested object
+    """
+    dbcol = db[collection]
+    query={"name" : nametag}
+    n = dbcol.count_documents(query)
+    if n>1:
+        raise MsPASSError("GCLdbread_by_name:  query for name="
+            +nametag+"yielded {count} documents.\nThe name attribute must be unique to use this function".format(count=n),
+            "Invalid")
+    elif n<=0:
+        raise MsPASSError("GCLdbread_by_name:  no match found in collection"
+            + collection + " for name="+nametag,"Invalid")
+    else:
+        doc = dbcol.find_one(query)
+        return GCLdbread(db,doc,collection=collection)
+    
 def GCLdbread(db, id_or_doc, collection="GCLfielddata"):
     """
+    Reconstructs a one of the family of GCLgrid objects from a MongoDB database
+    with the unique instance defined by an ObjectId or MongoDB document.
+
     These need to be defined in the database:
     dir
     grid_data_file_extension
@@ -171,9 +207,18 @@ def GCLdbread(db, id_or_doc, collection="GCLfielddata"):
     grid_data_foff
     field_data_foff
 
+    :param db:   mspass Database handle
+    :param id_or_doc: MongoDB document used to define attributes of the
+      requested object or an ObjectId.  If the later a query is used to
+      find and retrieve a document that is then used to reconstruct the
+      object.
+    :param collection:   MongoDB collection name used if a query is
+      necessary.  This parameter is ignore if id_or_doc is a document.
+
     """
-    dbcol = db[collection]
+
     if isinstance(id_or_doc, ObjectId):
+        dbcol = db[collection]
         doc = dbcol.find_one({"_id": id_or_doc})
     elif isinstance(id_or_doc, dict):
         doc = id_or_doc
@@ -226,8 +271,8 @@ def read_1d_model_file(fname,format='plain',property='P',
           property, depth_key, and gradient_key.
     :param property: physical property to be loaded.  For plain or rbh format
       must be either "P" or "S".  For csvit must match a column heading name
-      for the column of data to be loaded.  for mod1d must be the name used 
-      in the property field for the antelope mod1d table.  
+      for the column of data to be loaded.  for mod1d must be the name used
+      in the property field for the antelope mod1d table.
       ('Pvelocity' or 'Svelocity' for all examples I know)
     :param depth_key:  header name for depth field in a csv file.  Ignore for
       rbh and plain formats.  (default "P")
@@ -236,8 +281,8 @@ def read_1d_model_file(fname,format='plain',property='P',
       defined the column with which it is associated is loaded as the gradient
       for the model BELOW the comparable depth point.   Default is None which
       means grad will be set zero (constant velocity layer model)
-    :param model:  model name - used only for mod1d format to select 
-      subset of mod1d table for a particular named model 
+    :param model:  model name - used only for mod1d format to select
+      subset of mod1d table for a particular named model
 
     """
     if format == 'plain' or format == 'rbh':
@@ -288,8 +333,8 @@ def vmod1d_dbsave(db,vmod1d,model_name,property='Pvelocity',collection="Velocity
     dbcol = db[collection]
     doc={'property' : property, 'name' : model_name}
     doc['nlayers'] = vmod1d.nlayers
-    # the C++ object here uses an std::vector container.  
-    # mongodb doesn't support that native so we have convert the 
+    # the C++ object here uses an std::vector container.
+    # mongodb doesn't support that native so we have convert the
     # vectors to python arrays
     z=[]
     v=[]
@@ -303,7 +348,35 @@ def vmod1d_dbsave(db,vmod1d,model_name,property='Pvelocity',collection="Velocity
     doc['gradient'] = grad
     ret = dbcol.insert_one(doc)
     return ret.inserted_id
+def vmod1d_dbread_by_name(db,nametag,collection="VelocityModel_1d"):
+    """
+    Read and return a VelocityModel_1d object from MongoDb based on a
+    name tag.  This function is a convenience wrapper for the lower level 
+    function vmod1d_dbread.  It searches for a model with a particular 
+    "name" attribute.  It will throw an exception if the name is ambiguous 
+    (multiple hits for the same name) or if the name is not found. 
+    
+    :param db:  MsPASS Database class handle for MongoDB.
+    :param nametag:  unique string that will be matched with the key "name"
+    :param collection:   MongoDB collection to search.  Default, which should 
+      rarely if ever need to be changed) is VelocityModel_1d.
+    
+    :return:  VelocityModel_1d object
 
+    """
+    dbcol = db[collection]
+    query={"name" : nametag}
+    n = dbcol.count_documents(query)
+    if n>1:
+        raise MsPASSError("vmod1d_dbread_by_name:  query for name="
+            +nametag+"yielded {count} documents.\nThe name attribute must be unique to use this function".format(count=n),
+            "Invalid")
+    elif n<=0:
+        raise MsPASSError("vmod1d_dbread_by_name:  no match found in collection"
+            + collection + " for name="+nametag,"Invalid")
+    else:
+        doc = dbcol.find_one(query)
+        return vmod1d_dbread(db,doc,collection=collection)
 def vmod1d_dbread(db,id_or_doc,collection='VelocityModel_1d'):
     dbcol = db[collection]
     if isinstance(id_or_doc, ObjectId):
@@ -312,12 +385,12 @@ def vmod1d_dbread(db,id_or_doc,collection='VelocityModel_1d'):
         doc = id_or_doc
     else:
         raise MsPASSError("vmod1d_dbread:  Arg 2 has invalid type - must be objectid or doc",
-                          "Invalid") 
+                          "Invalid")
     vmod = VelocityModel_1d()
     z=doc['depth']
     v=doc['velocity']
     grad=doc['gradient']
-    # Assume z,v,and grad are same length.  Let python throw 
+    # Assume z,v,and grad are same length.  Let python throw
     # an exception if they aren't - should not happen anyway
     vmod.nlayers = doc['nlayers']
     for i in range(vmod.nlayers):
@@ -325,7 +398,7 @@ def vmod1d_dbread(db,id_or_doc,collection='VelocityModel_1d'):
         vmod.v.append(v[i])
         vmod.grad.append(grad[i])
     return vmod
-    
+
 
 # This set of functions are used to implement a verify procedure on
 # parametric data that can be cast into the tree structure of an AntelopePf.
@@ -376,13 +449,13 @@ def pf_dbsave(db,pf,name_tag, collection='AntelopePf'):
 
 def pf_dbread(db,id_or_doc,collection='AntelopePf'):
     """
-    Creates and returns an AntelopePf from a MongoDB database. 
-    
-    This function is the inverse of pf_dbsave.  It reads the data stored in 
-    MongoDb as a set of documents and subdocuments and reconstructs an 
-    AntelopePf object from that data.   The types of the returned data 
-    are determined by how MongoDB defined them, which should be the 
-    same as the original pf used to create the db record.   
+    Creates and returns an AntelopePf from a MongoDB database.
+
+    This function is the inverse of pf_dbsave.  It reads the data stored in
+    MongoDb as a set of documents and subdocuments and reconstructs an
+    AntelopePf object from that data.   The types of the returned data
+    are determined by how MongoDB defined them, which should be the
+    same as the original pf used to create the db record.
 
     """
     dbcol = db[collection]
@@ -395,7 +468,7 @@ def pf_dbread(db,id_or_doc,collection='AntelopePf'):
                           "Invalid")
     result = dict_to_pf(doc)
     return result
-    
+
 #def pf_verify(db,pfname):
 def pf_to_dict(pf):
     """
@@ -416,7 +489,7 @@ def pf_to_dict(pf):
     # TODO:  that is theoretical - test me
     md = Metadata(pf)
     result = Metadata2dict(md)
-    # Tbls are stored as an array of strings 
+    # Tbls are stored as an array of strings
     for tag in pf.tbl_keys():
         tbl = pf.get_tbl(tag)
         result[tag] = tbl
@@ -432,7 +505,7 @@ def dict_to_pf(doc):
     Inverse of pf_to_dict.
     """
     pf = AntelopePf()
-    # For simple types we can use the Metadata put method 
+    # For simple types we can use the Metadata put method
     # and it will resolve the type correctly (VERIFY)
     for key in doc.keys():
         val = doc[key]
@@ -440,8 +513,7 @@ def dict_to_pf(doc):
             pf.put(key,val)
         if isinstance(val,list):
             pf.put(key,val)
-            
-    # needs some testing externally - next handle Tbl data at this level 
-    #  Think we can do that with a test for python array type 
+
+    # needs some testing externally - next handle Tbl data at this level
+    #  Think we can do that with a test for python array type
     # Then call this function on each entry found as a python dict - also need to verify before continuing
-            
