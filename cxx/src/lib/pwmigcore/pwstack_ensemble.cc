@@ -287,6 +287,12 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata
     //int evid;
     string dfile;
     const double WEIGHT_MINIMUM=1.0e-2;
+    /* Return immediately doing nothing if the input is already marked dead or
+    the ensemble is emtpty.  We return what was received and post no error messages
+    for either situation assuming whatever caused the condition was logged then.*/
+    if(indata.dead()) return(indata);
+    if(indata.member.size()==0) return(indata);
+
     /* this use of a copy constructor followed by clearing the member
     vector is not efficient, but we expect with the new api using MongoDB
     the input ensembles will not usually be that large. */
@@ -294,7 +300,6 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata
     ensout.member.clear();
     try
     {
-      /*TO DO:   these will proably need some changes */
         lat0=indata.get_double("lat0");
         lon0=indata.get_double("lon0");
         ux0=indata.get_double("ux0");
@@ -303,6 +308,11 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata
         ix2=indata.get_int("ix2");
         //evid=indata.get_int("evid");
         gridname=indata.get_string("gridname");
+        /* It would be nice if we could handle MongoDB source_id attribute
+        here, but unfortunately boost::any doesn't like ObjectIDs - I think.
+        We have to do some things in the python wrappers anyway so we handle
+        the source_id and related issues on the python side.  This is problematic
+        but I see now alternative solution for now. */
     } catch (MsPASSError& serr)
     {
       stringstream ss;
@@ -588,6 +598,7 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata
     double ux,uy,dux,duy;
     /* This is standard thing done for efficiency on vector containers. */
     ensout.member.reserve(ugrid.ux_size()*ugrid.uy_size());
+
     /* Note older db version started gridid at 1 instead of 0 like this is */
     for(iu=0,gridid=0;iu<ugrid.ux_size();++iu)
     {
@@ -714,8 +725,8 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata
             // Create the output stack as a 3c trace object and copy
             // metadata from the input into the output object.
             stackout = new Seismogram(nsout);
-            /* copy the input ensemble's metadata to stackout.  
-            We add to it later, but we use this mechanism to pass 
+            /* copy the input ensemble's metadata to stackout.
+            We add to it later, but we use this mechanism to pass
             global metadata to from the input ensemble to the stacks
             Note in older versions this was done with a selective copy.
             (copy_selected_metadata function).
@@ -747,10 +758,13 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata
             stackout->put("duy",duy);
             stackout->put("ux0",ux0);
             stackout->put("uy0",uy0);
-            // may want to output a static here, but it is probably better to
-            // just keep a good estimate of elevation and deal with this in the
-            // migration algorithm.
-            stackout->put("elev",avg_elev);
+            /* may want to output a static here, but it is probably better to
+            just keep a good estimate of elevation and deal with this in the
+            migration algorithm.  Note this is a name change for the key.  In
+            the original pwmig package this was just elev.  Changed here to
+            mesh with naming in the python wrapper for this function.
+            That is fragile to beware. */
+            stackout->put("pseudostation_elev",avg_elev);
             stackmute.apply(*stackout);
             if(save_history)
             {
@@ -761,6 +775,10 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata
             delete stackout;
         }
     }
+    /* Essential to do this for new implementation with a live attribute
+    for the ensmble.  Could have been done earlier but at the exit of this
+    loop is the more obvious place. */
+    ensout.set_live();
     return(ensout);
 }
 
