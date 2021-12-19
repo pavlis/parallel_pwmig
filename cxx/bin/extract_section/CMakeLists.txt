@@ -1,0 +1,2 @@
+add_executable(extract_section extract_section.cc)
+target_link_libraries(extract_section PRIVATE gclgrid)

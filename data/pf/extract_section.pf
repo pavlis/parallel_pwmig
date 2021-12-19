@@ -1,0 +1,12 @@
+
+output_format dmatrix
+section_points &Tbl{
+8.0 -66.0
+12.0 -67.0
+}
+path_sample_interval 25.0
+depth_sample_interval 1.0
+maximum_depth 250
+minimum_depth 0
+component_number 2
+use_points_directly false
