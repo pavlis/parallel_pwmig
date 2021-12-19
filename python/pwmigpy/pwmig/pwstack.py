@@ -240,6 +240,9 @@ def get_source_metadata(ensemble):
             result['source_lon'] = d.get_double('source_lon')
             result['source_depth'] = d.get_double('source_depth')
             result['source_time'] = d.get_double('source_time')
+            # source_id is not a C type so we use the python construct
+            # which will use boost::any to fetch this nonstandard type
+            result['source_id'] = d['source_id']
             break
     return result
 
@@ -315,17 +318,45 @@ def read_ensembles(db,querydata,control):
                 ux=umag*math.sin(math.radians(az))
                 uy=umag*math.cos(math.radians(az))
                 d.put('ux0', ux)
-                d.put('uy0',uy)
+                d.put('uy0', uy)
+                # We intentionally save the same attributes with
+                # different keys.  One has units of degrees (the two
+                # with the pseudostation tag) and the others have
+                # units of radians.   The quantities in radian are
+                # required for the C++ pwstack_ensemble function.
                 d.put('pseudostation_lat',pslat)
                 d.put('pseudostation_lon',pslon)
-                # this more obscure name is needed as an alias by pwstack_ensemble
-                # we save the longer tag for less obscure database tags
-                d.put('lat0',pslat)
-                d.put('lon0',pslon)
+                d.put('lat0',math.radians(pslat))
+                d.put('lon0',math.radians(pslon))
                 d.put('ix1',querydata['ix1'])
                 d.put('ix2',querydata['ix2'])
                 d.put('gridname',control.pseudostation_gridname)
     return d
+
+def cleanup_pwstack_output_metadata(d,source_id):
+    """
+    There is an impedance mismatch between the C++ pwstack_ensemble function
+    and mspass that makes this function necessary.  Unless I wanted to change
+    the schema, mspass handles source data using a normalization with the
+    source_id cross referencing link to the source collection.   This
+    function is necessary to remove the source coordinate data in the
+    output ensemble from pwstack_ensemble (d), and make sure the source_id is
+    set.
+
+    This function is expected to used in a map operation.
+
+    :param d:  output ensemble from pwstack_ensemble that is to be cleaned.
+    :param source_id:   source_id attribute (an ObjectId) that is to be
+      set in the ensemble metadata for d.
+    """
+    attibutes_to_clear = ['source_lat','source_lon','source_depth','source_time']
+    # perhaps should check to assure source_id is an object id but since this
+    # function should only be used internally for this algorithm that is skipped
+    d['source_id']=source_id
+    for k in attributes_to_clear:
+        # Note we clear only ensemble Metadata.  pwstack_ensemble does not
+        # set these in the ensemble members.
+        d.erase(k)
 
 
 def pwstack(db,pf,source_query=None,
