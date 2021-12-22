@@ -210,7 +210,7 @@ double zmax, double tmax, double dt)
     theta = u.baz();
   }
   // First trace the basic ray object that will be projected.  This gets dimensions.
-  RayPathSphere base_ray(vmod, umag, zmax, tmax, dt, "t");
+  RayPathSphere base_ray(vmod, u.mag, zmax, tmax, dt, "t");
 
   // call the simple, parameterized GCLgrid constructor that allocs space but has no content
   GCLscalarfield3d *rgptr = new GCLscalarfield3d(parent.n1, parent.n2, base_ray.npts);
