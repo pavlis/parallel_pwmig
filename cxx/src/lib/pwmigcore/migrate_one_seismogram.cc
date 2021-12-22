@@ -201,8 +201,9 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
     switch(error_lookup)
     {
       case 0:
-        Tpx=TPgrid.interpolate(raygrid.x1[i][j][kk],
-          raygrid.x2[i][j][kk],raygrid.x3[i][j][kk]);
+        Tpx=TPgrid.parallel_interpolate(raygrid.x1[i][j][kk],
+          raygrid.x2[i][j][kk],raygrid.x3[i][j][kk],
+          ix1_0,ix2_0,ix3_0);
         break;
       case 1:
         /* This means the point falls outside the P ray grid.

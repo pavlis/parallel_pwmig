@@ -123,8 +123,9 @@ def BuildSlownessGrid(g,source_lat, source_lon, source_depth,model='iasp91',phas
             # az can be > 360 here but all known trig function algs handl this automatically
             ux=umag*math.sin(math.radians(az))
             uy=umag*math.cos(math.radians(az))
-            u=SlownessVector(ux,uy)
+            u=SlownessVector(ux,uy,0.0)
             svm.set_slowness(u,i,j)
+    return svm
 
 def query_by_id(gridid, db, source_id, collection='wf_Seismogram'):
     """
@@ -187,8 +188,7 @@ def _migrate_component(cursor,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control,
       Default sets the number of partitions as the size of the grid in the 2
       dimension (field.n2)
     """
-    # Set the default partitioning as n2.   We use partitioning to reduce
-    # memory usage
+    # Set the default partitioning as n2.  
     if number_partitions == None:
         npartitions = parent.n2
     else:

@@ -193,24 +193,22 @@ a major change.  The pervious version returned a GCLgrid3d object.
 This returns a GCLscalarfield3d object with 1D travel times loaded
 in the field variables.
 
+Major change 2021 to mesh with pwmig.  Dropped fixed_u_mode option. 
+
 Author:  Gary Pavlis
 */
 
-GCLscalarfield3d *Build_GCLraygrid(bool fixed_u_mode,
-GCLgrid& parent,
-SlownessVector u, SlownessVectorMatrix& svm,
-VelocityModel_1d& vmod,
-double zmax, double tmax, double dt)
+GCLscalarfield3d *Build_GCLraygrid(GCLgrid& parent, SlownessVectorMatrix& svm,
+  VelocityModel_1d& vmod,double zmax, double tmax, double dt)
 {
   int i,j;
-  double umag, theta;                             // used many times so we make temporaries of these
-  if(fixed_u_mode)
-  {
-    umag = u.mag();
-    theta = u.baz();
-  }
-  // First trace the basic ray object that will be projected.  This gets dimensions.
-  RayPathSphere base_ray(vmod, u.mag, zmax, tmax, dt, "t");
+  double umag,theta;                             // used many times so we make temporaries of these
+  /* We need to get a "base_ray" to establish the size of the raygrid we need for depth (n3)
+  dimension.  We use the slowness vector of the center of the svm as the reference*/
+  i=svm.rows()/2;
+  j=svm.columns()/2;
+  SlownessVector u0=svm(i,j);
+  RayPathSphere base_ray(vmod, u0.mag(), zmax, tmax, dt, "t");
 
   // call the simple, parameterized GCLgrid constructor that allocs space but has no content
   GCLscalarfield3d *rgptr = new GCLscalarfield3d(parent.n1, parent.n2, base_ray.npts);
@@ -239,7 +237,6 @@ double zmax, double tmax, double dt)
   // now start filling up the field with the cartesian points and travel times
   //
   dmatrix *path;
-  RayPathSphere ray(base_ray);
   int trimlength=raygrid.n3;
   for(i=0;i<parent.n1;++i)
     for(j=0;j<parent.n2;++j)
@@ -248,20 +245,12 @@ double zmax, double tmax, double dt)
     int tlenthis;
     try
     {
-      if(fixed_u_mode)
-      {
-        path = GCLgrid_Ray_project(parent,base_ray,
-          theta, i,j);
-      }
-      else
-      {
-        SlownessVector uij=svm(i,j);
-        theta=uij.baz();
-        ray=RayPathSphere(vmod, uij.mag(), zmax, tmax, dt, "t");
-        path = GCLgrid_Ray_project(parent,ray,
-          theta, i,j);
+      SlownessVector uij=svm(i,j);
+      umag=uij.mag();
+      theta=uij.baz();
+      RayPathSphere ray(vmod, umag, zmax, tmax, dt, "t");
+      path = GCLgrid_Ray_project(parent,ray,theta,i,j);
 
-      }
       /* A very confusing thing here is that through
        * evolution of this program the easiest way to
        * add the travel time to the field is in this

@@ -16,10 +16,11 @@ namespace pwmig::pwmigcore
 mspass::seismic::SlownessVector get_stack_slowness
   (mspass::seismic::LoggingEnsemble<mspass::seismic::Seismogram>& ensemble);
 //Hypocenter get_event_hypocenter(ThreeComponentEnsemble& ensemble);
-pwmig::gclgrid::GCLscalarfield3d *Build_GCLraygrid(bool fixed_u,
-	pwmig::gclgrid::GCLgrid& parent,mspass::seismic::SlownessVector u,
+pwmig::gclgrid::GCLscalarfield3d *Build_GCLraygrid(
+       pwmig::gclgrid::GCLgrid& parent,
 	pwmig::pwmigcore::SlownessVectorMatrix& svm,
-	pwmig::seispp::VelocityModel_1d& vmod,double zmax, double tmax, double dt);
+	 pwmig::seispp::VelocityModel_1d& vmod,
+          double zmax, double tmax, double dt);
 mspass::utility::dmatrix *ray_path_tangent(mspass::utility::dmatrix&);
 pwmig::gclgrid::GCLscalarfield3d *decimate(pwmig::gclgrid::GCLscalarfield3d& g,
 	int dec1, int dec2, int dec3);

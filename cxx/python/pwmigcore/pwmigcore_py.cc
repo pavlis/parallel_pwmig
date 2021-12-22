@@ -121,9 +121,7 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
   ;
   m.def("Build_GCLraygrid",&Build_GCLraygrid,"Creates a structured grid with lines of constant i,j defined by ray trace geometry",
    py::return_value_policy::copy,
-   py::arg("fixed_u"),
    py::arg("parent"),
-   py::arg("u"),
    py::arg("svm"),
    py::arg("vmod"),
    py::arg("zmax"),

@@ -254,7 +254,7 @@ namespace pwmig::pwmigcore
                          ix1_0, ix2_0, ix3_0);
       if(iret==0)
       {
-        du=U3d.interpolate(path(0,i),path(1,i),path(2,i));
+        du=U3d.parallel_interpolate(path(0,i),path(1,i),path(2,i),ix1_0,ix2_0,ix3_0);
         dx1=path(0,i)-path(0,i-1);
         dx2=path(1,i)-path(1,i-1);
         dx3=path(2,i)-path(2,i-1);
@@ -641,7 +641,7 @@ namespace pwmig::pwmigcore
     //SlownessVector u0=h.pslow(pstagrid.lat0,pstagrid.lon0,0.0);
     /* Get u0 from center of the grid - not really all that
        necessary, but will retain it for compatibility */
-    SlownessVector u0=svm(svm.rows()/2,svm.columns()/2);
+    //SlownessVector u0=svm(svm.rows()/2,svm.columns()/2);
     // First set up the new expanded grid.  The new grid has border_pad cells
     // added on each side of the parent grid (pstagrid).
     int n1new, n2new;
@@ -667,7 +667,7 @@ namespace pwmig::pwmigcore
          This procedure does that.  On creation Tp contains
          1d model travel times*/
       SlownessVectorMatrix svmpadded=pad_svm(svm,border_pad);
-      Tp=Build_GCLraygrid(false,ng2d,u0,svmpadded,vp1d,zmax,tmax,dt);
+      Tp=Build_GCLraygrid(ng2d,svmpadded,vp1d,zmax,tmax,dt);
       /* For the incident wave data we need to reverse the travel
        * time order from that computed by Build_GCLraygrid (top to
        * bottom is returned there).  This is because incident wave
