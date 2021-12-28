@@ -36,7 +36,6 @@ double fudge_model_upward(pwmig::gclgrid::GCLscalarfield3d& model,double dz);
 std::vector<double> compute_3Dmodel_time(pwmig::gclgrid::GCLscalarfield3d& U3d,
 	mspass::utility::dmatrix& path);
 void cosine_taper_highend(mspass::utility::dmatrix& d,int mark, int taper_length);
-mspass::utility::dmatrix* ray_path_tangent(mspass::utility::dmatrix& ray);
 mspass::utility::dmatrix compute_gradS(pwmig::gclgrid::GCLgrid3d& raygrid,
 	int ix1, int ix2, pwmig::seispp::VelocityModel_1d& Vs1d);
 std::vector<double> compute_unit_normal_P(pwmig::gclgrid::GCLgrid3d& raygrid,
@@ -83,7 +82,6 @@ pwmig::gclgrid::Geographic_point find_TP_at_x_depth(pwmig::gclgrid::GCLscalarfie
 double compute_delta_p_term(pwmig::gclgrid::Geographic_point r0x,
 	pwmig::gclgrid::Geographic_point r0, mspass::seismic::SlownessVector u0);
 mspass::seismic::SlownessVector EnsembleDeltaSlow(mspass::seismic::LoggingEnsemble<mspass::seismic::Seismogram> *d);
-/* These might need python bindings */
 void VelocityFieldToSlowness(pwmig::gclgrid::GCLscalarfield3d& g);
 pwmig::seispp::VelocityModel_1d DeriveVM1Dfrom3D(pwmig::gclgrid::GCLscalarfield3d& u);
 pwmig::pwmigcore::PWMIGmigrated_seismogram migrate_one_seismogram(mspass::seismic::Seismogram& pwdata,
