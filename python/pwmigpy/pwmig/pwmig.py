@@ -95,11 +95,14 @@ def _build_control_metadata(control):
     result.put("border_padding",border_pad)
     result.put("depth_padding_multiplier",zpad)
     result.put("taper_length_turning_rays",taper_length)
-    result.put("recompute_weight_function",rcomp_wt)
+    result.put("recompute_weight_functions",rcomp_wt)
     result.put("weighting_function_smoother_length",nwtsmooth)
     result.put("slowness_grid_deltau",dux)
     result.put("ray_trace_depth_increment",dz)
-
+    # these have no defaults
+    result.put("maximum_depth",control["maximum_depth"])
+    result.put("maximum_time_lag",control["maximum_time_lag"])
+    result.put("data_sample_interval",control["data_sample_interval"])
     return result;
 
 def BuildSlownessGrid(g,source_lat, source_lon, source_depth,model='iasp91',phase='P'):
@@ -149,10 +152,10 @@ def _set_incident_slowness_metadata(d,svm):
     the SlownessVectorMatrix object svm.
 
     """
-    i=d.get_long['ix1']
-    j=d.get_long['ix2']
+    i=d['ix1']
+    j=d['ix2']
     # not sure this is in the bindings but idea is to fetch a SlownessVector for i,j
-    slowness=svm(i,j)
+    slowness=svm.get_slowness(i,j)
     # Warning:  these keys must be consistent with C++ function migrate_one_seismogram
     # corresponding get
     d['ux0']=slowness.ux
@@ -167,7 +170,7 @@ def _add_fieldata(f1,f2):
     f1 += f2
     return f1
 
-def _migrate_component(cursor,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control,
+def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control,
         number_partitions=None):
     """
     This is an intermediate level function used in the mspass version of
@@ -209,15 +212,15 @@ def _migrate_component(cursor,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control,
     # This sigature of this function has changed from old pwmig - depricated
     # consant u mode
     raygrid=Build_GCLraygrid(parent,VPsvm,Vs1d,zmax,VPVSmax*tmax,dt*VPVSmax)
-    seisbag=read_distributed_data(cursor,collection='wf_Seismogram',npartitions=npartitions)
+    seisbag=read_distributed_data(db,cursor,npartitions=npartitions)
     # Only dask fold supports binop that can accumulate a different
     # type than the inputs of the bag.  spark uses the accumulate
     # method for the same purpose.  It seems fold doesn' accept any
     # arguments so he function called here needs to be a class method that
     # allows the input parameters to be defined before beginning the reduce
 
-    seisbag.map(_set_incident_slowness_metadata,VPsvm)
-    seisbag.map(migrate_one_seismogram,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
+    seisbag = seisbag.map(_set_incident_slowness_metadata,VPsvm)
+    seisbag = seisbag.map(migrate_one_seismogram,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
 
     # The documentation for bag accumulate implies the following will work.
     # This function might be better done as a lambda, but we'll try this initially
@@ -226,13 +229,18 @@ def _migrate_component(cursor,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control,
     # now but his is a small cost for stabiliy it buys
     pwdgrid.zero()
     del raygrid
+    
+    # this next section should be replacable by a reduce operator
+    # we are reducing the bag to a single thing in pwdgrid and that
+    # operator is associative - TODO
 
     seisbag.repartition(npartitions=npartitions)
     delayed_data = seisbag.to_delayed()
     for dgroup in delayed_data:
         dlist=dgroup.compute()
         for d in dlist:
-            pwdgrid.accumulate(_add_fieldata)
+            pwdgrid.accumulate(d)
+    
     return pwdgrid
 
 def pwmig_verify(db,pffile="pwmig.pf",GCLcollection='GCLfielddata',
@@ -399,7 +407,7 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata',
     planewaves=evbag.map(query_by_id,db,source_id)
     # This function processes one plane wave component and returns a
     # GCLvectorfield3d object containing the migrated data in ray geometry.
-    migrated_data=planewaves.map(_migrate_component,parent,TPfield,svm0,
+    migrated_data=planewaves.map(_migrate_component,db,parent,TPfield,svm0,
                                  Us3d,Vp1d,Vs1d,control,
                                    number_partitions=npartitions)
 
