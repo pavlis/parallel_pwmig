@@ -10,6 +10,7 @@
 #include "pwmig/pwmigcore/RectangularSlownessGrid.h"
 #include "pwmig/pwmigcore/pwstack.h"
 #include "pwmig/pwmigcore/SlownessVectorMatrix.h"
+#include "pwmig/pwmigcore/PWMIGmigrated_seismogram.h"
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/AntelopePf.h"
 
@@ -28,7 +29,7 @@ using pwmig::pwmigcore::SlownessVectorMatrix;
 using pwmig::pwmigcore::Build_GCLraygrid;
 using pwmig::pwmigcore::ComputeIncidentWaveRaygrid;
 using pwmig::pwmigcore::migrate_one_seismogram;
-
+using pwmig::pwmigcore::PWMIGmigrated_seismogram;
 
 PYBIND11_MODULE(pwmigcore, m) {
 py::class_<DepthDependentAperture>(m,"DepthDependentAperture",
@@ -118,9 +119,120 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
      {
        return self(i,j);
      })
+     /*TODO;  needs pickle.  Easiest with boost seralization but SlownessVector
+     has no serialization defined.   current branch is way out of sync so will
+     put this aside until later.   Verified form documentation all I need to is have
+     boost serialization defined for SlownessVector and then the vector of SlownessVectors
+     stored in this beast can be serialized with a single ar & usarray*/
   ;
+  py::class_<PWMIGmigrated_seismogram>(m,"PWMIGmigrated_seismogram","Holds time to depth mapped data internal to pwmig.  A bit like Seismogram but not a child")
+    .def(py::init<>())
+    .def(py::init<const int, const int, const int>(),"Space allocating constructor - ix1, ix2, n (size)")
+    .def(py::init<const PWMIGmigrated_seismogram&>(),"copy constructor")
+    .def("copy_elog",&PWMIGmigrated_seismogram::copy_elog,"Copy ErrorLogger data from the Seismogram from which this datum was created")
+    /* Attributes */
+    .def_readwrite("ix1",&PWMIGmigrated_seismogram::ix1,"Surface GCLgrid index location for x1 position")
+    .def_readwrite("ix2",&PWMIGmigrated_seismogram::ix1,"Surface GCLgrid index position for x2 position")
+    .def_readwrite("live",&PWMIGmigrated_seismogram::live,"Boolean set true of data are valid - do not use if false")
+    .def_readwrite("migrated_data",&PWMIGmigrated_seismogram::migrated_data,"dmatrix containing time to depth mapped data")
+    .def_readwrite("domega",&PWMIGmigrated_seismogram::domega,"vector of solid angle terms used in pwmig for amplitude normalization using GRT")
+    .def_readwrite("dweight",&PWMIGmigrated_seismogram::dweight,"vector of GRT weight terms san solid angle increment")
+    .def_readwrite("elog",&PWMIGmigrated_seismogram::elog,"ErrorLogger used to hold errors transferred from Seismogram and any additional logged errors")
+
+    .def(py::pickle(
+          [](const PWMIGmigrated_seismogram &self) {
+            /* We always have to serialize the error log - for dead data it
+            should contain critical log messages */
+            stringstream ss_elog;
+            boost::archive::text_oarchive ar(ss_elog);
+            ar << self.elog;
+            /* This handles datum marked dead or empty equally */
+            if( self.live && (self.domega.size()>0))
+            {
+              /* This is borrowed from Seismogram which also contains a dmatrix */
+              size_t d_size = self.migrated_data.rows()*self.migrated_data.columns();
+              py::array_t<double, py::array::f_style> mdarr(d_size,
+                   self.migrated_data.get_address(0,0));
+              py::array_t<double, py::array::f_style> domarr(self.domega.size(),
+                   &(self.domega[0]));
+              py::array_t<double, py::array::f_style> dwarr(self.dweight.size(),
+                   &(self.dweight[0]));
+              /* We assume domega and dweight have the same size and the size = N
+              migrated_data is 3*N.  We store N as tuple component 4 */
+              return py::make_tuple(self.ix1,self.ix2,self.live,ss_elog.str(),
+                  self.domega.size(),mdarr,domarr,dwarr);
+            }
+            else
+            {
+              /* We force component 2 to false to handle case of
+              live being true but data vectors empty - should be dead then
+              anyway */
+              return py::make_tuple(self.ix1,self.ix2,false,ss_elog.str(),NULL,NULL,NULL,NULL);
+            }
+          },
+          [](py::tuple t) {
+            int ix1,ix2;
+            ix1 = t[0].cast<int>();
+            ix2 = t[1].cast<int>();
+            bool live=t[2].cast<bool>();
+            mspass::utility::ErrorLogger elog;
+            stringstream ss_elog(t[3].cast<std::string>());
+            boost::archive::text_iarchive arelog(ss_elog);
+            arelog >> elog;
+            int data_size = t[4].cast<size_t>();
+            /* live or dead both use the space allocating constructor that
+            sets ix1 and ix2.  When zero depends upon std:;vector property that
+            reserve(0) is handled correctly*/
+            PWMIGmigrated_seismogram result(ix1,ix2,data_size);
+            if(live)
+            {
+              result.live=true;
+              /* The constructor above allocated space for the dmatrix
+              holding migrated_data.  Hence, we can use memcpy to copy
+              the internal buffer to the object's copy of same */
+              size_t matrix_size=3*data_size;
+              py::array_t<double, py::array::f_style> darr;
+              darr = t[5].cast<py::array_t<double, py::array::f_style>>();
+              py::buffer_info info = darr.request();
+              /* Perhaps should verify size matches what we would get from
+              buffer_info but for planned use we skip that safety and just
+              copy */
+              memcpy(result.migrated_data.get_address(0,0),
+                  info.ptr,sizeof(double)*matrix_size);
+              /* Now code similar to TimeSeries to copy the two std::vector
+              containers using buffer protocol.  We reuse darr declared above*/
+              darr = t[6].cast<py::array_t<double, py::array::f_style>>();
+              info = darr.request();
+              /* The constructor calls reserve for the two std::vectors.
+              In timeSeries we use a resize but here we use a
+              more standard loop to copy the vectors from the buffer
+              using push_back.   Because reserve was called we can be sure
+              there will be no realloc overhead */
+              double *ptr=(double *)info.ptr;
+              for(auto i=0;i<data_size;++i,++ptr) result.domega.push_back(*ptr);
+              /* Same for dweight*/
+              darr = t[7].cast<py::array_t<double, py::array::f_style>>();
+              info = darr.request();
+              ptr=(double *)info.ptr;
+              for(auto i=0;i<data_size;++i,++ptr) result.dweight.push_back(*ptr);
+            }
+            else
+            {
+              result.elog = elog;
+              // Make sure it is marked dead - redundant but clearer
+              result.live = false;
+            }
+            return result;
+         }
+         ))
+
+  ;
+
+  /* Note the return_value_policy here is ESSENTIAl to avoid memory leaks. 
+  We normally used copy but that is a bad idea because this function returns 
+  a pointer to a GCLscalargrid3d object. */
   m.def("Build_GCLraygrid",&Build_GCLraygrid,"Creates a structured grid with lines of constant i,j defined by ray trace geometry",
-   py::return_value_policy::copy,
+   py::return_value_policy::take_ownership,
    py::arg("parent"),
    py::arg("svm"),
    py::arg("vmod"),
@@ -130,7 +242,7 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
  );
  m.def("ComputeIncidentWaveRaygrid",&ComputeIncidentWaveRaygrid,
   "Computes a raygrid for the incident wavefield driven by a grid of slowness values, 1d ray tracing, and 3D model implemented by approximate ray tracing",
-  py::return_value_policy::copy,
+  py::return_value_policy::take_ownership,
   py::arg("pstagrid"),
   py::arg("border_pad"),
   py::arg("UP3d"),
@@ -142,7 +254,17 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
   py::arg("zdecfac"),
   py::arg("use_3d")
  );
- m.def("migrate_one_seismogram",&migrate_one_seismogram,"pwmig innermost loop function - projects 3C seismogram data along a ray path",
+ //m.def("migrate_one_seismogram",&migrate_one_seismogram,"pwmig innermost loop function - projects 3C seismogram data along a ray path",
+ m.def("migrate_one_seismogram",static_cast<PWMIGmigrated_seismogram (*)
+   (mspass::seismic::Seismogram& pwdata,
+       pwmig::gclgrid::GCLgrid&,
+             pwmig::gclgrid::GCLscalarfield3d&,
+                     pwmig::gclgrid::GCLscalarfield3d&,
+                                pwmig::gclgrid::GCLscalarfield3d&,
+                                             pwmig::seispp::VelocityModel_1d&,
+                                                            pwmig::seispp::VelocityModel_1d&,
+                                                                             mspass::utility::Metadata&)>(&migrate_one_seismogram),
+   "pwmig innermost loop function - projects 3C seismogram data along a ray path",
  py::return_value_policy::copy,
  py::arg("pwdata"),
  py::arg("parent"),
@@ -153,12 +275,12 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
  py::arg("vs1d"),
  py::arg("control")
 );
-/* These aren't needed for pwmig python code, but are of broader use so 
+/* These aren't needed for pwmig python code, but are of broader use so
 I have this binding code for these functions */
  m.def("remove_mean_x3",&pwmig::pwmigcore::remove_mean_x3,"Removes mean for slices in the x3 direction (normally assumed to be a depth variable) from scalar field data",
    py::return_value_policy::copy,
-   py::arg("f") 
-  );  
+   py::arg("f")
+  );
 
 }
 }  // end namespace pwmigpy
