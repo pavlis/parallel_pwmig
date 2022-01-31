@@ -1,0 +1,38 @@
+gridname new
+fieldname bolivar1_P
+fieldtype scalar3d
+# 
+# remap grid option parameters
+#
+remap_grid false
+latitude_origin 38
+longitude_origin -88.5
+radius_origin  6170.033
+azimuth_y_axis 0.0
+#
+#  Used only for vector fields
+#
+save_as_vector_field false
+#
+# Only referenced for vector fields when save_as_vector_field is false
+# Which component of vector will be saved as scalar field file
+#
+remove_mean_x3_slices false
+apply_agc false
+agc_operator_length 20
+#   this is the expected size for a vector field read from a db
+#  ignored for other types
+nv_expected 5
+#
+#  This should be a list of names to be assigned to vector components
+#  in a vector field.   it is also used for scalar field data but 
+#  in that case should only contain one entry 
+#
+data_component_names &Tbl{
+T
+R
+L
+sum_omega
+fold
+}
+scalars_name_tag P2S
