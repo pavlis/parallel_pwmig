@@ -15,69 +15,76 @@ using namespace pwmig::gclgrid;
 /* This is also in dsap but avoiding a large include for one line */
 #define rad(d)    ((d) * M_PI/180.0)
 int vtk_output_GCLgrid(GCLgrid& g, string ofile,string scalars_tag="Elevation");
+int vtk_output_GCLgrid(GCLscalarfield& g, string ofile,string scalars_tag);
+
 
 
 void usage()
 {
-	cerr << "GCL2Dtovtk infile outfile [-i -g gridname -f fieldname -r "
-		<< "-odbf outfieldname -xml -binary -pf pffile] -V" << endl;
-	exit(-1);
+  cerr << "GCL2Dtovtk infile outfile [-f ftype -r -pf pffile -V]"<<endl
+    <<    "Read from infile and write to outfile (.vtk appended to this name)"<<endl
+    <<    "  -f specify type of object infile is expected to contain (default is grid2d)"<<endl
+    <<    "     (one of:  grid2d, scalar2d, MaskedScalar2d)"<<endl
+    <<    "  -r remap using parameters form pffile"<<endl
+    <<    "  -pf specify alternative pf to default GCL2Dtovtk.pf"<<endl
+    <<    "  -V  echo this usage "<<endl;
+  exit(-1);
 }
 
 int main(int argc, char **argv)
 {
-	int i,j;
+  int i,j;
   ios::sync_with_stdio();
-	if(argc<3) usage();
-	string infile(argv[1]);
-	string outfile(argv[2]);
-	string argstr;
-	string pffile("GCL2Dtovtk.pf");
-	string outfieldname;
+  if(argc<3) usage();
+  string infile(argv[1]);
+  string outfile(argv[2]);
+  string argstr;
+  string pffile("GCL2Dtovtk.pf");
+  string outfieldname;
   string fieldtype("grid2d");
-	bool remap(false);
-	for(i=3;i<argc;++i)
-	{
-		argstr=string(argv[i]);
-		if(argstr=="-pf")
-		{
-			++i;
-			if(i>=argc)usage();
-			pffile=string(argv[i]);
-		}
+  bool remap(false);
+  for(i=3;i<argc;++i)
+  {
+    argstr=string(argv[i]);
+    if(argstr=="-pf")
+    {
+      ++i;
+      if(i>=argc)usage();
+      pffile=string(argv[i]);
+    }
     if(argstr=="-f")
-		{
-			++i;
-			if(i>=argc)usage();
-			fieldtype=string(argv[i]);
-		}
-		else if(argstr=="-V")
-		{
+    {
+      ++i;
+      if(i>=argc)usage();
+      fieldtype=string(argv[i]);
+    }
+    else if(argstr=="-V")
+    {
       usage();
-		}
-		else if(argstr=="-r")
-		{
-			remap=true;
-		}
-		else
-		{
-			usage();
-		}
-	}
-	try {
+    }
+    else if(argstr=="-r")
+    {
+      remap=true;
+    }
+    else
+    {
+      usage();
+    }
+  }
+  try {
 
     AntelopePf control=pfread(pffile);
 
     string scalars_tag=control.get_string("scalars_name_tag");
-		/* Slightly odd logic here, but this allows remap off
-		to be the default.  pf switch is ignored this way if
-		the -r flag was used */
-		if(!remap) remap=control.get_bool("remap_grid");
-		BasicGCLgrid *rgptr;
+    /* Slightly odd logic here, but this allows remap off
+    to be the default.  pf switch is ignored this way if
+    the -r flag was used */
+    if(!remap) remap=control.get_bool("remap_grid");
+    BasicGCLgrid *rgptr;
     rgptr=NULL;
-		if(remap)
-		{
-			cout << "Remapping enabled"<<endl;
+    if(remap)
+    {
+      cout << "Remapping enabled"<<endl;
       /* We create a small temporary GCLgrid to allow
                            use of remap_grid procedure.   */
       double lat0,lon0,r0,azm;
@@ -96,41 +103,40 @@ int main(int argc, char **argv)
                                 lat0,lon0,r0,azm,1.0,1.0,0,0);
       rgptr=dynamic_cast<BasicGCLgrid*>(gtmp);
 
-		}
+    }
 
-		if(fieldtype=="grid2d")
-		{
-			int npoly;
+    if(fieldtype=="grid2d")
+    {
+      int npoly;
       GCLgrid g;
 
       g=GCLgrid(infile);
-			if(remap)
-			{
-				//if(g!=(*rgptr))
-				remap_grid(g,*rgptr);
-			}
+      if(remap)
+      {
+        //if(g!=(*rgptr))
+        remap_grid(g,*rgptr);
+      }
       outfile=outfile+".vtk";
-			npoly=vtk_output_GCLgrid(g,outfile,scalars_tag);
-			cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
-		}
-		else if(fieldtype=="scalar2d")
-		{
-			int npoly;
-      GCLscalarfield field;
-      field=GCLscalarfield(infile);
-			if(remap)
-			{
-			    remap_grid(dynamic_cast<GCLgrid&>(field),
-						*rgptr);
-			}
+      npoly=vtk_output_GCLgrid(g,outfile,scalars_tag);
+      cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
+    }
+    else if(fieldtype=="scalar2d")
+    {
+      int npoly;
+      GCLscalarfield field(infile);
+      if(remap)
+      {
+          remap_grid(dynamic_cast<GCLgrid&>(field),
+            *rgptr);
+      }
       outfile=outfile+".vtk";
-			npoly=vtk_output_GCLgrid(field,outfile,scalars_tag);
-			cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
-		}
-		else if( (fieldtype=="MaskedScalar2d")
+      npoly=vtk_output_GCLgrid(field,outfile,scalars_tag);
+      cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
+    }
+    else if( (fieldtype=="MaskedScalar2d")
                         || (fieldtype=="MaskedGrid2d"))
-		{
-			int npoly;
+    {
+      int npoly;
       GCLMaskedScalarField *field;
       if(fieldtype=="MaskedScalar2d")
           field=new GCLMaskedScalarField(infile);
@@ -164,28 +170,28 @@ int main(int argc, char **argv)
             }
           }
       }
-			if(remap)
-			{
-			    remap_grid(dynamic_cast<GCLgrid&>(*field),
-						*rgptr);
-			}
+      if(remap)
+      {
+          remap_grid(dynamic_cast<GCLgrid&>(*field),
+            *rgptr);
+      }
                         outfile=outfile+".vtk";
-			npoly=vtk_output_GCLgrid(*field,outfile,scalars_tag);
-			cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
-		}
-		else
-		{
-			cerr << "Unsupported fieldtype = "<<fieldtype<<endl
-				<< "Exiting with no output\n" << endl;
-		}
+      npoly=vtk_output_GCLgrid(*field,outfile,scalars_tag);
+      cout << "Wrote "<<npoly<<" polygons to output file"<<endl;
+    }
+    else
+    {
+      cerr << "Unsupported fieldtype = "<<fieldtype<<endl
+        << "Exiting with no output\n" << endl;
+    }
 
-	}
-	catch (MsPASSError& merr)
-	{
-		cerr << "Caught MsPASSError object with this content:"<<endl;
+  }
+  catch (MsPASSError& merr)
+  {
+    cerr << "Caught MsPASSError object with this content:"<<endl;
     merr.log_error();
-		exit(-1);
-	}
+    exit(-1);
+  }
   catch(GCLgridError& gerr)
   {
     cerr << "GCLgridError thrown"<<endl<<gerr.what();
@@ -196,9 +202,9 @@ int main(int argc, char **argv)
     cerr << sexcp.what();
     exit(-1);
   }
-	catch (...)
-	{
-	    cerr << "Something threw an unhandled exception"<<endl;
+  catch (...)
+  {
+      cerr << "Something threw an unhandled exception"<<endl;
       exit(-1);
-	}
+  }
 }
