@@ -1,0 +1,16 @@
+build_3d_grid	true
+delta_x1	35.0
+delta_x2	35.0
+delta_x3	25.0
+gridfile_directory	./GCLgrids
+gridname ak135
+n1	60
+n2	70
+n3	40
+# This is site M09A
+origin_latitude	41.4230
+origin_longitude	-117.4497
+origin_offset_x1	20
+origin_offset_x2	43
+pf_revision_time	1042137542
+x_axis_azimuth	75.0

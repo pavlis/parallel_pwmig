@@ -1,0 +1,263 @@
+wfprocess &Arr{
+primary_keys &Tbl{
+pwfid
+}
+attributes &Tbl{
+pwfid integer -1
+starttime epochtime -1.0
+endtime epochtime 9999999999.99900
+time_standard string -
+dir string -
+dfile string -
+foff integer 0
+dtype string - wf_Seismgoram
+samprate float -1.0
+unkwown integer -1 drop   # Can't find wfprocess schema - unclear what this one is
+algorithm string -    # probably should use a different name if retained ok for testing
+lddate epochtime -9999999999.99900
+}
+}
+wfdisc &Arr{
+primary_keys &Tbl{
+sta
+chan
+starttime
+}
+common &Tbl{
+sta
+chan
+starttime
+endtime
+nsamp
+samprate
+calib
+datatype
+dir
+dfile
+foff
+}
+attributes &Tbl{
+sta string -
+chan string -
+starttime epochtime -1.0
+wfid int -1
+chanid int -1
+jdate int -1
+endtime epochtime 9999999999.99900
+nsamp int -1
+samprate float -1.0
+calib float -1.0
+calper float -1.0
+instype string -
+segtype string -
+datatype string -
+clip string -
+dir string -
+dfile string -
+foff integer 0
+commid int -1
+lddate epochtime -9999999999.99900
+}
+}
+event &Arr{
+primary_keys &Tbl{
+evid
+}
+common &Tbl{
+evid
+prefor
+}
+attributes &Tbl{
+  evid int -1
+  evname string -
+  prefor int -1
+  auth string -
+  commid int -1
+  lddate epochtime -9999999999.99900
+}
+}
+
+
+origin &Arr{
+# The schema has a long list of primaries but for MsPASS purpose alterate orid is preferable
+primary_keys &Tbl{
+orid
+}
+common &Tbl{
+lat
+lon
+depth
+time
+}
+attributes &Tbl{
+  lat float -999.0000
+  lon float -999.0000
+  depth float -999.0000
+  time epochtime -9999999999.99900
+  orid int -1
+  evid int -1
+  jdate int -1
+  nass int -1
+  ndef int -1
+  ndp int -1
+  grn int -1
+  srn int -1
+  etype string -
+  review string -
+  depdp float -999.0000
+  dtype string -
+  mb float -999.00
+  mbid int -1
+  ms float -999.00
+  msid int -1
+  ml float -999.00
+  mlid int -1
+  algorithm string -
+  auth string -
+  commid int -1
+  lddate epochtime -9999999999.99900
+}
+}
+
+site &Arr{
+primary_keys &Tbl{
+sta
+ondate
+}
+common &Tbl{
+sta
+lat
+lon
+elev
+ondate
+offdate
+}
+attributes &Tbl{
+  sta string -
+  ondate int -1
+  offdate int -1
+  lat float -999.0000
+  lon float -999.0000
+  elev float -999.0000
+  staname string -
+  statype string -
+  refsta string -
+  dnorth float 0.0000
+  deast float 0.0000
+  lddate epochtime -9999999999.99900
+}
+}
+# these are pwmig specific related to old wfprocess table
+evlink &Arr{
+primary_keys &Tbl{
+pwfid
+}
+common &Tbl{
+pwfid
+evid
+}
+attributes &Tbl{
+  pwfid int -1
+  evid int -1
+  lddate epochtime -9999999999.99900
+}
+}
+
+sclink &Arr{
+primary_keys &Tbl{
+pwfid
+}
+common &Tbl{
+sta
+dtype
+pwfid
+}
+attributes &Tbl{
+  sta string -
+  dtype string -
+  pwfid int -1
+  lddate epochtime -9999999999.99900
+}
+}
+
+# arrival and assoc and are back to css3.0
+arrival &Arr{
+primary_keys &Tbl{
+sta
+time
+}
+common &Tbl{
+sta
+time
+chan
+iphase
+deltim
+arid
+}
+attributes &Tbl{
+  sta string -
+  time epochtime -9999999999.99900
+  arid int -1
+  jdate int -1
+  stassid int -1
+  chanid int -1
+  chan string -
+  iphase string -
+  stype string -
+  deltim float -1.000
+  azimuth float -1.00
+  delaz float -1.00
+  slow float -1.00
+  delslo float -1.00
+  ema float -1.00
+  rect float -1.000
+  amp float -1.0
+  per float -1.00
+  logat float -999.00
+  clip string -
+  fm string -
+  snr float -1.00
+  qual string -
+  auth string -
+  commid int -1
+  lddate epochtime -9999999999.99900
+}
+}
+
+assoc &Arr{
+primary_keys &Tbl{
+arid
+orid
+}
+common &Tbl{
+arid
+orid
+sta
+phase
+delta
+seaz
+esaz
+timeres
+}
+attributes &Tbl{
+  arid int -1
+  orid int -1
+  sta string -
+  phase string -
+  belief float 9.99
+  delta float -1.00
+  seaz float -999.00
+  esaz float -999.00
+  timeres float -999.000
+  timedef string -
+  azres float -999.0
+  azdef string -
+  slores float -999.00
+  slowdef string -
+  emares float -999.0
+  wgt float -1.000
+  vmodel string -
+  commid int -1
+  lddate epochtime -9999999999.99900
+}
+}
