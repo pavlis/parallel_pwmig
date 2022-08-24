@@ -1,4 +1,4 @@
-import os
+
 import math
 import dask
 from mspasspy.ccore.utility import (AntelopePf,
@@ -6,14 +6,12 @@ from mspasspy.ccore.utility import (AntelopePf,
                     MsPASSError,
                     ErrorSeverity)
 from mspasspy.ccore.seismic import (SlownessVector)
-from mspasspy.db.database import read_distributed_data
 from obspy.taup import TauPyModel
 from obspy.geodetics import gps2dist_azimuth,kilometers2degrees
 
 from pwmigpy.ccore.gclgrid import (GCLvectorfield3d,
-                    PWMIGfielddata,
-                    GCLgrid,
-                    GCLgrid3d)
+                    PWMIGfielddata)
+
 from pwmigpy.ccore.pwmigcore import (SlownessVectorMatrix,
                     Build_GCLraygrid,
                     ComputeIncidentWaveRaygrid,
@@ -21,7 +19,7 @@ from pwmigpy.ccore.pwmigcore import (SlownessVectorMatrix,
 from pwmigpy.db.database import (GCLdbread,
                                  vmod1d_dbread_by_name,
                                  GCLdbread_by_name)
-from pwmigpy.ccore.seispp import VelocityModel_1d
+#from pwmigpy.ccore.seispp import VelocityModel_1d
 
 def _print_default_used_message(key,defval):
     print("Parameter warning:  AntelopePf file does not have key=",key,
@@ -170,8 +168,7 @@ def _add_fieldata(f1,f2):
     f1 += f2
     return f1
 
-def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control,
-        number_partitions=None):
+def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
     """
     This is an intermediate level function used in the mspass version of
     pwmig.  It will migrate one plane wave component of data created by
@@ -187,15 +184,7 @@ def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control,
     data passed through the VPsvm object (here a GCLvectorfield but originally
     this was a smaller thing read from the old pwstack to pwmig file structure).
 
-    :param number_partitions:  Explicitly set the number of partitions.
-      Default sets the number of partitions as the size of the grid in the 2
-      dimension (field.n2)
     """
-    # Set the default partitioning as n2.  
-    if number_partitions == None:
-        npartitions = parent.n2
-    else:
-        npartitions = number_partitions
 
     zmax=control.get_double("maximum_depth")
     tmax=control.get_double("maximum_time_lag")
@@ -212,35 +201,14 @@ def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control,
     # This sigature of this function has changed from old pwmig - depricated
     # consant u mode
     raygrid=Build_GCLraygrid(parent,VPsvm,Vs1d,zmax,VPVSmax*tmax,dt*VPVSmax)
-    seisbag=read_distributed_data(db,cursor,npartitions=npartitions)
-    # Only dask fold supports binop that can accumulate a different
-    # type than the inputs of the bag.  spark uses the accumulate
-    # method for the same purpose.  It seems fold doesn' accept any
-    # arguments so he function called here needs to be a class method that
-    # allows the input parameters to be defined before beginning the reduce
-
-    seisbag = seisbag.map(_set_incident_slowness_metadata,VPsvm)
-    seisbag = seisbag.map(migrate_one_seismogram,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
-
-    # The documentation for bag accumulate implies the following will work.
-    # This function might be better done as a lambda, but we'll try this initially
     pwdgrid=PWMIGfielddata(raygrid)
-    # Don't assume the constructor initializes the data arrays to 0.  It does
-    # now but his is a small cost for stabiliy it buys
-    pwdgrid.zero()
-    del raygrid
-    
-    # this next section should be replacable by a reduce operator
-    # we are reducing the bag to a single thing in pwdgrid and that
-    # operator is associative - TODO
-
-    seisbag.repartition(npartitions=npartitions)
-    delayed_data = seisbag.to_delayed()
-    for dgroup in delayed_data:
-        dlist=dgroup.compute()
-        for d in dlist:
-            pwdgrid.accumulate(d)
-    
+    for doc in cursor:
+        seis = dask.delayed(db.read_data)(doc)
+        seis = _set_incident_slowness_metadata(seis, VPsvm)
+        migseis = dask.delayed(migrate_one_seismogram)(seis,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
+        pwdgrid.accumulate(migseis)
+        
+    pwdgrid = dask.compute(*pwdgrid)    
     return pwdgrid
 
 def pwmig_verify(db,pffile="pwmig.pf",GCLcollection='GCLfielddata',
@@ -268,8 +236,7 @@ def pwmig_verify(db,pffile="pwmig.pf",GCLcollection='GCLfielddata',
     # 1  verify all gclfeield and vmodel data
     # print a report for waveform inputs per event
 
-def migrate_event(db,source_id,pf,collection='GCLfielddata',
-                   number_stack_partitions=5):
+def migrate_event(db,source_id,pf,collection='GCLfielddata'):
     """
     Top level map function for pwmig.   pwmig is a "prestack" method
     meaning we migrate data from individual source regions (always best
@@ -302,12 +269,7 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata',
     source_lat=doc['lat']
     source_lon=doc['lon']
     source_depth=doc['depth']
-    source_time=doc['time']
-
-    # This is a new parameter in pf that was not found in the old
-    # pwmig. For that reason we fetch it immediately.  Let the program
-    # abort immediately then if it isn't defined
-    npartitions=pf.get_long("number_partitions")
+    #source_time=doc['time']
 
     # This function is the one that extracts parameters required in
     # what were once inner loops of this program.  As noted there are
@@ -315,7 +277,17 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata',
     # this control metadata container around.  The dark side is if any
     # new parameters are added changes are required in this function,
     control = _build_control_metadata(pf)
-
+    
+    # This builds the image volume used to accumulate plane wave 
+    # components.   We assume it was constructed earlier and saved
+    # to the database.  This parameter is outside control because it 
+    # is only used in this function
+    imgname = pf.get_string("stack_grid_name")
+    imggrid = GCLdbread_by_name(db,imgname)
+    migrated_image = GCLvectorfield3d(imggrid,5)
+    del imggrid
+    migrated_image.zero()
+    
     # This function extracts parameters passed around through a Metadata
     # container (what it returns).   These are a subset of those extracted
     # in this function.  This should, perhaps, be passed into this function
@@ -398,23 +370,15 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata',
     TPfield=ComputeIncidentWaveRaygrid(parent,border_pad,
        Up3d,Vp1d,svm0,zmax*zpad,tmax,dt,zdecfac,True)
     del Up3d
+    
     # The loop over plane wave components is driven by a list of cursors
     # created in this MongoDB incantation
     query={'source_id' : source_id}
     gridid_list=db.wf_Seismogram.find(query).distinct('gridid')
-    evbag=dask.bag.from_sequence(gridid_list)
-    # This loads the bag with cursors for each plane wave component
-    planewaves=evbag.map(query_by_id,db,source_id)
-    # This function processes one plane wave component and returns a
-    # GCLvectorfield3d object containing the migrated data in ray geometry.
-    migrated_data=planewaves.map(_migrate_component,db,parent,TPfield,svm0,
-                                 Us3d,Vp1d,Vs1d,control,
-                                   number_partitions=npartitions)
-
-    migrated_data.repartition(npartitions=number_stack_partitions)
-    delayed_data = migrated_data.to_delayed()
-    for dgroup in delayed_data:
-        dlist=dgroup.compute()
-        for d in dlist:
-            migrated_data.accumulate(_add_fieldata)
-    return migrated_data
+    for gridid in gridid_list:
+        cursor = query_by_id(gridid, db, source_id)
+        migrated_data = _migrate_component(cursor,db,parent,TPfield,svm0,
+                                 Us3d,Vp1d,Vs1d,control)
+        migrated_image += migrated_data
+        
+    return migrated_image
