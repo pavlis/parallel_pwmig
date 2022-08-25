@@ -143,6 +143,8 @@ def query_by_id(gridid, db, source_id, collection='wf_Seismogram'):
     query={'source_id': source_id, "gridid" : gridid}
     collection=db[collection]
     return collection.find(query)
+
+@dask.delayed
 def _set_incident_slowness_metadata(d,svm):
     """
     Internal function used in map to set metadata fields in
@@ -204,8 +206,11 @@ def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
     pwdgrid=PWMIGfielddata(raygrid)
     for doc in cursor:
         seis = dask.delayed(db.read_data)(doc)
+        # This functions is defined above as delayed with a decorator
         seis = _set_incident_slowness_metadata(seis, VPsvm)
-        migseis = dask.delayed(migrate_one_seismogram)(seis,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
+        migseis = dask.delayed(migrate_one_seismogram)\
+                      (seis,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
+        pwdgrid.accumulate(migseis)
         pwdgrid.accumulate(migseis)
         
     pwdgrid = dask.compute(*pwdgrid)    
@@ -224,8 +229,8 @@ def pwmig_verify(db,pffile="pwmig.pf",GCLcollection='GCLfielddata',
     print('Warning:  this function is not yet implemented.   Checks only if pf is readable')
     # First we test the parameter file for completeness.
     # we use a generic pf testing function in mspass.
-    algorithm="pwmig"
-    pf=AntelopePf(pffile)
+    #algorithm="pwmig"
+    #pf=AntelopePf(pffile)
     # TODO  this does not exists and is subject to design changes from github discussion
     #pfverify(algorithm,pf)
     # this also doesn't exists.  Idea is to verify all model files are
