@@ -67,12 +67,12 @@ class CMakeBuild(build_ext):
         subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
 
-#ENTRY_POINTS = {
-#    'console_scripts': [
-#        'mspass-dbclean = mspasspy.db.script.dbclean:main',
-#        'mspass-dbverify = mspasspy.db.script.dbverify:main',
-#    ],
-#}
+ENTRY_POINTS = {
+    'console_scripts': [
+        'pwmig-makegclgrid = pwmigpy.dataprep.scripts.makegclgrid:main',
+        'pwmig-project1dmod = pwmigpy.dataprep.scripts.project1dmod:main',
+    ],
+}
 
 setup(
     name='pwmig',
@@ -83,7 +83,7 @@ setup(
     long_description='',
     ext_modules=[CMakeExtension('pwmigpy.ccore')],
     cmdclass=dict(build_ext=CMakeBuild),
-    #entry_points=ENTRY_POINTS,
+    entry_points=ENTRY_POINTS,
     zip_safe=False,
     package_dir={"": "python"},
     packages=find_namespace_packages(where="python", include=["pwmigpy", "pwmigpy.*"]),
