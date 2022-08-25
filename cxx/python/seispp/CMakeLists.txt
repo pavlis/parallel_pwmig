@@ -11,7 +11,7 @@ include_directories(
 
 pybind11_add_module(pyseispp seispp_py.cc)
 
-target_link_libraries(pyseispp PRIVATE seispp dsap gclgrid 
+target_link_libraries(pyseispp PRIVATE pwmig 
   $ENV{MSPASS_HOME}/lib/libmspass.a 
   ${Boost_LIBRARIES})
 set_target_properties(pyseispp PROPERTIES OUTPUT_NAME "seispp")

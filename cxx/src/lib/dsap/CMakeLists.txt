@@ -7,7 +7,7 @@ include_directories(
   ${PROJECT_BINARY_DIR}/include
   ${PROJECT_SOURCE_DIR}/include)
 
-add_library(dsap STATIC ${sources_dsap})
-target_link_libraries(dsap PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+add_library(dsap OBJECT ${sources_dsap})
+#target_link_libraries(dsap PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
-install (TARGETS dsap DESTINATION lib)
+#install (TARGETS dsap DESTINATION lib)

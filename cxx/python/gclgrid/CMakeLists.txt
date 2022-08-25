@@ -11,7 +11,7 @@ include_directories(
 
 pybind11_add_module(pygclgrid gclgrid_py.cc)
 
-target_link_libraries(pygclgrid PRIVATE seispp dsap gclgrid 
+target_link_libraries(pygclgrid PRIVATE pwmig 
   $ENV{MSPASS_HOME}/lib/libmspass.a 
   ${Boost_LIBRARIES})
 set_target_properties(pygclgrid PROPERTIES OUTPUT_NAME "gclgrid")

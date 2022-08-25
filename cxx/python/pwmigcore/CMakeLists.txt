@@ -11,7 +11,7 @@ include_directories(
 
 pybind11_add_module(pypwmigcore pwmigcore_py.cc)
 
-target_link_libraries(pypwmigcore PRIVATE pwmigcore dsap gclgrid 
+target_link_libraries(pypwmigcore PRIVATE pwmig 
   $ENV{MSPASS_HOME}/lib/libmspass.a 
   ${Boost_LIBRARIES})
 set_target_properties(pypwmigcore PROPERTIES OUTPUT_NAME "pwmigcore")
