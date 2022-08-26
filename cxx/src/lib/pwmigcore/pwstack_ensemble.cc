@@ -302,6 +302,11 @@ LoggingEnsemble<Seismogram> pwstack_ensemble(LoggingEnsemble<Seismogram>& indata
     {
         lat0=indata.get_double("lat0");
         lon0=indata.get_double("lon0");
+        /* for consistency with other coordinate data lat0 and lon0 
+        are posted in degrees.  We need to convert them to radians 
+        to be consistent with this function. */
+        lat0 = rad(lat0);
+        lon0 = rad(lon0);
         ux0=indata.get_double("ux0");
         uy0=indata.get_double("uy0");
         ix1=indata.get_int("ix1");
