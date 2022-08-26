@@ -37,8 +37,6 @@ from mspasspy.ccore.utility import (AntelopePf,
                                     MsPASSError)
 import pandas as pd
 import dask.dataframe as dd
-# this module name is temporary.   The function here needs to 
-# be moved to a more appropriate location
 from pwmigpy.db.dbview2collection import parse_attribute_name_tbl
 
 
