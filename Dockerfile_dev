@@ -7,5 +7,5 @@ ADD cxx /parallel_pwmig/cxx
 ADD data /parallel_pwmig/data
 ADD setup.py /parallel_pwmig/setup.py
 ADD python /parallel_pwmig/python
-RUN MSPASS_HOME=/usr/local pip3 install /parallel_pwmig -v
+RUN MSPASS_HOME=/usr/local pip3 install --global-option build --global-option --debug /parallel_pwmig -v
 
