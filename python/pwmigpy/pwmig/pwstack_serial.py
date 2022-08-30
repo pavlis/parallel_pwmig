@@ -241,6 +241,7 @@ def get_source_metadata(ensemble):
             result['source_lon'] = d.get_double('source_lon')
             result['source_depth'] = d.get_double('source_depth')
             result['source_time'] = d.get_double('source_time')
+            result['source_id'] = d['source_id']
             break
     return result
             
@@ -276,7 +277,7 @@ def read_ensembles(db,querydata,control):
                                     data_tag=control.data_tag)
         if len(d.member) > 0:
             # When the ensemble is not empty we have to compute the 
-            # slowness vector of the incident wavefield using source \
+            # slowness vector of the incident wavefield using source 
             # coordinates and the pseudostation location.  This section 
             # depends on a feature of the reader that it the normalize 
             # parameter causes all members to have source coordinates loaded
@@ -293,7 +294,10 @@ def read_ensembles(db,querydata,control):
                 for k in srcdata:
                     d[k] = srcdata[k]
                 # a bit of a weird way to fetch the pseudostation 
-                # coordinates but the only way without using additional arts
+                # coordinates but a fast an efficnet way to do it
+                # Note also a unit mismatch - gps2dist_azimuth requires
+                # coordinates in degrees but the C++ code here uses 
+                # radians internally
                 pslat=querydata['lat']
                 pslon=querydata['lon']
                 georesult=gps2dist_azimuth(srcdata['source_lat'],
