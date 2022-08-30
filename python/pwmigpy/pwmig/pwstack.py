@@ -349,7 +349,7 @@ def cleanup_pwstack_output_metadata(d,source_id):
     :param source_id:   source_id attribute (an ObjectId) that is to be
       set in the ensemble metadata for d.
     """
-    attibutes_to_clear = ['source_lat','source_lon','source_depth','source_time']
+    attributes_to_clear = ['source_lat','source_lon','source_depth','source_time']
     # perhaps should check to assure source_id is an object id but since this
     # function should only be used internally for this algorithm that is skipped
     d['source_id']=source_id

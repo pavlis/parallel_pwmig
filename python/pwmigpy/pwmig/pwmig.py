@@ -211,7 +211,6 @@ def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
         migseis = dask.delayed(migrate_one_seismogram)\
                       (seis,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
         pwdgrid.accumulate(migseis)
-        pwdgrid.accumulate(migseis)
         
     pwdgrid = dask.compute(*pwdgrid)    
     return pwdgrid

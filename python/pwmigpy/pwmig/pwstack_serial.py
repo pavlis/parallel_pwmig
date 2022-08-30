@@ -417,6 +417,7 @@ def pwstack(db,pf,source_query=None,
                             control.centroid_cutoff,
                                 False,'')
         print(dret.keys(),len(dret.member))
+
         db.save_ensemble_data(dret,data_tag=output_data_tag)
     # Now run pwstack_ensemble - it has a long arg list
     #mybag.map(lambda d : pwstack_ensemble(d,control.data_mute,
