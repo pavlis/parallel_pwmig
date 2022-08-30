@@ -154,7 +154,7 @@ def GCLdbsave(db, obj, collection="GCLfielddata",
     md['_id']=id
     return md
 
-def GCLdbread_by_name(db,nametag,collection="GCLfielddata"):
+def GCLdbread_by_name(db,nametag,collection="GCLfielddata",object_type=None):
     """
     This is a convenience method that can be used as a wrapper for the
     lower level GCLdbread function.  It does little more than query
@@ -170,12 +170,22 @@ def GCLdbread_by_name(db,nametag,collection="GCLfielddata"):
 
     :param db:  mspass Database handle to query
     :param nametag:  value of name attribute to use in query (unique match)
+    :type nametag: string
     :param collection:  MongoDB collection name to query (default is GCLfielddata)
+    :type collection: string
+    :param object_type:  optional tag used to match the (literal) 
+     attribute name "object_type" stored in MongoDB.  Use this to resolve 
+     ambiguous name tags assigned to different object types.  
+     No test for validity of the name are made.  If not null a query for
+     object_type is added.
+    :type object_type:  string
 
     :return:  requested object
     """
     dbcol = db[collection]
     query={"name" : nametag}
+    if object_type is not None:
+        query["object_type"] = object_type
     n = dbcol.count_documents(query)
     if n>1:
         raise MsPASSError("GCLdbread_by_name:  query for name="
