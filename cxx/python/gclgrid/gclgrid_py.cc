@@ -140,6 +140,18 @@ py::class_<pwmig::gclgrid::Geographic_point>(m,"Geographic_point","Point on Eart
   .def_readwrite("lat",&Geographic_point::lat,"Latitude of a point (radians)")
   .def_readwrite("lon",&Geographic_point::lon,"Longitude of a point (radians)")
   .def_readwrite("r",&Geographic_point::r,"Radial distance from Earth center (km)")
+  .def(py::pickle(
+     [](const Geographic_point &self) {
+       return py::make_tuple(self.lat,self.lon,self.r);
+     },
+     [](py::tuple t) {
+       double lat_in = t[0].cast<double>();
+       double lon_in = t[1].cast<double>();
+       double r_in = t[2].cast<double>();
+       return Geographic_point(lat_in, lon_in, r_in);
+     }
+   )
+  )
   ;
 py::class_<pwmig::gclgrid::Cartesian_point>(m,"Cartesian_point","Point on Earth defined coordinates in radians")
     .def(py::init<>())
@@ -148,6 +160,18 @@ py::class_<pwmig::gclgrid::Cartesian_point>(m,"Cartesian_point","Point on Earth 
     .def_readwrite("x1",&Cartesian_point::x1,"x1 coordinate axis value (km)")
     .def_readwrite("x2",&Cartesian_point::x2,"x2 coordinate axis value (km)")
     .def_readwrite("x3",&Cartesian_point::x3,"x3 coordinate axis value (km)")
+    .def(py::pickle(
+       [](const Cartesian_point &self) {
+         return py::make_tuple(self.x1,self.x2,self.x3);
+       },
+       [](py::tuple t) {
+         double x1_in = t[0].cast<double>();
+         double x2_in = t[1].cast<double>();
+         double x3_in = t[2].cast<double>();
+         return Cartesian_point(x1_in, x2_in, x3_in);
+       }
+     )
+    )
     ;
 py::class_<BasicGCLgrid,PyBasicGCLgrid>(m,"BasicGCLgrid","Base class for family of GCL data objects")
   .def(py::init<>())

@@ -103,6 +103,16 @@ public:
 	{
 		lat=0.0; lon=0.0; r=0.0;
 	};
+	/*! Fully parameterized constructor.
+
+	This constructor was added 2022 to simply pickle interface
+	in pybind11 */
+	Geographic_point(const double lat_in, const double lon_in, const double r_in)
+	{
+		lat = lat_in;
+		lon = lon_in;
+		r = r_in;
+	};
 	Geographic_point(const Geographic_point& parent)
 	{
 		lat=parent.lat;
@@ -134,6 +144,16 @@ public:
 	Cartesian_point()
 	{
 		x1=0.0; x2=-0.0; x3=0.0;
+	};
+	/*! Fully parameterized constructor.
+
+	This constructor was added 2022 to simply pickle interface
+	in pybind11 */
+	Cartesian_point(const double x1_in, const double x2_in, const double x3_in)
+	{
+		x1 = x1_in;
+		x2 = x2_in;
+		x3 = x3_in;
 	};
 	Cartesian_point(const Cartesian_point& parent)
 	{
