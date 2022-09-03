@@ -240,8 +240,6 @@ def get_source_metadata(ensemble):
             result['source_lon'] = d.get_double('source_lon')
             result['source_depth'] = d.get_double('source_depth')
             result['source_time'] = d.get_double('source_time')
-            # source_id is not a C type so we use the python construct
-            # which will use boost::any to fetch this nonstandard type
             result['source_id'] = d['source_id']
             break
     return result
@@ -278,7 +276,7 @@ def read_ensembles(db,querydata,control):
                                     data_tag=control.data_tag)
         if len(d.member) > 0:
             # When the ensemble is not empty we have to compute the
-            # slowness vector of the incident wavefield using source \
+            # slowness vector of the incident wavefield using source
             # coordinates and the pseudostation location.  This section
             # depends on a feature of the reader that it the normalize
             # parameter causes all members to have source coordinates loaded
@@ -295,7 +293,10 @@ def read_ensembles(db,querydata,control):
                 for k in srcdata:
                     d[k] = srcdata[k]
                 # a bit of a weird way to fetch the pseudostation
-                # coordinates but the only way without using additional arts
+                # coordinates but a fast an efficnet way to do it
+                # Note also a unit mismatch - gps2dist_azimuth requires
+                # coordinates in degrees but the C++ code here uses
+                # radians internally
                 pslat=querydata['lat']
                 pslon=querydata['lon']
                 georesult=gps2dist_azimuth(srcdata['source_lat'],
@@ -318,46 +319,23 @@ def read_ensembles(db,querydata,control):
                 ux=umag*math.sin(math.radians(az))
                 uy=umag*math.cos(math.radians(az))
                 d.put('ux0', ux)
-                d.put('uy0', uy)
-                # We intentionally save the same attributes with
-                # different keys.  One has units of degrees (the two
-                # with the pseudostation tag) and the others have
-                # units of radians.   The quantities in radian are
-                # required for the C++ pwstack_ensemble function.
+                d.put('uy0',uy)
                 d.put('pseudostation_lat',pslat)
                 d.put('pseudostation_lon',pslon)
-                d.put('lat0',math.radians(pslat))
-                d.put('lon0',math.radians(pslon))
+                # this more obscure name is needed as an alias by pwstack_ensemble
+                # we save the longer tag for less obscure database tags
+                d.put('lat0',pslat)
+                d.put('lon0',pslon)
                 d.put('ix1',querydata['ix1'])
                 d.put('ix2',querydata['ix2'])
                 d.put('gridname',control.pseudostation_gridname)
     return d
-
-def cleanup_pwstack_output_metadata(d,source_id):
+def pwstack_ensemble_python(*arg):
     """
-    There is an impedance mismatch between the C++ pwstack_ensemble function
-    and mspass that makes this function necessary.  Unless I wanted to change
-    the schema, mspass handles source data using a normalization with the
-    source_id cross referencing link to the source collection.   This
-    function is necessary to remove the source coordinate data in the
-    output ensemble from pwstack_ensemble (d), and make sure the source_id is
-    set.
-
-    This function is expected to used in a map operation.
-
-    :param d:  output ensemble from pwstack_ensemble that is to be cleaned.
-    :param source_id:   source_id attribute (an ObjectId) that is to be
-      set in the ensemble metadata for d.
-    """
-    attributes_to_clear = ['source_lat','source_lon','source_depth','source_time']
-    # perhaps should check to assure source_id is an object id but since this
-    # function should only be used internally for this algorithm that is skipped
-    d['source_id']=source_id
-    for k in attributes_to_clear:
-        # Note we clear only ensemble Metadata.  pwstack_ensemble does not
-        # set these in the ensemble members.
-        d.erase(k)
-
+    Temporary workaround for a problem with return in dask. Patch we can
+    hopefully remove when we understand this problem better.
+    """ 
+    return pwstack_ensemble(*arg)
 
 def pwstack(db,pf,source_query=None,
         slowness_grid_tag='RectangularSlownessGrid',
@@ -392,8 +370,16 @@ def pwstack(db,pf,source_query=None,
             gc=control.stagrid.geo_coordinates(i,j)
             lat=math.degrees(gc.lat)
             lon=math.degrees(gc.lon)
+            # I could not make this work.   I don't think there is a
+            # huge overhead in creating this geometry object defining
+            # how to find which stations are related to each pseudostation
+            # point.
+            #ids=dask.delayed(site_query)(db,lat,lon,i,j,cutoff)
             ids=site_query(db,lat,lon,i,j,cutoff)
             staids.append(ids)
+    # I think we need to do for the steps below to work - we need data in
+    # staids
+    #staids.compute()
     # Now we create a dask bag with query strings for all source_ids and
     # all staids.  For now we use a large memory model and build the
     # list of build_query returns and then construct a bag from that.
@@ -409,7 +395,7 @@ def pwstack(db,pf,source_query=None,
             # debug
             #print(q['ix1'],q['ix2'],q['fold'])
             allqueries.append(q)
-    mybag=dask.bag.from_sequence(allqueries)
+    #mybag=dask.bag.from_sequence(allqueries)
     # These can now be deleted to save memory
     del source_id_list
     del staids
@@ -417,7 +403,7 @@ def pwstack(db,pf,source_query=None,
     # queries held in query
     mybag = mybag.map(lambda q : read_ensembles(db,q,control))
     # Now run pwstack_ensemble - it has a long arg list
-    mybag = mybag.map(lambda d : pwstack_ensemble(d,
+    mybag = mybag.map(lambda d : pwstack_ensemble_python(d,
             control.SlowGrid,
               control.data_mute,
                 control.stack_mute,
