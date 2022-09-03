@@ -119,11 +119,21 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
      {
        return self(i,j);
      })
-     /*TODO;  needs pickle.  Easiest with boost seralization but SlownessVector
-     has no serialization defined.   current branch is way out of sync so will
-     put this aside until later.   Verified form documentation all I need to is have
-     boost serialization defined for SlownessVector and then the vector of SlownessVectors
-     stored in this beast can be serialized with a single ar & usarray*/
+     .def(py::pickle(
+         [](const SlownessVectorMatrix &self){
+           stringstream ss;
+           boost::archive::text_oarchive ar(ss);
+           ar << self;
+           return py::make_tuple(ss.str());
+       },
+       [](py::tuple t){
+           stringstream ss(t[0].cast<std::string>());
+           boost::archive::text_iarchive ar(ss);
+           SlownessVectorMatrix svm;
+           ar>>svm;
+           return svm;
+       }
+     ))
   ;
   py::class_<PWMIGmigrated_seismogram>(m,"PWMIGmigrated_seismogram","Holds time to depth mapped data internal to pwmig.  A bit like Seismogram but not a child")
     .def(py::init<>())
@@ -228,8 +238,8 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
 
   ;
 
-  /* Note the return_value_policy here is ESSENTIAl to avoid memory leaks. 
-  We normally used copy but that is a bad idea because this function returns 
+  /* Note the return_value_policy here is ESSENTIAl to avoid memory leaks.
+  We normally used copy but that is a bad idea because this function returns
   a pointer to a GCLscalargrid3d object. */
   m.def("Build_GCLraygrid",&Build_GCLraygrid,"Creates a structured grid with lines of constant i,j defined by ray trace geometry",
    py::return_value_policy::take_ownership,

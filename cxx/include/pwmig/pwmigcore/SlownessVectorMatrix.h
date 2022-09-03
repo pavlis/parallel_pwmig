@@ -5,6 +5,10 @@
 #include <vector>
 #include "mspass/seismic/SlownessVector.h"
 #include "mspass/utility/MsPASSError.h"
+#include <boost/serialization/serialization.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
 namespace pwmig::pwmigcore
 {
 class SlownessVectorMatrix
@@ -71,6 +75,16 @@ private:
     int nrow;
     int ncol;
     std::vector<mspass::seismic::SlownessVector> uarray;
+    friend class boost::serialization::access;
+    /* We can only use boost serialization here because SlownessVector
+    defines boost serialziation consistently*/
+    template<class Archive>
+         void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & nrow;
+      ar & ncol;
+      ar & uarray;
+    };
 };
 } // End namespace encapsulation
 #endif

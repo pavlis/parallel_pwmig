@@ -40,10 +40,10 @@ using pwmig::seispp::VelocityModel_1d;
 
 PYBIND11_MODULE(seispp, m) {
 /* more std::vector requirements borrowed from mspass */
-/* Note I had to comment out the bind_vector line below for TimeSeriesVector.  The 
-reason seems to be that that symbol is registered global in MsPASS.  DoubleVector, on 
-the other hand, uses the default which the documentation for pybind11 says means it 
-will be treated as local to only this module.   Hence we have to retain DoubleVector 
+/* Note I had to comment out the bind_vector line below for TimeSeriesVector.  The
+reason seems to be that that symbol is registered global in MsPASS.  DoubleVector, on
+the other hand, uses the default which the documentation for pybind11 says means it
+will be treated as local to only this module.   Hence we have to retain DoubleVector
 but not TimeSeriesVector*/
 py::bind_vector<std::vector<double>>(m, "DoubleVector");
 //py::bind_vector<std::vector<TimeSeries>>(m, "TimeSeriesVector");
@@ -63,6 +63,19 @@ py::class_<Hypocenter>(m,"Hypocenter","Class to hold earthquake space-time coord
   .def_readwrite("lon",&Hypocenter::lon,"Source longitude (in radians)")
   .def_readwrite("depth",&Hypocenter::z,"Source depth (in km)")
   .def_readwrite("time",&Hypocenter::time,"Source origin time (Unix epoch time)")
+  .def(py::pickle(
+      [](const Hypocenter &self){
+        return py::make_tuple(self.lat,self.lon,self.z,self.time);
+    },
+    [](py::tuple t){
+      double lat,lon,z,time;
+      lat = t[0].cast<double>();
+      lon = t[1].cast<double>();
+      z = t[2].cast<double>();
+      time = t[3].cast<double>();
+      return Hypocenter(lat,lon,z,time);
+    }
+  ))
 ;
 py::class_<RadialGrid>(m,"RadialGrid","Defines global radial grid with great circle paths and gcp distances")
   .def(py::init<>())
