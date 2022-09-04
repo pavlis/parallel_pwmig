@@ -287,7 +287,7 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata'):
     # to the database.  This parameter is outside control because it 
     # is only used in this function
     imgname = pf.get_string("stack_grid_name")
-    imggrid = GCLdbread_by_name(db,imgname)
+    imggrid = GCLdbread_by_name(db,imgname,object_type="pwmig::gclgrid::GCLgrid3d")
     migrated_image = GCLvectorfield3d(imggrid,5)
     del imggrid
     migrated_image.zero()
@@ -351,8 +351,8 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata'):
     # WARNING - these names are new and not in any old pf files driving C++ version
     up3dname=pf.get_string('Pslowness_model_name')
     us3dname=pf.get_string('Sslowness_model_name')
-    Up3d=GCLdbread_by_name(db,up3dname)
-    Us3d=GCLdbread_by_name(db,us3dname)
+    Up3d=GCLdbread_by_name(db,up3dname,object_type="pwmig::gclgrid::GCLscalarfield3d")
+    Us3d=GCLdbread_by_name(db,us3dname,object_type="pwmig::gclgrid::GCLscalarfield3d")
     # Similar for 1d models.   The velocity name key is the pf here is the
     # same though since we don't convert to slowness in a 1d model
     # note the old program used files.  Here we store these in mongodb
@@ -362,10 +362,7 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata'):
     Vs1d=vmod1d_dbread_by_name(db,Smodel1d_name)
     # Now bring in the grid geometry.  First the 2d surface of pseudostation points
     parent_grid_name=pf.get_string("Parent_GCLgrid_Name");
-    # CAUTION:  name may not be the right key
-    query={'name' : parent_grid_name}
-    doc=gclcollection.find_one(query)
-    parent=GCLdbread(db,doc)
+    parent = GCLdbread_by_name(db,parent_grid_name,object_type="pwmig::gclgrid::GCLgrid")
     # This functions is implemented in python because we currently know of
     # no stable and usable, open-source, travel time calculator in a lower
     # level language.  The performance hit doesn't seem horrible anyway
