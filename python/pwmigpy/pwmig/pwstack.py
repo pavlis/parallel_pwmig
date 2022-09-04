@@ -395,7 +395,7 @@ def pwstack(db,pf,source_query=None,
             # debug
             #print(q['ix1'],q['ix2'],q['fold'])
             allqueries.append(q)
-    #mybag=dask.bag.from_sequence(allqueries)
+    mybag=dask.bag.from_sequence(allqueries)
     # These can now be deleted to save memory
     del source_id_list
     del staids
