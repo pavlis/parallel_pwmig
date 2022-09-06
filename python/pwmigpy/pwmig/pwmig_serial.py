@@ -144,7 +144,7 @@ def query_by_id(gridid, db, source_id, collection='wf_Seismogram'):
     collection=db[collection]
     return collection.find(query)
 
-@dask.delayed
+#@dask.delayed
 def _set_incident_slowness_metadata(d,svm):
     """
     Internal function used in map to set metadata fields in
@@ -206,7 +206,8 @@ def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
     pwdgrid=PWMIGfielddata(raygrid)
     for doc in cursor:
         #seis = dask.delayed(db.read_data)(doc)
-        seis = db.read_data(doc)
+        #print("DEBUG:  working on wfid=",doc['_id'])
+        seis = db.read_data(doc,collection="wf_Seismogram")
         # This functions is defined above as delayed with a decorator
         seis = _set_incident_slowness_metadata(seis, VPsvm)
         migseis = migrate_one_seismogram(seis,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
@@ -214,7 +215,7 @@ def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
         #              (seis,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
         pwdgrid.accumulate(migseis)
         
-    pwdgrid = dask.compute(*pwdgrid)    
+    #pwdgrid = dask.compute(*pwdgrid)    
     return pwdgrid
 
 def pwmig_verify(db,pffile="pwmig.pf",GCLcollection='GCLfielddata',
@@ -379,6 +380,7 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata'):
     query={'source_id' : source_id}
     gridid_list=db.wf_Seismogram.find(query).distinct('gridid')
     for gridid in gridid_list:
+        print("Working on gridid=",gridid)
         cursor = query_by_id(gridid, db, source_id)
         migrated_data = _migrate_component(cursor,db,parent,TPfield,svm0,
                                  Us3d,Vp1d,Vs1d,control)
