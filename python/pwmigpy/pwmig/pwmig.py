@@ -1,4 +1,3 @@
-
 import math
 import dask
 from mspasspy.ccore.utility import (AntelopePf,
@@ -170,6 +169,13 @@ def _add_fieldata(f1,f2):
     f1 += f2
     return f1
 
+def migrate_one_seismogram_python(*args):
+    return migrate_one_seismogram(*args)
+@dask.delayed
+def accumulate_python(grid, migseis):
+    grid.accumulate(migseis)
+    return grid
+
 def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
     """
     This is an intermediate level function used in the mspass version of
@@ -204,15 +210,23 @@ def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
     # consant u mode
     raygrid=Build_GCLraygrid(parent,VPsvm,Vs1d,zmax,VPVSmax*tmax,dt*VPVSmax)
     pwdgrid=PWMIGfielddata(raygrid)
+    #pwdgrid=dask.delayed(PWMIGfielddata(raygrid))
+    seislist = []
     for doc in cursor:
-        seis = dask.delayed(db.read_data)(doc)
+        seis = dask.delayed(db.read_data)(doc,collection="wf_Seismogram")
         # This functions is defined above as delayed with a decorator
         seis = _set_incident_slowness_metadata(seis, VPsvm)
-        migseis = dask.delayed(migrate_one_seismogram)\
+        migseis = dask.delayed(migrate_one_seismogram_python)\
                       (seis,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
-        pwdgrid.accumulate(migseis)
+        #This uses an @delayed decorator in its definition
+        #pwdgrid = accumulate_python(pwdgrid, migseis)
+        #pwdgrid.accumulate(migseis)
+        seislist.append(migseis)
         
-    pwdgrid = dask.compute(*pwdgrid)    
+    #pwdgrid = dask.compute(*pwdgrid)    
+    seislist = dask.compute(*seislist)
+    for d in seislist:
+        pwdgrid.accumulate(d)
     return pwdgrid
 
 def pwmig_verify(db,pffile="pwmig.pf",GCLcollection='GCLfielddata',
@@ -377,9 +391,11 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata'):
     query={'source_id' : source_id}
     gridid_list=db.wf_Seismogram.find(query).distinct('gridid')
     for gridid in gridid_list:
+        print("Working on gridid=",gridid)
         cursor = query_by_id(gridid, db, source_id)
         migrated_data = _migrate_component(cursor,db,parent,TPfield,svm0,
                                  Us3d,Vp1d,Vs1d,control)
         migrated_image += migrated_data
         
     return migrated_image
+
