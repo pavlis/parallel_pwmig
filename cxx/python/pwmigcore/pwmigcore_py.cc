@@ -30,6 +30,7 @@ using pwmig::pwmigcore::Build_GCLraygrid;
 using pwmig::pwmigcore::ComputeIncidentWaveRaygrid;
 using pwmig::pwmigcore::migrate_one_seismogram;
 using pwmig::pwmigcore::PWMIGmigrated_seismogram;
+using pwmig::pwmigcore::migrate_component;
 
 PYBIND11_MODULE(pwmigcore, m) {
 py::class_<DepthDependentAperture>(m,"DepthDependentAperture",
@@ -281,8 +282,8 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
  py::arg("raygrid"),
  py::arg("TPgrid"),
  py::arg("Us3d"),
- py::arg("vp1d"),
- py::arg("vs1d"),
+ py::arg("Vp1d"),
+ py::arg("Vs1d"),
  py::arg("control")
 );
 /* These aren't needed for pwmig python code, but are of broader use so
@@ -291,6 +292,18 @@ I have this binding code for these functions */
    py::return_value_policy::copy,
    py::arg("f")
   );
+
+m.def("migrate_component",&migrate_component,"Migrate one plane wave component with multithreading defined by Metadata argument",
+  py::return_value_policy::copy,
+  py::arg("pwensemble"),
+  py::arg("VPsvm"),
+  py::arg("parent"),
+  py::arg("TPgrid"),
+  py::arg("Us3d"),
+  py::arg("Vp1d"),
+  py::arg("Vs1d"),
+  py::arg("control")
+);
 
 }
 }  // end namespace pwmigpy
