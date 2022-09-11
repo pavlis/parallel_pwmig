@@ -14,7 +14,8 @@ from pwmigpy.ccore.gclgrid import (GCLvectorfield3d,
 from pwmigpy.ccore.pwmigcore import (SlownessVectorMatrix,
                     Build_GCLraygrid,
                     ComputeIncidentWaveRaygrid,
-                    migrate_one_seismogram)
+                    migrate_one_seismogram,
+                    migrate_component)
 from pwmigpy.db.database import (GCLdbread,
                                  vmod1d_dbread_by_name,
                                  GCLdbread_by_name)
@@ -178,57 +179,15 @@ def accumulate_python(grid, migseis):
 
 def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
     """
-    This is an intermediate level function used in the mspass version of
-    pwmig.  It will migrate one plane wave component of data created by
-    pwstack and return the result as a GCLvectorfield3d object.
-    The caller may either immediately stack the plane wave components
-    or save them and run a seperate stacker later.  In either case the
-    expectation is this function appears as the function object in a
-    map operator driven by a bag of cursors. The cursors are assumed
-    define a correct and consistent set of data.  No checking is made
-    here to verify the consistency of the inputs.
-
-    The code first sets up the raygrid geometry based on input slowness
-    data passed through the VPsvm object (here a GCLvectorfield but originally
-    this was a smaller thing read from the old pwstack to pwmig file structure).
+    This small function is largely a wrapper for the C++ function 
+    with the same name sans the _ (i.e. migrate_component).
 
     """
-
-    zmax=control.get_double("maximum_depth")
-    tmax=control.get_double("maximum_time_lag")
-    dt=control.get_double("data_sample_interval")
-
-    # old pwmig had a relic calculation of a variable ustack and deltaslow here
-    # Replacing it here with slowness vectors for each grid point in the
-    # function called in the fold operation below.  Note deltaslow is
-    # invariant anyway and can be extracted from the metadata of each Seismogram
-    # also skipping coherence grid stuff as that was found earlier to not be
-    # worth the extra compute time and it would be better done in his framework
-    # as an indepndent processing step
-    VPVSmax=2.0   # Intentionally large as this is just used to avoid infinite loops where used
-    # This sigature of this function has changed from old pwmig - depricated
-    # consant u mode
-    raygrid=Build_GCLraygrid(parent,VPsvm,Vs1d,zmax,VPVSmax*tmax,dt*VPVSmax)
-    pwdgrid=PWMIGfielddata(raygrid)
-    #pwdgrid=dask.delayed(PWMIGfielddata(raygrid))
-    seislist = []
-    for doc in cursor:
-        seis = dask.delayed(db.read_data)(doc,collection="wf_Seismogram")
-        # This functions is defined above as delayed with a decorator
-        seis = _set_incident_slowness_metadata(seis, VPsvm)
-        migseis = dask.delayed(migrate_one_seismogram_python)\
-                      (seis,parent,raygrid,TPfield,Us3d,Vp1d,Vs1d,control)
-        #This uses an @delayed decorator in its definition
-        #pwdgrid = accumulate_python(pwdgrid, migseis)
-        #pwdgrid.accumulate(migseis)
-        seislist.append(migseis)
-        
-    #pwdgrid = dask.compute(*pwdgrid)    
-    seislist = dask.compute(*seislist)
-    for d in seislist:
-        pwdgrid.accumulate(d)
+    pwensemble = db.read_ensemble_data(cursor,collection="wf_Seismogram")
+    pwdgrid = migrate_component(pwensemble, VPsvm, parent, TPfield, Us3d, 
+                                Vp1d, Vs1d, control)
     return pwdgrid
-
+    
 def pwmig_verify(db,pffile="pwmig.pf",GCLcollection='GCLfielddata',
      check_waveform_data=False):
     """
