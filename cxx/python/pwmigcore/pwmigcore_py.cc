@@ -13,6 +13,8 @@
 #include "pwmig/pwmigcore/PWMIGmigrated_seismogram.h"
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/AntelopePf.h"
+#include "mspass/seismic/Seismogram.h"
+#include "mspass/seismic/Ensemble.h"
 
 
 namespace pwmig {
@@ -293,12 +295,23 @@ I have this binding code for these functions */
    py::arg("f")
   );
 
-m.def("migrate_component",&migrate_component,"Migrate one plane wave component with multithreading defined by Metadata argument",
+//m.def("migrate_component",&migrate_component,"Migrate one plane wave component with multithreading defined by Metadata argument",
+
+m.def("migrate_component",static_cast<pwmig::gclgrid::PWMIGfielddata (*)
+  (mspass::seismic::Ensemble<mspass::seismic::Seismogram>& pwdata,
+        pwmig::gclgrid::GCLgrid&,
+          pwmig::gclgrid::GCLscalarfield3d&,
+            pwmig::pwmigcore::SlownessVectorMatrix&,
+              pwmig::gclgrid::GCLscalarfield3d&,
+                pwmig::seispp::VelocityModel_1d&,
+                  pwmig::seispp::VelocityModel_1d&,
+                    mspass::utility::Metadata&)>(&migrate_component),
+    "Migrate one plane wave component with multithreading defined by Metadata argument",
   py::return_value_policy::copy,
   py::arg("pwensemble"),
-  py::arg("VPsvm"),
   py::arg("parent"),
   py::arg("TPgrid"),
+  py::arg("VPsvm"),
   py::arg("Us3d"),
   py::arg("Vp1d"),
   py::arg("Vs1d"),

@@ -101,7 +101,7 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
 
     This also has a lot thrown together putting the thread constructor
     inside the call to push_back, but using a temporary that would be
-    clearer to read does no compiles - some obscure copy issue I think, 
+    clearer to read does no compiles - some obscure copy issue I think,
     */
     thread_pool.push_back(std::thread(migrate_one_member_threaded,
          ref(d), ref(parent), ref(*raygrid), ref(TPgrid), ref(Us3d),

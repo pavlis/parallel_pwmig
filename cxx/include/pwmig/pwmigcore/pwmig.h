@@ -104,12 +104,12 @@ at the correct index grid position.
 */
 pwmig::gclgrid::PWMIGfielddata migrate_component(
   mspass::seismic::ThreeComponentEnsemble& d,
-    pwmig::pwmigcore::SlownessVectorMatrix& VPsvm,
-      pwmig::gclgrid::GCLgrid& parent,
-        pwmig::gclgrid::GCLscalarfield3d& TPgrid,
-           pwmig::gclgrid::GCLscalarfield3d& Us3d,
-             pwmig::seispp::VelocityModel_1d& Vp1d,
-               pwmig::seispp::VelocityModel_1d& Vs1d,
-                 mspass::utility::Metadata& control);
+    pwmig::gclgrid::GCLgrid& parent,
+      pwmig::gclgrid::GCLscalarfield3d& TPgrid,
+        pwmig::pwmigcore::SlownessVectorMatrix& VPsvm,
+          pwmig::gclgrid::GCLscalarfield3d& Us3d,
+            pwmig::seispp::VelocityModel_1d& Vp1d,
+              pwmig::seispp::VelocityModel_1d& Vs1d,
+                mspass::utility::Metadata& control);
 } // end namespace
 #endif

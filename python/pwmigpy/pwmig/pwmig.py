@@ -179,15 +179,15 @@ def accumulate_python(grid, migseis):
 
 def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
     """
-    This small function is largely a wrapper for the C++ function 
+    This small function is largely a wrapper for the C++ function
     with the same name sans the _ (i.e. migrate_component).
 
     """
     pwensemble = db.read_ensemble_data(cursor,collection="wf_Seismogram")
-    pwdgrid = migrate_component(pwensemble, VPsvm, parent, TPfield, Us3d, 
+    pwdgrid = migrate_component(pwensemble, parent, TPfield, VPvsm, Us3d, 
                                 Vp1d, Vs1d, control)
     return pwdgrid
-    
+
 def pwmig_verify(db,pffile="pwmig.pf",GCLcollection='GCLfielddata',
      check_waveform_data=False):
     """
@@ -254,17 +254,17 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata'):
     # this control metadata container around.  The dark side is if any
     # new parameters are added changes are required in this function,
     control = _build_control_metadata(pf)
-    
-    # This builds the image volume used to accumulate plane wave 
+
+    # This builds the image volume used to accumulate plane wave
     # components.   We assume it was constructed earlier and saved
-    # to the database.  This parameter is outside control because it 
+    # to the database.  This parameter is outside control because it
     # is only used in this function
     imgname = pf.get_string("stack_grid_name")
     imggrid = GCLdbread_by_name(db,imgname,object_type="pwmig::gclgrid::GCLgrid3d")
     migrated_image = GCLvectorfield3d(imggrid,5)
     del imggrid
     migrated_image.zero()
-    
+
     # This function extracts parameters passed around through a Metadata
     # container (what it returns).   These are a subset of those extracted
     # in this function.  This should, perhaps, be passed into this function
@@ -344,7 +344,7 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata'):
     TPfield=ComputeIncidentWaveRaygrid(parent,border_pad,
        Up3d,Vp1d,svm0,zmax*zpad,tmax,dt,zdecfac,True)
     del Up3d
-    
+
     # The loop over plane wave components is driven by a list of cursors
     # created in this MongoDB incantation
     query={'source_id' : source_id}
@@ -355,6 +355,5 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata'):
         migrated_data = _migrate_component(cursor,db,parent,TPfield,svm0,
                                  Us3d,Vp1d,Vs1d,control)
         migrated_image += migrated_data
-        
-    return migrated_image
 
+    return migrated_image
