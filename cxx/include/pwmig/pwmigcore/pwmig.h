@@ -7,6 +7,7 @@ pwmig.   Most will not be wrapped for python */
 #include "mspass/seismic/Ensemble.h"
 #include "mspass/seismic/SlownessVector.h"
 #include "pwmig/gclgrid/gclgrid.h"
+#include "pwmig/gclgrid/PWMIGfielddata.h"
 #include "pwmig/pwmigcore/SlownessVectorMatrix.h"
 #include "pwmig/pwmigcore/PWMIGmigrated_seismogram.h"
 #include "pwmig/seispp/VelocityModel_1d.h"
@@ -87,6 +88,24 @@ pwmig::seispp::VelocityModel_1d DeriveVM1Dfrom3D(pwmig::gclgrid::GCLscalarfield3
 pwmig::pwmigcore::PWMIGmigrated_seismogram migrate_one_seismogram(mspass::seismic::Seismogram& pwdata,
     pwmig::gclgrid::GCLgrid& parent,
       pwmig::gclgrid::GCLscalarfield3d& raygrid,
+        pwmig::gclgrid::GCLscalarfield3d& TPgrid,
+           pwmig::gclgrid::GCLscalarfield3d& Us3d,
+             pwmig::seispp::VelocityModel_1d& Vp1d,
+               pwmig::seispp::VelocityModel_1d& Vs1d,
+                 mspass::utility::Metadata& control);
+/*! Multithreaded function to migrate one plane wave component.
+
+This function takes input assumed to be contained in the input ThreeComponentEnsemble
+defining data for one plane wave as output by pwstack.  I uses a ray-based
+algorithm to backproject each datum onto a ray path computed from the slowness
+vector and the input S wave velocity model.  The output of each such operation
+is a Seismogram like object that is then copied into the PWMIGfielddata grid
+at the correct index grid position.
+*/
+pwmig::gclgrid::PWMIGfielddata migrate_component(
+  mspass::seismic::ThreeComponentEnsemble& d,
+    pwmig::pwmigcore::SlownessVectorMatrix& VPsvm,
+      pwmig::gclgrid::GCLgrid& parent,
         pwmig::gclgrid::GCLscalarfield3d& TPgrid,
            pwmig::gclgrid::GCLscalarfield3d& Us3d,
              pwmig::seispp::VelocityModel_1d& Vp1d,
