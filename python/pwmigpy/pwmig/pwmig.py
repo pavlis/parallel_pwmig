@@ -184,7 +184,7 @@ def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
 
     """
     pwensemble = db.read_ensemble_data(cursor,collection="wf_Seismogram")
-    pwdgrid = migrate_component(pwensemble, parent, TPfield, VPvsm, Us3d, 
+    pwdgrid = migrate_component(pwensemble, parent, TPfield, VPsvm, Us3d, 
                                 Vp1d, Vs1d, control)
     return pwdgrid
 
