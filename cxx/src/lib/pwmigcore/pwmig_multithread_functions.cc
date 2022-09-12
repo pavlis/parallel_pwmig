@@ -44,7 +44,7 @@ int fill_member_list(const ThreeComponentEnsemble& d)
 }
 /*! Multithreaded function to process one seismogram in an input ensemble d.
 */
-void migrate_one_member_threaded(ThreeComponentEnsemble& d,
+void migrate_members_threaded(ThreeComponentEnsemble& d,
   GCLgrid& parent,
     GCLscalarfield3d& raygrid,
       GCLscalarfield3d& TPgrid,
@@ -55,16 +55,19 @@ void migrate_one_member_threaded(ThreeComponentEnsemble& d,
                  PWMIGfielddata& pwdgrid)
 {
   int m;
-  queue_lock.lock();
-  m = member_to_process.front();
-  member_to_process.pop();
-  queue_lock.unlock();
-  PWMIGmigrated_seismogram dout;
-  dout = migrate_one_seismogram(d.member[m], parent, raygrid, TPgrid,Us3d,
+  while(!member_to_process.empty())
+  {
+    queue_lock.lock();
+    m = member_to_process.front();
+    member_to_process.pop();
+    queue_lock.unlock();
+    PWMIGmigrated_seismogram dout;
+    dout = migrate_one_seismogram(d.member[m], parent, raygrid, TPgrid,Us3d,
                       Vp1d, Vs1d, control);
-  grid_lock.lock();
-  pwdgrid.accumulate(dout);
-  grid_lock.unlock();
+    grid_lock.lock();
+    pwdgrid.accumulate(dout);
+    grid_lock.unlock();
+  }
 }
 
 PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
@@ -103,7 +106,7 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
     inside the call to push_back, but using a temporary that would be
     clearer to read does no compiles - some obscure copy issue I think,
     */
-    thread_pool.push_back(std::thread(migrate_one_member_threaded,
+    thread_pool.push_back(std::thread(migrate_members_threaded,
          ref(d), ref(parent), ref(*raygrid), ref(TPgrid), ref(Us3d),
            ref(Vp1d), ref(Vs1d), ref(control), ref(pwdgrid)));
   }
