@@ -1,3 +1,4 @@
+#include <mutex>
 #include "pwmig/gclgrid/gclgrid.h"
 #include "pwmig/gclgrid/PWMIGfielddata.h"
 namespace pwmig::gclgrid {
@@ -25,6 +26,7 @@ PWMIGfielddata& PWMIGfielddata::operator=(const PWMIGfielddata& parent)
   return *this;
 };
 
+std::mutex elog_lock;
 void PWMIGfielddata::accumulate(const pwmig::pwmigcore::PWMIGmigrated_seismogram& d)
 {
   size_t i,j,n3(0);   // initializing to zero to assure 0 is returned for dead data
@@ -57,6 +59,7 @@ void PWMIGfielddata::accumulate(const pwmig::pwmigcore::PWMIGmigrated_seismogram
   }
   if(d.elog.size()>0)
   {
+    elog_lock.lock();
     list<LogData> logdata=d.elog.get_error_log();
     for(auto lptr=logdata.begin();lptr!=logdata.end();++lptr)
     {
@@ -65,6 +68,7 @@ void PWMIGfielddata::accumulate(const pwmig::pwmigcore::PWMIGmigrated_seismogram
           << lptr->message<<endl;
       this->elog.log_error(lptr->algorithm,string(ss.str()),lptr->badness);
     }
+    elog_lock.unlock();
   }
 }
 

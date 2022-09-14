@@ -1,5 +1,5 @@
 #include <thread>
-#include <mutex>
+//#include <mutex>
 #include <queue>
 /* needed for ref */
 #include <functional>
@@ -23,14 +23,15 @@ using namespace pwmig::pwmigcore;
 using namespace mspass::seismic;
 using namespace mspass::utility;
 /* Mutex for managing input list of ensemble members */
-std::mutex queue_lock;
-std::mutex grid_lock;
+//std::mutex queue_lock;
+//std::mutex grid_lock;
 /* We put this list at file scope so all the functions in this file
 can use it without having to pass it around.   Hope that doesn't cause an issue*/
-std::queue<int> member_to_process;
+//std::queue<int> member_to_process;
+/*
 int fill_member_list(const ThreeComponentEnsemble& d)
 {
-  /* Better to be sure we don't have debris in this before starting */
+
   if(!member_to_process.empty())
       throw MsPASSError(string("fill_member_list:   ")
           + "member_to_process queue used to synchronize theads is not empty!\n"
@@ -42,6 +43,7 @@ int fill_member_list(const ThreeComponentEnsemble& d)
   }
   return member_to_process.size();
 }
+*/
 /*! Multithreaded function to process one seismogram in an input ensemble d.
 */
 void migrate_members_threaded(ThreeComponentEnsemble& d,
@@ -52,21 +54,20 @@ void migrate_members_threaded(ThreeComponentEnsemble& d,
            VelocityModel_1d& Vp1d,
              VelocityModel_1d& Vs1d,
                Metadata& control,
-                 PWMIGfielddata& pwdgrid)
+                 PWMIGfielddata& pwdgrid,
+                   const int rank,
+                     const int nthreads)
 {
-  int m;
-  while(!member_to_process.empty())
+  for(int m=rank;m<d.member.size();m+=nthreads)
   {
-    queue_lock.lock();
-    m = member_to_process.front();
-    member_to_process.pop();
-    queue_lock.unlock();
     PWMIGmigrated_seismogram dout;
     dout = migrate_one_seismogram(d.member[m], parent, raygrid, TPgrid,Us3d,
                       Vp1d, Vs1d, control);
-    grid_lock.lock();
+    /* At one point had a mutex lock here, but moved to accumulate method
+    as the only place a lock is needed is if an error log is appended. */
+    //grid_lock.lock();
     pwdgrid.accumulate(dout);
-    grid_lock.unlock();
+    //grid_lock.unlock();
   }
 }
 
@@ -80,7 +81,8 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
                Metadata& control)
 {
   int nmembers;
-  nmembers = fill_member_list(d);
+  //nmembers = fill_member_list(d);
+  nmembers = d.member.size();
   /* Perhaps should throw an exception here, but an empty ensemble should
   be allowed and handled seamlessly*/
   if(nmembers==0)
@@ -96,7 +98,7 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
   int number_threads;
   number_threads = control.get_int("number_of_threads_per_worker");
   std::vector<std::thread> thread_pool;
-  for(unsigned i=0;i<number_threads;++i)
+  for(int i=0;i<number_threads;++i)
   {
     /* The use of ref on all these arguments is an obscure issue related
     to template handling with std::thread.  The reference I used is
@@ -108,7 +110,7 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
     */
     thread_pool.push_back(std::thread(migrate_members_threaded,
          ref(d), ref(parent), ref(*raygrid), ref(TPgrid), ref(Us3d),
-           ref(Vp1d), ref(Vs1d), ref(control), ref(pwdgrid)));
+           ref(Vp1d), ref(Vs1d), ref(control), ref(pwdgrid), i, number_threads));
   }
   for(unsigned i=0;i<number_threads;++i)
   {

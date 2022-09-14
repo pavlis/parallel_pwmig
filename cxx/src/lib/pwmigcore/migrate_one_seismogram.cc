@@ -342,6 +342,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
     }
     weight_functions_set=true;
   }
+  result.live=true;
   return result;
 }
 
