@@ -87,7 +87,7 @@ def _build_control_metadata(control):
         dz=1.0
         _print_default_used_message("ray_trace_depth_increment",dz)
     if control.is_defined("number_of_threads_per_worker"):
-        nthreads = control.get_int("number_of_threads_per_worker")
+        nthreads = control.get_long("number_of_threads_per_worker")
     else:
         nthreads = 4
         _print_default_used_message("number_of_threads_per_worker",nthreads)
