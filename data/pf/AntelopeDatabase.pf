@@ -10,10 +10,10 @@ time_standard string -
 dir string -
 dfile string -
 foff integer 0
-dtype string - wf_Seismgoram
+dtype string - 
 samprate float -1.0
-unkwown integer -1 drop   # Can't find wfprocess schema - unclear what this one is
-algorithm string -    # probably should use a different name if retained ok for testing
+nsamp integer -1 
+algorithm string -    
 lddate epochtime -9999999999.99900
 }
 }
