@@ -8,5 +8,5 @@ ADD data /parallel_pwmig/data
 ADD setup.py /parallel_pwmig/setup.py
 ADD python /parallel_pwmig/python
 RUN MSPASS_HOME=/usr/local pip3 install /parallel_pwmig -v
-pip3 install vtk
+RUN pip3 install vtk
 
