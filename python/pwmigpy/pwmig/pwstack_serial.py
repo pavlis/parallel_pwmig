@@ -244,16 +244,49 @@ def get_source_metadata(ensemble):
             result['source_id'] = d['source_id']
             break
     return result
-            
+
+def handle_relative_time(ensemble,arrival_key):
+    """
+    Implements algorithm described in docstring of read_ensemble to 
+    allow mixing relative and absolute time.  d is the input ensemble 
+    and arrival_key is a metadata key used to fetch arrival times 
+    for any live datum with time set as UTC.  I intentionally let this 
+    throw an exception of the arrival key is missing as it is a data 
+    error that should not be permitted. 
+    """
+    for d in ensemble.member:
+        # this will just skip any dead data
+        if d.live:
+            if d.time_is_UTC():
+                atime = d[arrival_key]
+                d.ator(atime)
+    return ensemble
         
-def read_ensembles(db,querydata,control):
+def read_ensembles(db,querydata,control,arrival_key="Ptime"):
     """
     Constructs a query from dict created by build_wfquery, runs it 
     on the wf_Seismogram collection of db, and then calls read_ensemble_data 
     on the cursor returned by MongoDB.  It the sets the ensemble 
-    metadata for lat, lon, ix1, and ix2 before returning the ensembles
+    metadata for lat, lon, ix1, and ix2 before returning the ensembles.
+    Most variable parameters come through control but there is a data 
+    arg (arrival_key) handling an issue that is data dependent.  Input 
+    data can be in either UTC or relative time.  If the data read are 
+    found to be in relative time this program assumes it has already been 
+    shifted to what I call the "arrival time reference" that normally means 
+    t0 is the P arrival time which is the maximum of the spike in the 
+    data at the arrival time.   If the data have a UTC time standard 
+    the function will attempt to extract a time from each member's 
+    metadata container with that key and then call the ator method of 
+    Seismogram to make the data into the expected relative time standard. 
+    The entire run will be aborted with an exception if any live datum 
+    is missing the arrival_key field.  (Not relevant, of course, for 
+    all data input with relative time already set.)
     
-    We need to pass the control class to access the stack_count_cutoff attribute.
+    :param db:  database handle
+    :param querydata:  python dictionary created by build_wfquery (see that function)
+    :param control:  special class with control parameters created from pf
+    :param arrival_key:  key for fetching arrival time using algorithm noted 
+      above.  Default is "Ptime"
     """
     # don't even issue a query if the fold is too low
     fold=querydata['fold']
@@ -276,6 +309,7 @@ def read_ensembles(db,querydata,control):
                                     normalize=['source','site'],
                                     data_tag=control.data_tag)
         if len(d.member) > 0:
+            d = handle_relative_time(d,arrival_key)
             # When the ensemble is not empty we have to compute the 
             # slowness vector of the incident wavefield using source 
             # coordinates and the pseudostation location.  This section 

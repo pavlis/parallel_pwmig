@@ -244,15 +244,48 @@ def get_source_metadata(ensemble):
             break
     return result
 
-
-def read_ensembles(db,querydata,control):
+def handle_relative_time(ensemble,arrival_key):
     """
-    Constructs a query from dict created by build_wfquery, runs it
-    on the wf_Seismogram collection of db, and then calls read_ensemble_data
-    on the cursor returned by MongoDB.  It the sets the ensemble
-    metadata for lat, lon, ix1, and ix2 before returning the ensembles
-
-    We need to pass the control class to access the stack_count_cutoff attribute.
+    Implements algorithm described in docstring of read_ensemble to 
+    allow mixing relative and absolute time.  d is the input ensemble 
+    and arrival_key is a metadata key used to fetch arrival times 
+    for any live datum with time set as UTC.  I intentionally let this 
+    throw an exception of the arrival key is missing as it is a data 
+    error that should not be permitted. 
+    """
+    for d in ensemble.member:
+        # this will just skip any dead data
+        if d.live:
+            if d.time_is_UTC():
+                atime = d[arrival_key]
+                d.ator(atime)
+    return ensemble
+        
+def read_ensembles(db,querydata,control,arrival_key="Ptime"):
+    """
+    Constructs a query from dict created by build_wfquery, runs it 
+    on the wf_Seismogram collection of db, and then calls read_ensemble_data 
+    on the cursor returned by MongoDB.  It the sets the ensemble 
+    metadata for lat, lon, ix1, and ix2 before returning the ensembles.
+    Most variable parameters come through control but there is a data 
+    arg (arrival_key) handling an issue that is data dependent.  Input 
+    data can be in either UTC or relative time.  If the data read are 
+    found to be in relative time this program assumes it has already been 
+    shifted to what I call the "arrival time reference" that normally means 
+    t0 is the P arrival time which is the maximum of the spike in the 
+    data at the arrival time.   If the data have a UTC time standard 
+    the function will attempt to extract a time from each member's 
+    metadata container with that key and then call the ator method of 
+    Seismogram to make the data into the expected relative time standard. 
+    The entire run will be aborted with an exception if any live datum 
+    is missing the arrival_key field.  (Not relevant, of course, for 
+    all data input with relative time already set.)
+    
+    :param db:  database handle
+    :param querydata:  python dictionary created by build_wfquery (see that function)
+    :param control:  special class with control parameters created from pf
+    :param arrival_key:  key for fetching arrival time using algorithm noted 
+      above.  Default is "Ptime"
     """
     # don't even issue a query if the fold is too low
     fold=querydata['fold']
@@ -264,23 +297,24 @@ def read_ensembles(db,querydata,control):
         #debug
         #print(query,n)
         if n==0:
-            # This shouldn't ever really be executed unless stack_count_cutoff
+            # This shouldn't ever really be executed unless stack_count_cutoff 
             # is 0 or the query is botched
             d=SeismogramEnsemble()
         else:
             cursor=db.wf_Seismogram.find(query)
-            # Note control.data_tag can be a None type here - see
+            # Note control.data_tag can be a None type here - see 
             # control object constructor
             d=db.read_ensemble_data(cursor,collection='wf_Seismogram',
                                     normalize=['source','site'],
                                     data_tag=control.data_tag)
         if len(d.member) > 0:
-            # When the ensemble is not empty we have to compute the
-            # slowness vector of the incident wavefield using source
-            # coordinates and the pseudostation location.  This section
-            # depends on a feature of the reader that it the normalize
+            d = handle_relative_time(d,arrival_key)
+            # When the ensemble is not empty we have to compute the 
+            # slowness vector of the incident wavefield using source 
+            # coordinates and the pseudostation location.  This section 
+            # depends on a feature of the reader that it the normalize 
             # parameter causes all members to have source coordinates loaded
-            # this small function copies source metadata from the first
+            # this small function copies source metadata from the first 
             # live member
             srcdata = get_source_metadata(d)
             if len(srcdata)==0:
@@ -292,10 +326,10 @@ def read_ensembles(db,querydata,control):
                 # post the source metadata to the ensemble metadata
                 for k in srcdata:
                     d[k] = srcdata[k]
-                # a bit of a weird way to fetch the pseudostation
+                # a bit of a weird way to fetch the pseudostation 
                 # coordinates but a fast an efficnet way to do it
                 # Note also a unit mismatch - gps2dist_azimuth requires
-                # coordinates in degrees but the C++ code here uses
+                # coordinates in degrees but the C++ code here uses 
                 # radians internally
                 pslat=querydata['lat']
                 pslon=querydata['lon']
@@ -305,7 +339,7 @@ def read_ensembles(db,querydata,control):
                 # their travel time calculator it is degrees so we need this conversion
                 Rearth=6378.164
                 dist=kilometers2degrees(georesult[0]/1000.0)
-                # We pass the model object through control because I think
+                # We pass the model object through control because I think 
                 # there is a nontrivial overhead in creating it
                 arrivals=control.model.get_travel_times(
                     source_depth_in_km=srcdata['source_depth'],
@@ -321,15 +355,16 @@ def read_ensembles(db,querydata,control):
                 d.put('ux0', ux)
                 d.put('uy0',uy)
                 d.put('pseudostation_lat',pslat)
-                d.put('pseudostation_lon',pslon)
+                d.put('pseudostation_lon',pslon) 
                 # this more obscure name is needed as an alias by pwstack_ensemble
                 # we save the longer tag for less obscure database tags
                 d.put('lat0',pslat)
-                d.put('lon0',pslon)
-                d.put('ix1',querydata['ix1'])
+                d.put('lon0',pslon) 
+                d.put('ix1',querydata['ix1']) 
                 d.put('ix2',querydata['ix2'])
                 d.put('gridname',control.pseudostation_gridname)
     return d
+
 def pwstack_ensemble_python(*arg):
     """
     Temporary workaround for a problem with return in dask. Patch we can
