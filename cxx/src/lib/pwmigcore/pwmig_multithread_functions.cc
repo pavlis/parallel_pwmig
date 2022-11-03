@@ -105,6 +105,7 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
   int number_threads;
   number_threads = control.get_int("number_of_threads_per_worker");
   std::vector<std::thread> thread_pool;
+  cout << "Entering thread creatoin loop" << endl;
   for(int i=0;i<number_threads;++i)
   {
     /* The use of ref on all these arguments is an obscure issue related
@@ -119,6 +120,7 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
          ref(d), ref(parent), ref(*raygrid), ref(TPgrid), ref(Us3d),
            ref(Vp1d), ref(Vs1d), ref(control), ref(pwdgrid), i, number_threads));
   }
+  cout << "Entering loop calling join" << endl;
   for(unsigned i=0;i<number_threads;++i)
   {
     thread_pool[i].join();
