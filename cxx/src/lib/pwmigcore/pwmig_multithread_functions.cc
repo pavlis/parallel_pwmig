@@ -62,7 +62,7 @@ void migrate_members_threaded(ThreeComponentEnsemble& d,
                      const int nthreads)
 {
   //cout statements are all for debug testing - remove for production
-  cout << "Starting thread with rank="<<rank<<endl;
+  cout << "Starting thread with rank="<<rank<<" with number of threads="<<nthreads<<endl;
   for(int m=rank;m<d.member.size();m+=nthreads)
   {
     PWMIGmigrated_seismogram dout;
