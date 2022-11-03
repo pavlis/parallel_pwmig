@@ -3,6 +3,9 @@
 #include <queue>
 /* needed for ref */
 #include <functional>
+// used only for debug - remove when finished
+#include <iostream>
+using namespace std;
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/MsPASSError.h"
 #include "mspass/seismic/Seismogram.h"
@@ -58,15 +61,19 @@ void migrate_members_threaded(ThreeComponentEnsemble& d,
                    const int rank,
                      const int nthreads)
 {
+  //cout statements are all for debug testing - remove for production
+  cout << "Starting thread with rank="<<rank<<endl;
   for(int m=rank;m<d.member.size();m+=nthreads)
   {
     PWMIGmigrated_seismogram dout;
+    cout << "Starting rank="<<rank<<" m="<<m<<endl;
     dout = migrate_one_seismogram(d.member[m], parent, raygrid, TPgrid,Us3d,
                       Vp1d, Vs1d, control);
     /* At one point had a mutex lock here, but moved to accumulate method
     as the only place a lock is needed is if an error log is appended. */
     //grid_lock.lock();
     pwdgrid.accumulate(dout);
+    cout << "Finished rank="<<rank<<" m="<<m<<endl;
     //grid_lock.unlock();
   }
 }

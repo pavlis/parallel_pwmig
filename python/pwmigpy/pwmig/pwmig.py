@@ -1,3 +1,5 @@
+import time # for testing only - remove when done
+
 import math
 import dask
 from mspasspy.ccore.utility import (AntelopePf,
@@ -189,9 +191,12 @@ def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
     with the same name sans the _ (i.e. migrate_component).
 
     """
+    t0 = time.time()
     pwensemble = db.read_ensemble_data(cursor,collection="wf_Seismogram")
     pwdgrid = migrate_component(pwensemble, parent, TPfield, VPsvm, Us3d,
                                 Vp1d, Vs1d, control)
+    t2 = time.time()
+    print("Time to run read_ensemble=",t1-t0," Time to run migrate_component=",t2-t1)
     return pwdgrid
 
 def pwmig_verify(db,pffile="pwmig.pf",GCLcollection='GCLfielddata',
@@ -360,6 +365,9 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata'):
         cursor = query_by_id(gridid, db, source_id)
         migrated_data = _migrate_component(cursor,db,parent,TPfield,svm0,
                                  Us3d,Vp1d,Vs1d,control)
+        # timing code is for testing - remove when done
+        t0 = time.time()
         migrated_image += migrated_data
+        print("Time to sum this plane wave component =",time.time()-t0)
 
     return migrated_image
