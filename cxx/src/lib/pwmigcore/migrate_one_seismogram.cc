@@ -1,4 +1,4 @@
-//DEBUG - remove this and all cout statements after resolution
+//DEBUG - remove this and all //cout statements after resolution
 #include <iostream>
 using namespace std;
 
@@ -29,7 +29,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
                VelocityModel_1d& Vs1d,
                  Metadata& control)
 {
-  cout << "Entered function migrate_one_seismogram"<<endl;
+  //cout << "Entered function migrate_one_seismogram"<<endl;
   int k;  // primary depth index in loops.  Defined outside loops for error logging
   int kk;   // used repeatedly as an index in z running the reverse of index k
   string algname("migrate_one_seismogram");  // used in elog messages as algorithm name
@@ -37,7 +37,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
   quite a Seismogram. */
   if(pwdata.dead())
   {
-    cout << "This datum was marked dead - returning deadguy"<<endl;
+    //cout << "This datum was marked dead - returning deadguy"<<endl;
     PWMIGmigrated_seismogram deadguy;
     deadguy.elog=pwdata.elog;
     if(pwdata.is_defined("ix1"))
@@ -105,7 +105,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
   i = pwdata.get_int("ix1");
   j = pwdata.get_int("ix2");
   gridid=pwdata.get_int("gridid");
-  cout << "ix1="<<i<<" ix2="<<j<<" gridid="<<gridid<<" n3="<<n3<<endl;
+  //cout << "ix1="<<i<<" ix2="<<j<<" gridid="<<gridid<<" n3="<<n3<<endl;
   /* Original pwmig had a static option here.  As a module in mspass it
   would be far better to apply statics as a mspass operator */
   if( (i<0) || (i>raygrid.n1) || (j<0) || (j>raygrid.n2) )
@@ -185,7 +185,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
 	ix1_0 = lookup_origin[0];
 	ix2_0 = lookup_origin[1];
 	ix3_0 = lookup_origin[2];
-  cout << "loopup_origin result:  "<<ix1_0<<", "<<ix2_0<<", "<<ix3_0<<endl;
+  //cout << "loopup_origin result:  "<<ix1_0<<", "<<ix2_0<<", "<<ix3_0<<endl;
   for(k=0,kk=raygrid.n3-1;k<raygrid.n3;++k,--kk)
   {
     vector<double>nu;
@@ -204,13 +204,13 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
     /* This section used to be a procedure.  Inlined for
     speed during a cleanup June 2012 */
     int error_lookup;
-    cout << "origin passed to parallel_lookup:  "<<ix1_0<<", "<<ix2_0<<", "<<ix3_0<<endl;
+    //cout << "origin passed to parallel_lookup:  "<<ix1_0<<", "<<ix2_0<<", "<<ix3_0<<endl;
     error_lookup=TPgrid.parallel_lookup(raygrid.x1[i][j][kk],
       raygrid.x2[i][j][kk],raygrid.x3[i][j][kk],ix1_0,ix2_0,ix3_0);
     switch(error_lookup)
     {
       case 0:
-        cout << "origin passed to parallel_interpolate:  "<<ix1_0<<", "<<ix2_0<<", "<<ix3_0<<endl;
+        //cout << "origin passed to parallel_interpolate:  "<<ix1_0<<", "<<ix2_0<<", "<<ix3_0<<endl;
         Tpx=TPgrid.parallel_interpolate(raygrid.x1[i][j][kk],
           raygrid.x2[i][j][kk],raygrid.x3[i][j][kk],
           ix1_0,ix2_0,ix3_0);
@@ -255,7 +255,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
   // skip this ray if there were travel time computation problems
   if(tcompute_problem)
   {
-    cout << "Writing elog entry for tcompute_problem"<<endl;
+    //cout << "Writing elog entry for tcompute_problem"<<endl;
     stringstream ss;
     ss << "Warning:  slowness gridid "<< gridid
       << ", grid position index ("
@@ -272,7 +272,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
   }
   if (needs_padding)
   {
-    cout << "Entered block for needs_padding"<<endl;
+    //cout << "Entered block for needs_padding"<<endl;
     if(padmark==0)
     {
       stringstream ss;
@@ -311,7 +311,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
   // Compute the transformation vector for each
   // ray point in space.
   //
-  cout << "Calling extract gridline with i,j,n3="<<i<<", "<<j<<", "<<n3<<endl;
+  //cout << "Calling extract gridline with i,j,n3="<<i<<", "<<j<<", "<<n3<<endl;
   dmatrix *pathptr=extract_gridline(raygrid,i,j,raygrid.n3-1,3,true);
   /* Old version used ustack here.  This is more correct as that is an
   approximation.  that was an error in the old version that could create
@@ -356,10 +356,12 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
     weight_functions_set=true;
   }
   result.live=true;
-  cout << "Result object of migrate_one_seismogram"<<endl;
+  //cout << "Result object of migrate_one_seismogram"<<endl;
+  /*
   cout << "ix1="<<result.ix1<<" ix2="<<result.ix2<<endl
        << "dweight and domega vector sizes:"<<result.dweight.size()<<", "<<result.domega.size()<<endl
        << "data matrix size="<<result.migrated_data.columns()<<endl;
+       */
   return result;
 }
 
