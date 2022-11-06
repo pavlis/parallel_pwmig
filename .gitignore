@@ -1,0 +1,13 @@
+.env
+.vscode
+cxx/build/
+docs/build/
+docs/source/doxygen
+**/_build/
+**/__pycache__/
+.idea
+misc
+.coverage*
+build/
+dask-worker-space/
+dist/

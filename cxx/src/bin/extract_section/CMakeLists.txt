@@ -2,8 +2,8 @@
 include_directories(
   ${pybind11_INCLUDE_DIR}
   ${PYTHON_INCLUDE_DIRS}
-  #${MSPASSHOME}/include}
-  /home/pavlis/mspass/include
+  ${MSPASSHOME}/include
+  #/home/pavlis/mspass/include
   ${PROJECT_BINARY_DIR}/include
   ${PROJECT_SOURCE_DIR}/include)
 
