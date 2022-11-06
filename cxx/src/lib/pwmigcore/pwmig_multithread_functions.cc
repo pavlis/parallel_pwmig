@@ -4,8 +4,8 @@
 /* needed for ref */
 #include <functional>
 // used only for debug - remove when finished
-#include <iostream>
-using namespace std;
+//#include <iostream>
+//using namespace std;
 #include "mspass/utility/Metadata.h"
 #include "mspass/utility/MsPASSError.h"
 #include "mspass/seismic/Seismogram.h"
@@ -62,18 +62,18 @@ void migrate_members_threaded(ThreeComponentEnsemble& d,
                      const int nthreads)
 {
   //cout statements are all for debug testing - remove for production
-  cout << "Starting thread with rank="<<rank<<" with number of threads="<<nthreads<<endl;
+  //cout << "Starting thread with rank="<<rank<<" with number of threads="<<nthreads<<endl;
   for(int m=rank;m<d.member.size();m+=nthreads)
   {
     PWMIGmigrated_seismogram dout;
-    cout << "Starting rank="<<rank<<" m="<<m<<endl;
+    //cout << "Starting rank="<<rank<<" m="<<m<<endl;
     dout = migrate_one_seismogram(d.member[m], parent, raygrid, TPgrid,Us3d,
                       Vp1d, Vs1d, control);
     /* At one point had a mutex lock here, but moved to accumulate method
     as the only place a lock is needed is if an error log is appended. */
     //grid_lock.lock();
     pwdgrid.accumulate(dout);
-    cout << "Finished rank="<<rank<<" m="<<m<<endl;
+    //cout << "Finished rank="<<rank<<" m="<<m<<endl;
     //grid_lock.unlock();
   }
 }
@@ -105,7 +105,7 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
   int number_threads;
   number_threads = control.get_int("number_of_threads_per_worker");
   std::vector<std::thread> thread_pool;
-  cout << "Entering thread creatoin loop" << endl;
+  //cout << "Entering thread creatoin loop" << endl;
   for(int i=0;i<number_threads;++i)
   {
     /* The use of ref on all these arguments is an obscure issue related
@@ -120,7 +120,7 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
          ref(d), ref(parent), ref(*raygrid), ref(TPgrid), ref(Us3d),
            ref(Vp1d), ref(Vs1d), ref(control), ref(pwdgrid), i, number_threads));
   }
-  cout << "Entering loop calling join" << endl;
+  //cout << "Entering loop calling join" << endl;
   for(unsigned i=0;i<number_threads;++i)
   {
     thread_pool[i].join();
