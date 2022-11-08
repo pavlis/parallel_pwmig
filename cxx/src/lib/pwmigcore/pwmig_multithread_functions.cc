@@ -49,6 +49,7 @@ int fill_member_list(const ThreeComponentEnsemble& d)
 */
 /*! Multithreaded function to process one seismogram in an input ensemble d.
 */
+/*
 void migrate_members_threaded(ThreeComponentEnsemble& d,
   GCLgrid& parent,
     GCLscalarfield3d& raygrid,
@@ -60,6 +61,19 @@ void migrate_members_threaded(ThreeComponentEnsemble& d,
                  PWMIGfielddata& pwdgrid,
                    const int rank,
                      const int nthreads)
+*/
+void migrate_members_threaded(ThreeComponentEnsemble d,
+  GCLgrid parent,
+    GCLscalarfield3d raygrid,
+      GCLscalarfield3d TPgrid,
+         GCLscalarfield3d Us3d,
+           VelocityModel_1d Vp1d,
+             VelocityModel_1d Vs1d,
+               Metadata control,
+                 PWMIGfielddata pwdgrid,
+                   const int rank,
+                     const int nthreads)
+
 {
   //cout statements are all for debug testing - remove for production
   //cout << "Starting thread with rank="<<rank<<" with number of threads="<<nthreads<<endl;
@@ -116,9 +130,13 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
     inside the call to push_back, but using a temporary that would be
     clearer to read does no compiles - some obscure copy issue I think,
     */
+    /*
     thread_pool.push_back(std::thread(migrate_members_threaded,
          ref(d), ref(parent), ref(*raygrid), ref(TPgrid), ref(Us3d),
            ref(Vp1d), ref(Vs1d), ref(control), ref(pwdgrid), i, number_threads));
+    */
+    thread_pool.push_back(std::thread(migrate_members_threaded,
+        d,parent,*raygrid,TPgrid,Us3d,Vp1d,Vs1d,control,pwdgrid,i,number_threads));
   }
   //cout << "Entering loop calling join" << endl;
   for(unsigned i=0;i<number_threads;++i)
