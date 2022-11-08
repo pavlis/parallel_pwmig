@@ -70,7 +70,7 @@ void migrate_members_threaded(ThreeComponentEnsemble d,
            VelocityModel_1d Vp1d,
              VelocityModel_1d Vs1d,
                Metadata control,
-                 PWMIGfielddata pwdgrid,
+                 PWMIGfielddata& pwdgrid,
                    const int rank,
                      const int nthreads)
 
@@ -136,7 +136,7 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
            ref(Vp1d), ref(Vs1d), ref(control), ref(pwdgrid), i, number_threads));
     */
     thread_pool.push_back(std::thread(migrate_members_threaded,
-        d,parent,*raygrid,TPgrid,Us3d,Vp1d,Vs1d,control,pwdgrid,i,number_threads));
+        d,parent,*raygrid,TPgrid,Us3d,Vp1d,Vs1d,control,ref(pwdgrid),i,number_threads));
   }
   //cout << "Entering loop calling join" << endl;
   for(unsigned i=0;i<number_threads;++i)
