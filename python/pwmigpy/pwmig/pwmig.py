@@ -119,7 +119,8 @@ def BuildSlownessGrid(g,source_lat, source_lon, source_depth,model='iasp91',phas
         for j in range(g.n2):
             stalat=g.lat(i,j)
             stalon=g.lon(i,j)
-            georesult=gps2dist_azimuth(source_lat,source_lon,stalat,stalon)
+            georesult=gps2dist_azimuth(source_lat,source_lon,
+              math.degrees(stalat),math.degrees(stalon))
             # obspy's function we just called returns distance in m in element 0 of a tuple
             # their travel time calculator it is degrees so we need this conversion
             dist=kilometers2degrees(georesult[0]/1000.0)
