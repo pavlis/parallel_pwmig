@@ -76,11 +76,16 @@ elseif (NOT LAPACK_FOUND)
   set (LAPACK_LIBRARIES ${PROJECT_BINARY_DIR}/openblas/lib/libopenblas.a)
 endif ()
 
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 include (FortranCInterface)
 list (APPEND FORTRAN_FUNCTIONS ddot dscal daxpy dcopy dnrm2)
 list (APPEND FORTRAN_FUNCTIONS dgetrf dgetri)
 list (APPEND FORTRAN_FUNCTIONS dlamch dstebz dstein)
-FortranCInterface_HEADER (include/FC.h 
+FortranCInterface_HEADER (include/FC.h
   MACRO_NAMESPACE "FC_"
   SYMBOLS ${FORTRAN_FUNCTIONS}
   )
