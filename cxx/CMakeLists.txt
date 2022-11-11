@@ -77,9 +77,6 @@ elseif (NOT LAPACK_FOUND)
 endif ()
 
 find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
-endif()
 
 include (FortranCInterface)
 list (APPEND FORTRAN_FUNCTIONS ddot dscal daxpy dcopy dnrm2)
