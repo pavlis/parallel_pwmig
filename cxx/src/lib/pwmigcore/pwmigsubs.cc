@@ -1176,7 +1176,8 @@ namespace pwmig::pwmigcore
   }
 
 
-  Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp)
+  Geographic_point get_gp_base_TPx(GCLscalarfield3d& TP,Geographic_point xgp,
+     int ix1, int ix2, int ix3)
   {
     /* These matrices hold the Jacobian and inverse Jacobian for cells */
     dmatrix J(3,3),Jinv(3,3);
@@ -1186,7 +1187,8 @@ namespace pwmig::pwmigcore
     /* WARNING WARNING WARNING:   In current position of this procedure we can be sure
      * that the index pointer is already position and we do not need to waste time on
      * calling the lookup method.  This is a very dangerous assumption made for speed.*/
-    TP.get_index(tpind);
+    //TP.get_index(tpind);
+    tpind[0]=ix1;  tpind[1]=ix2; tpind[2]=ix3;
     /* Compute unit vectors on 1 and 2 generalized coordinate directions
      * at the image point x.  Use the lookup point */
     int k;

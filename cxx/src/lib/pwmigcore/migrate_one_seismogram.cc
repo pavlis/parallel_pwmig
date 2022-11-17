@@ -60,6 +60,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
   ux=pwdata.get_double("ux0");
   uy=pwdata.get_double("uy0");
   SlownessVector u0(ux,uy);
+  //cout << "ux0="<<ux<<" uy0="<<uy<<endl;
   /* The contents of this function in the original pwmig C++ program were
   the innermost of 3 loops used to compute the GRT migration.   The following
   set of parameters are here extracted from the Metadata container passed
@@ -105,6 +106,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
   i = pwdata.get_int("ix1");
   j = pwdata.get_int("ix2");
   gridid=pwdata.get_int("gridid");
+  //cout << "migrate_one:  gridid="<<gridid<<" i="<<i<<" j="<<j<<endl;
   //cout << "ix1="<<i<<" ix2="<<j<<" gridid="<<gridid<<" n3="<<n3<<endl;
   /* Original pwmig had a static option here.  As a module in mspass it
   would be far better to apply statics as a mspass operator */
@@ -185,7 +187,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
 	ix1_0 = lookup_origin[0];
 	ix2_0 = lookup_origin[1];
 	ix3_0 = lookup_origin[2];
-  //cout << "loopup_origin result:  "<<ix1_0<<", "<<ix2_0<<", "<<ix3_0<<endl;
+  //cout << "tlag Tpx Stime[k] tdelta Tpr"<<endl;
   for(k=0,kk=raygrid.n3-1;k<raygrid.n3;++k,--kk)
   {
     vector<double>nu;
@@ -236,7 +238,8 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
      * no antelope version pwmig2.0 */
     try
     {
-      rxTP_gp0=get_gp_base_TPx(TPgrid,x_gp);
+      //rxTP_gp0=get_gp_base_TPx(TPgrid,x_gp);
+      rxTP_gp0=get_gp_base_TPx(TPgrid,x_gp,ix1_0,ix2_0,ix3_0);
     }catch(MsPASSError& serr)
     {
       result.elog.log_error(serr);
@@ -250,6 +253,7 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
     tdelta=compute_delta_p_term(rxTP_gp0,rTP_gp,u0);
     tlag=Tpx+Stime[k]+tdelta-Tpr;
     SPtime.push_back(tlag);
+    //if(gridid==60) cout <<tlag<<" "<<Tpx<<" "<<Stime[k]<<" "<<tdelta<<" "<<Tpr<<endl;
   }
 
   // skip this ray if there were travel time computation problems
@@ -295,6 +299,14 @@ PWMIGmigrated_seismogram migrate_one_seismogram(Seismogram& pwdata,
         Stime.push_back(tpadding0+dt*static_cast<double>(k-padmark+1));
     }
   }
+  // DEBUG
+  /*
+  if(gridid==60) {
+  cout <<"SP times vector"<<endl;
+  for(auto sptr= SPtime.begin();sptr!=SPtime.end();++sptr) cout << *sptr<<endl;
+  }
+  */
+
   // We now interpolate the data with tlag values to map
   // the data from time to an absolute location in space
   // Note carefully SPtime and result.migrated_data sense are inverted from

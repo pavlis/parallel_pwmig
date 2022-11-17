@@ -77,7 +77,8 @@ mspass::seismic::SlownessVector slowness_average(mspass::seismic::LoggingEnsembl
 pwmig::gclgrid::Geographic_point fetch_TP_point_at_base(pwmig::gclgrid::GCLscalarfield3d& TP,
 	int i, int j);
 pwmig::gclgrid::Geographic_point get_gp_base_TPx(pwmig::gclgrid::GCLscalarfield3d& TP,
-	pwmig::gclgrid::Geographic_point xgp);
+	pwmig::gclgrid::Geographic_point xgp,
+        int, int, int);
 pwmig::gclgrid::Geographic_point find_TP_at_x_depth(pwmig::gclgrid::GCLscalarfield3d& TP,
 	int i, int j, double zx);
 double compute_delta_p_term(pwmig::gclgrid::Geographic_point r0x,
