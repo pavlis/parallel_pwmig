@@ -30,6 +30,7 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
              VelocityModel_1d& Vs1d,
                Metadata& control)
 {
+
   int nmembers;
   //nmembers = fill_member_list(d);
   nmembers = d.member.size();
@@ -45,12 +46,13 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
   GCLscalarfield3d *raygrid;
   raygrid = Build_GCLraygrid(parent,VPsvm,Vs1d,zmax,VPVSmax*tmax,dt*VPVSmax);
   PWMIGfielddata pwdgrid(*raygrid);
-  #pragma omp parallel for private(m)
+  //omp_set_num_threads(8);
+  //#pragma omp parallel for
   for(int m=0;m<d.member.size();++m)
   {
     PWMIGmigrated_seismogram dout;
     //cout << "Starting rank="<<rank<<" m="<<m<<endl;
-    dout = migrate_one_seismogram(d.member[m], parent, raygrid, TPgrid,Us3d,
+    dout = migrate_one_seismogram(d.member[m], parent, *raygrid, TPgrid,Us3d,
                       Vp1d, Vs1d, control);
     pwdgrid.accumulate(dout);
   }
