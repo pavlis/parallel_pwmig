@@ -32,7 +32,6 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
 {
 
   int nmembers;
-  //nmembers = fill_member_list(d);
   nmembers = d.member.size();
   /* Perhaps should throw an exception here, but an empty ensemble should
   be allowed and handled seamlessly*/
@@ -51,7 +50,6 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
   for(int m=0;m<d.member.size();++m)
   {
     PWMIGmigrated_seismogram dout;
-    //cout << "Starting rank="<<rank<<" m="<<m<<endl;
     dout = migrate_one_seismogram(d.member[m], parent, *raygrid, TPgrid,Us3d,
                       Vp1d, Vs1d, control);
     pwdgrid.accumulate(dout);
