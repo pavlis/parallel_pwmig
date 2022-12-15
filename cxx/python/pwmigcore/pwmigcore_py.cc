@@ -245,6 +245,7 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
   We normally used copy but that is a bad idea because this function returns
   a pointer to a GCLscalargrid3d object. */
   m.def("Build_GCLraygrid",&Build_GCLraygrid,"Creates a structured grid with lines of constant i,j defined by ray trace geometry",
+   py::call_guard<py::gil_scoped_release>(),
    py::return_value_policy::take_ownership,
    py::arg("parent"),
    py::arg("svm"),
@@ -255,6 +256,7 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
  );
  m.def("ComputeIncidentWaveRaygrid",&ComputeIncidentWaveRaygrid,
   "Computes a raygrid for the incident wavefield driven by a grid of slowness values, 1d ray tracing, and 3D model implemented by approximate ray tracing",
+  py::call_guard<py::gil_scoped_release>(),
   py::return_value_policy::take_ownership,
   py::arg("pstagrid"),
   py::arg("border_pad"),
@@ -278,6 +280,7 @@ m.def("pwstack_ensemble",&pwstack_ensemble,"Run pwstack algorithm on a Seismogra
                                                             pwmig::seispp::VelocityModel_1d&,
                                                                              mspass::utility::Metadata&)>(&migrate_one_seismogram),
    "pwmig innermost loop function - projects 3C seismogram data along a ray path",
+ py::call_guard<py::gil_scoped_release>(),
  py::return_value_policy::copy,
  py::arg("pwdata"),
  py::arg("parent"),
@@ -307,6 +310,7 @@ m.def("migrate_component",static_cast<pwmig::gclgrid::PWMIGfielddata (*)
                   pwmig::seispp::VelocityModel_1d&,
                     mspass::utility::Metadata&)>(&migrate_component),
     "Migrate one plane wave component with multithreading defined by Metadata argument",
+  py::call_guard<py::gil_scoped_release>(),
   py::return_value_policy::copy,
   py::arg("pwensemble"),
   py::arg("parent"),
