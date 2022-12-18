@@ -327,9 +327,9 @@ py::class_<GCLgrid3d,BasicGCLgrid>(m,"GCLgrid3d",py::buffer_protocol(),
   .def("save",&GCLgrid3d::save,"Save to an external file")
   .def("lookup",&GCLgrid3d::lookup,"Find point by cartesian coordinates (depricated)")
   .def("parallel_lookup",py::overload_cast<const double,const double,const double,int&,int&,int&>
-      (&GCLgrid3d::parallel_lookup,py::const_),"Thread save lookup method")
+      (&GCLgrid3d::parallel_lookup,py::const_),"Thread save lookup method",py::call_guard<py::gil_scoped_release>())
   .def("parallel_lookup",py::overload_cast<const double,const double,const double,std::vector<int>&>
-      (&GCLgrid3d::parallel_lookup,py::const_),"Thread save lookup method - vector index overloading")
+      (&GCLgrid3d::parallel_lookup,py::const_),"Thread save lookup method - vector index overloading",py::call_guard<py::gil_scoped_release>())
   .def("reset_index",&GCLgrid3d::reset_index,"Initializer for lookup searches - rarely needed")
   .def("get_index",&GCLgrid3d::get_index,"Return index position found with lookup")
   .def("geo_coordinates",&GCLgrid3d::geo_coordinates,"Return geo coordinate struct")
@@ -600,7 +600,7 @@ py::class_<GCLvectorfield3d,GCLgrid3d>(m,"GCLvectorfield3d","Three-dimensional g
   .def(py::init<const Metadata&>())
   .def("zero",&GCLvectorfield3d::zero,"Set all field attributes to 0")
   .def("save",&GCLvectorfield3d::save,"Save contents to a file")
-  .def("interpolate",&GCLvectorfield3d::interpolate,"Interpolate grid to get vector values at point passed")
+  .def("interpolate",&GCLvectorfield3d::interpolate,"Interpolate grid to get vector values at point passed",py::call_guard<py::gil_scoped_release>())
   .def("get_attributes",&GCLvectorfield3d::get_attributes,
      "Fetch all attributes into a Metadata container")
   .def("get_value",
@@ -701,7 +701,7 @@ py::class_<PWMIGfielddata,GCLvectorfield3d>(m,"PWMIGfielddata",
   .def(py::init<>())
   .def(py::init<const pwmig::gclgrid::GCLgrid3d>())
   .def(py::init<const pwmig::gclgrid::PWMIGfielddata>())
-  .def("accumulate",&PWMIGfielddata::accumulate,"Sum a single seismogram like migrated output to field")
+  .def("accumulate",&PWMIGfielddata::accumulate,"Sum a single seismogram like migrated output to field",py::call_guard<py::gil_scoped_release>())
   .def_readwrite("elog",&PWMIGfielddata::elog,"ErrorLogger object for handling errors in mspass way")
   /* This is annoyingly parallel to GCLvectorfield3d but I don't see how to do it
   with pybind11 to use inheritance unless we did a double pickle which would be a
