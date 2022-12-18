@@ -45,8 +45,8 @@ PWMIGfielddata migrate_component(ThreeComponentEnsemble& d,
   GCLscalarfield3d *raygrid;
   raygrid = Build_GCLraygrid(parent,VPsvm,Vs1d,zmax,VPVSmax*tmax,dt*VPVSmax);
   PWMIGfielddata pwdgrid(*raygrid);
-  //omp_set_num_threads(8);
-  //#pragma omp parallel for
+  omp_set_num_threads(8);
+  #pragma omp parallel for
   for(int m=0;m<d.member.size();++m)
   {
     PWMIGmigrated_seismogram dout;
