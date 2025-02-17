@@ -193,7 +193,7 @@ def _migrate_component(cursor,db,parent,TPfield,VPsvm,Us3d,Vp1d,Vs1d,control):
 
     """
     t0 = time.time()
-    pwensemble = db.read_ensemble_data(cursor,collection="wf_Seismogram")
+    pwensemble = db.read_data(cursor,collection="wf_Seismogram")
     t1 = time.time()
     pwdgrid = migrate_component(pwensemble, parent, TPfield, VPsvm, Us3d,
                                 Vp1d, Vs1d, control)
@@ -360,16 +360,38 @@ def migrate_event(db,source_id,pf,collection='GCLfielddata'):
 
     # The loop over plane wave components is driven by a list of cursors
     # created in this MongoDB incantation
-    query={'source_id' : source_id}
-    gridid_list=db.wf_Seismogram.find(query).distinct('gridid')
+    query = {'source_id': source_id}
+    gridid_list = db.wf_Seismogram.find(query).distinct('gridid')
+
+    from dask.distributed import Client, performance_report
+
+    client = Client.current()
+    migrated_image = 0  # Initialize the final accumulated image
+    futures_list = []
+
     for gridid in gridid_list:
-        print("Working on gridid=",gridid)
+        print("Submitting job for gridid=", gridid)
         cursor = query_by_id(gridid, db, source_id)
-        migrated_data = _migrate_component(cursor,db,parent,TPfield,svm0,
-                                 Us3d,Vp1d,Vs1d,control)
-        # timing code is for testing - remove when done
-        t0 = time.time()
-        migrated_image += migrated_data
-        print("Time to sum this plane wave component =",time.time()-t0)
+        f = client.submit(_migrate_component, cursor, db, parent, TPfield,
+                          svm0, Us3d, Vp1d, Vs1d, control)
+        futures_list.append(f)
+
+    poll_interval = 2  # seconds
+
+    with performance_report(filename="performance_report.html"):
+        finished = [False] * len(futures_list)
+        while not all(finished):
+            did_accumulate = False
+            for i, f in enumerate(futures_list):
+                if not finished[i] and f.status == "finished":
+                    migrated_data = f.result()
+                    t0 = time.time()
+                    migrated_image += migrated_data
+                    print("Accumulated component in", time.time() - t0, "seconds")
+                    finished[i] = True
+                    did_accumulate = True
+            if not did_accumulate:
+                time.sleep(poll_interval)
+
 
     return migrated_image

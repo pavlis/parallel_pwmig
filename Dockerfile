@@ -1,6 +1,7 @@
 FROM ghcr.io/mspass-team/mspass:latest
 
 LABEL maintainer="Ian Wang <yinzhi.wang.cug@gmail.com>"
+ENV PFPATH=/test/pf
 
 # Add cxx library
 ADD cxx /parallel_pwmig/cxx

@@ -305,7 +305,7 @@ def read_ensembles(db,querydata,control,arrival_key="Ptime"):
             cursor=db.wf_Seismogram.find(query)
             # Note control.data_tag can be a None type here - see 
             # control object constructor
-            d=db.read_ensemble_data(cursor,collection='wf_Seismogram',
+            d=db.read_data(cursor,collection='wf_Seismogram',
                                     normalize=['source','site'],
                                     data_tag=control.data_tag)
         if len(d.member) > 0:
@@ -452,7 +452,7 @@ def pwstack(db,pf,source_query=None,
                                 False,'')
         print(dret.keys(),len(dret.member))
 
-        db.save_ensemble_data(dret,data_tag=output_data_tag)
+        db.save_data(dret,data_tag=output_data_tag)
     # Now run pwstack_ensemble - it has a long arg list
     #mybag.map(lambda d : pwstack_ensemble(d,control.data_mute,
     #            control.stack_mute,

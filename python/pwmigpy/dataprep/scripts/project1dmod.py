@@ -75,9 +75,15 @@ def main(args=None):
                         action='store_true',
                         help='Be more verbose - retrieve and print the document saved in MongoDB '
                         )
+    parser.add_argument('-cs', '--connection_string',
+                        metavar='connection_string',
+                        type=str,
+                        default='mongodb://localhost:27017',
+                        help='MongoDB connection string (default mongodb://localhost:27017)'
+                        )
     args = parser.parse_args(args)
     dbname=args.dbname
-    dbclient=DBClient()
+    dbclient=DBClient(args.connection_string)
     db=Database(dbclient,dbname)
     gridname = args.gridname
     modname = args.modelname
