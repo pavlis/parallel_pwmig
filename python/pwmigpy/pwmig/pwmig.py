@@ -458,7 +458,7 @@ def migrate_event(db, source_id, pf, collection='GCLfielddata'):
     # return migrated_image
 
     from mspasspy.client import Client
-    import time, os, dask, gc
+    import time, os
     from dask.distributed import as_completed, performance_report
 
 

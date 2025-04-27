@@ -25,6 +25,7 @@ from pwmigpy.ccore.gclgrid import GCLscalarfield3d
 from pwmigpy.db.database import (GCLdbsave,
                                  GCLdbread,
                                  vmod1d_dbread)
+from mspasspy.client import Client
 
 
 
@@ -75,15 +76,10 @@ def main(args=None):
                         action='store_true',
                         help='Be more verbose - retrieve and print the document saved in MongoDB '
                         )
-    parser.add_argument('-cs', '--connection_string',
-                        metavar='connection_string',
-                        type=str,
-                        default='mongodb://localhost:27017',
-                        help='MongoDB connection string (default mongodb://localhost:27017)'
-                        )
     args = parser.parse_args(args)
     dbname=args.dbname
-    dbclient=DBClient(args.connection_string)
+    client = Client()
+    dbclient = client.get_database_client()
     db=Database(dbclient,dbname)
     gridname = args.gridname
     modname = args.modelname
