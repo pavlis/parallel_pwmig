@@ -38,7 +38,7 @@ their space times positions (using vp) are less than rmax (units of km).  Parame
 here are reasonable for global solution, but network operators using this code
 for regional networks may want to change these parameters.
 */
-class SpaceTimeCompare : public binary_function<Hypocenter,Hypocenter,bool>
+class SpaceTimeCompare
 {
 public:
         bool operator()(const Hypocenter& h1, const Hypocenter& h2) const

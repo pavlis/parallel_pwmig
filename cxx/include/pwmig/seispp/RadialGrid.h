@@ -94,7 +94,7 @@ private:
 };
 /* This function object is used as the predicate for the subset method template in
 EventCatalog for a radial grid.  */
-class SectorTest : public unary_function<Hypocenter,bool>
+class SectorTest
 {
 public:
 	bool operator() (const Hypocenter& h) const

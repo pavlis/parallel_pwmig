@@ -602,6 +602,12 @@ GCLvectorfield3d& GCLvectorfield3d::operator+=(const GCLvectorfield3d& g)
 	}
 	return *this;
 }
+GCLvectorfield3d GCLvectorfield3d::operator+(const GCLvectorfield3d& g) const
+{
+    GCLvectorfield3d result(*this);
+    result += g;
+    return result;
+}
 GCLscalarfield& GCLscalarfield::operator+=(GCLscalarfield& g)
 {
 	int i,j;

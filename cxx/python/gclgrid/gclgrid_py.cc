@@ -611,6 +611,7 @@ py::class_<GCLvectorfield3d,GCLgrid3d>(m,"GCLvectorfield3d","Three-dimensional g
     "Get the value at a specified point specified by geographic coordinates")
   .def("set_value",&GCLvectorfield3d::set_value,"Set the value at a specified grid point")
   .def(py::self += py::self)
+  .def(py::self + py::self)
   .def(py::self *= double())
   .def_readwrite("nv",&GCLvectorfield3d::nv,"Number of components in each vector")
   .def(py::pickle(

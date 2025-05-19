@@ -16,7 +16,9 @@ struct date_time
     int             minute;
     float           second;
 };
-
+void month_day(struct date_time *dt);
+void mdtodate(struct date_time *dt);
+void etoh(struct date_time *dt);
 void 
 doy2mday ( doy, year, month, day ) 
 int year, doy ;

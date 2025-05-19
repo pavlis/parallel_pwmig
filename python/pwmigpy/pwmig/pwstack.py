@@ -304,7 +304,7 @@ def read_ensembles(db,querydata,control,arrival_key="Ptime"):
             cursor=db.wf_Seismogram.find(query)
             # Note control.data_tag can be a None type here - see 
             # control object constructor
-            d=db.read_ensemble_data(cursor,collection='wf_Seismogram',
+            d=db.read_data(cursor,collection='wf_Seismogram',
                                     normalize=['source','site'],
                                     data_tag=control.data_tag)
         if len(d.member) > 0:
@@ -449,5 +449,5 @@ def pwstack(db,pf,source_query=None,
                           control.aperture_taper_length,
                             control.centroid_cutoff,
                                 False,'') )
-    mybag = mybag.map(lambda d : db.save_ensemble_data(d,data_tag=output_data_tag))
+    mybag = mybag.map(lambda d : db.save_data(d,data_tag=output_data_tag))
     mybag.compute()

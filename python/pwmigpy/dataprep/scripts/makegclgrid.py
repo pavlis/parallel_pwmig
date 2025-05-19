@@ -20,6 +20,7 @@ from pwmigpy.ccore.gclgrid import (GCLgrid,
                                    GCLgrid3d,
                                    r0_ellipse)
 from pwmigpy.db.database import GCLdbsave
+from mspasspy.client import Client
 
 def main(args=None):
     # As a script that would be run from the shell we let
@@ -61,7 +62,8 @@ def main(args=None):
                         )
     args = parser.parse_args(args)
     dbname=args.dbname
-    dbclient=DBClient()
+    client = Client()
+    dbclient = client.get_database_client()
     db=Database(dbclient,dbname)
     collection=args.c
     verbose = args.verbose

@@ -1872,6 +1872,7 @@ public:
 	(smoother) filter.
 	*/
 	GCLvectorfield3d& operator+=(const GCLvectorfield3d& other);
+	GCLvectorfield3d operator+(const GCLvectorfield3d& other) const;
 	/*!
 	Multiply all field values by a constant scale factor.
 

@@ -25,6 +25,7 @@ from pwmigpy.ccore.gclgrid import GCLscalarfield3d
 from pwmigpy.db.database import (GCLdbsave,
                                  GCLdbread,
                                  vmod1d_dbread)
+from mspasspy.client import Client
 
 
 
@@ -77,7 +78,8 @@ def main(args=None):
                         )
     args = parser.parse_args(args)
     dbname=args.dbname
-    dbclient=DBClient()
+    client = Client()
+    dbclient = client.get_database_client()
     db=Database(dbclient,dbname)
     gridname = args.gridname
     modname = args.modelname
