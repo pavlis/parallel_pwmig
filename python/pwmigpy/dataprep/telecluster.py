@@ -1,9 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+This module implements a C++ algorithm from the older pwmig set to python. 
+The older C++ program was a command line tool used to build a data structure 
+linking sources in an Antelope database into a set of "clusters".  A 
+"cluster" in that context is a set of source located inside a radial sector 
+defined by a range of distances and station-to-event azimuths.   The result 
+was as still is used to drive a source-side stacking algorithm called 
+RFEventStacker.  
+
+This module contains all the functional code of telecluster.   A separate 
+file in the scripts directory implements the CLI tool using command line 
+arguments that make that CLI tool act much like the old C++ code.
+"""
+
 from pwmigpy.ccore.seispp import (EventCatalog,Hypocenter,RadialGrid,SectorTest)
 from mspasspy.ccore.utility import (Metadata,AntelopePf)
 from mspasspy.db.database import Database
-from mspasspy.db.client import Client
+from mspasspy.db.client import DBClient
 import numpy as np
 
 def dbload_EventCatalog(db,mdlist=[],query={}):
@@ -130,6 +144,8 @@ def telecluster(dbname,pfname="telecluster.pf",query={},othermd=[]):
        will be translated and loaded to create associations.)
     :param othermd:  optional list of keys of other md to load with the 
       hypocenter coordinates - these get posted to cluster collection.
+    :return: tuple with two componens.  0 component is size of catalog 
+      processed and 1 is the number of added to cluster collection 
     
     """
     # First make sure the pf file can be read and contains everything 
@@ -141,15 +157,15 @@ def telecluster(dbname,pfname="telecluster.pf",query={},othermd=[]):
     gridname=pf.get_string('gridname')
     grid=pfload_radial_grid(pf)
     # Now attempt to load the source data
-    dbclient=Client()
+    dbclient=DBClient()
     db=Database(dbclient,dbname)
     cluster_collection=db['telecluster']
     evcat=dbload_EventCatalog(db,mdlist=othermd,query=query)
+    ncluster=0
     for i in range(grid.number_azimuth_bins()):
         for j in range(grid.number_distance_bins()):
             tester=SectorTest(grid,i,j)
             catsubset=evcat.sector_subset(tester)
-            #print(i,',',j,' subset size=',catsubset.size())
             nthis=catsubset.size()
             if nthis>0:
                 hypos=cat2dict(catsubset)
@@ -170,8 +186,7 @@ def telecluster(dbname,pfname="telecluster.pf",query={},othermd=[]):
                 for k in celldata:
                     cellsubdoc[k]=celldata[k]
                 doc['gridcell']=cellsubdoc
-                print(doc)
                 cluster_collection.insert_one(doc)
+                ncluster += 1
+    return [evcat.size(),ncluster]
 
-telecluster('usarraytest')          
-    
